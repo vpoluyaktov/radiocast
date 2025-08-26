@@ -5,7 +5,7 @@ on:
     branches: [ main ]
 
 env:
-  PROJECT_ID: dfh-prod
+  PROJECT_ID: dfh-prod-id
   SERVICE_NAME: radiocast-prod
   REGION: us-central1
 

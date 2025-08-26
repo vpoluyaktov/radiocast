@@ -7,7 +7,7 @@ on:
     branches: [ stage ]
 
 env:
-  PROJECT_ID: dfh-stage
+  PROJECT_ID: dfh-stage-id
   SERVICE_NAME: radiocast-stage
   REGION: us-central1
 
