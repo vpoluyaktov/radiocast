@@ -3,17 +3,18 @@ package reports
 import (
 	"bytes"
 	"fmt"
+	"html/template"
+	"io/ioutil"
 	"log"
+	"path/filepath"
 	"time"
-
-	"radiocast/internal/models"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/go-echarts/go-echarts/v2/types"
-	"github.com/gomarkdown/markdown"
-	"github.com/gomarkdown/markdown/html"
-	"github.com/gomarkdown/markdown/parser"
+	"github.com/russross/blackfriday/v2"
+
+	"radiocast/internal/models"
 )
 
 // Generator handles report generation and HTML conversion
@@ -51,23 +52,74 @@ func (g *Generator) GenerateHTML(markdownReport string, data *models.Propagation
 	}
 	
 	// Combine everything into a complete HTML document
-	fullHTML := g.buildCompleteHTML(htmlContent, solarChart, kIndexChart, bandChart, data)
+	fullHTML, err := g.buildCompleteHTML(htmlContent, solarChart, kIndexChart, bandChart, data)
+	if err != nil {
+		return "", fmt.Errorf("failed to build complete HTML: %w", err)
+	}
 	
 	log.Printf("Generated complete HTML report with %d characters", len(fullHTML))
 	return fullHTML, nil
 }
 
-// markdownToHTML converts markdown to HTML
+// markdownToHTML converts markdown to HTML using blackfriday
 func (g *Generator) markdownToHTML(markdownText string) string {
-	extensions := parser.CommonExtensions | parser.AutoHeadingIDs
-	p := parser.NewWithExtensions(extensions)
-	doc := p.Parse([]byte(markdownText))
+	htmlBytes := blackfriday.Run([]byte(markdownText))
+	return string(htmlBytes)
+}
+
+// convertMarkdownToHTML converts markdown text to HTML using blackfriday
+func (g *Generator) convertMarkdownToHTML(markdownText string) string {
+	// Convert markdown to HTML using blackfriday
+	htmlBytes := blackfriday.Run([]byte(markdownText))
+	return string(htmlBytes)
+}
+
+// ConvertMarkdownToHTML converts markdown content to a complete HTML document using configurable templates
+func (g *Generator) ConvertMarkdownToHTML(markdownContent string, date string) (string, error) {
+	// Convert markdown to HTML using blackfriday
+	htmlBytes := blackfriday.Run([]byte(markdownContent))
+	htmlContent := string(htmlBytes)
 	
-	htmlFlags := html.CommonFlags | html.HrefTargetBlank
-	opts := html.RendererOptions{Flags: htmlFlags}
-	renderer := html.NewRenderer(opts)
+	// Load HTML template
+	htmlTemplate, err := g.loadHTMLTemplate()
+	if err != nil {
+		return "", fmt.Errorf("failed to load HTML template: %w", err)
+	}
 	
-	return string(markdown.Render(doc, renderer))
+	// Load CSS styles
+	cssStyles, err := g.loadCSSStyles()
+	if err != nil {
+		return "", fmt.Errorf("failed to load CSS styles: %w", err)
+	}
+	
+	// Parse the HTML template
+	tmpl, err := template.New("report").Parse(htmlTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse HTML template: %w", err)
+	}
+	
+	// Prepare template data
+	templateData := struct {
+		Date        string
+		GeneratedAt string
+		Content     string
+		CSSStyles   string
+		Charts      string
+	}{
+		Date:        date,
+		GeneratedAt: time.Now().Format("2006-01-02 15:04:05 UTC"),
+		Content:     htmlContent,
+		CSSStyles:   cssStyles,
+		Charts:      "", // Charts will be embedded in content
+	}
+	
+	// Execute the template
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, templateData); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+	
+	return buf.String(), nil
 }
 
 // generateSolarChart creates a solar activity chart
@@ -229,170 +281,67 @@ func (g *Generator) generateBandChart(data *models.PropagationData) (string, err
 }
 
 // buildCompleteHTML creates a complete HTML document
-func (g *Generator) buildCompleteHTML(content, solarChart, kIndexChart, bandChart string, data *models.PropagationData) string {
-	timestamp := data.Timestamp.Format("2006-01-02 15:04:05 UTC")
-	
-	html := fmt.Sprintf(`<!DOCTYPE html>
+func (g *Generator) buildCompleteHTML(content, solarChart, kIndexChart, bandChart string, data *models.PropagationData) (string, error) {
+	// Use the new template-based conversion
+	result, err := g.ConvertMarkdownToHTML(content, time.Now().Format("2006-01-02"))
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
+// loadHTMLTemplate loads the HTML template from file
+func (g *Generator) loadHTMLTemplate() (string, error) {
+	templatePath := filepath.Join("internal", "templates", "report_template.html")
+	content, err := ioutil.ReadFile(templatePath)
+	if err != nil {
+		// Return default template if file not found
+		return g.getDefaultHTMLTemplate(), nil
+	}
+	return string(content), nil
+}
+
+// loadCSSStyles loads the CSS styles from file
+func (g *Generator) loadCSSStyles() (string, error) {
+	cssPath := filepath.Join("internal", "templates", "report_styles.css")
+	content, err := ioutil.ReadFile(cssPath)
+	if err != nil {
+		// Return default styles if file not found
+		return g.getDefaultCSSStyles(), nil
+	}
+	return string(content), nil
+}
+
+// getDefaultHTMLTemplate returns a fallback HTML template
+func (g *Generator) getDefaultHTMLTemplate() string {
+	return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radio Propagation Report - %s</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f8f9fa;
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
-            color: white;
-            padding: 30px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 2.5em;
-        }
-        .header .timestamp {
-            opacity: 0.9;
-            margin-top: 10px;
-        }
-        .summary-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-left: 4px solid #667eea;
-        }
-        .card h3 {
-            margin-top: 0;
-            color: #667eea;
-        }
-        .metric {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #333;
-        }
-        .content {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-        .charts-section {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-        .chart-container {
-            margin-bottom: 40px;
-        }
-        .footer {
-            text-align: center;
-            color: #666;
-            font-size: 0.9em;
-            margin-top: 30px;
-        }
-        h1, h2, h3 { color: #333; }
-        h2 { border-bottom: 2px solid #667eea; padding-bottom: 5px; }
-        code { background: #f4f4f4; padding: 2px 4px; border-radius: 3px; }
-        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; overflow-x: auto; }
-        blockquote { border-left: 4px solid #667eea; margin: 0; padding-left: 20px; color: #666; }
-        table { border-collapse: collapse; width: 100%%; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #f8f9fa; font-weight: bold; }
-        .status-good { color: #28a745; font-weight: bold; }
-        .status-fair { color: #ffc107; font-weight: bold; }
-        .status-poor { color: #dc3545; font-weight: bold; }
-    </style>
+    <title>Radio Propagation Report - {{.Date}}</title>
+    <style>{{.CSSStyles}}</style>
 </head>
 <body>
-    <div class="header">
-        <h1>📡 Radio Propagation Report</h1>
-        <div class="timestamp">Generated: %s</div>
-    </div>
-    
-    <div class="summary-cards">
-        <div class="card">
-            <h3>Solar Activity</h3>
-            <div class="metric">%.1f SFU</div>
-            <div>Solar Flux Index</div>
-            <div style="margin-top: 10px;">%s Activity</div>
+    <div class="container">
+        <div class="header">
+            <h1>Radio Propagation Report</h1>
+            <h2>{{.Date}}</h2>
         </div>
-        <div class="card">
-            <h3>Geomagnetic</h3>
-            <div class="metric">K=%.1f</div>
-            <div>Planetary K-index</div>
-            <div style="margin-top: 10px;">%s Conditions</div>
+        <div class="content">
+            {{.Content}}
         </div>
-        <div class="card">
-            <h3>Sunspots</h3>
-            <div class="metric">%d</div>
-            <div>Daily Count</div>
-        </div>
-        <div class="card">
-            <h3>Best Bands</h3>
-            <div style="margin-top: 10px;">%s</div>
-        </div>
-    </div>
-    
-    <div class="content">
-        %s
-    </div>
-    
-    <div class="charts-section">
-        <h2>📊 Propagation Data Visualization</h2>
-        
-        <div class="chart-container">
-            %s
-        </div>
-        
-        <div class="chart-container">
-            %s
-        </div>
-        
-        <div class="chart-container">
-            %s
-        </div>
-    </div>
-    
-    <div class="footer">
-        <p>Report generated by Radio Propagation Service | Data sources: NOAA SWPC, N0NBH, SIDC</p>
-        <p>For amateur radio operators worldwide | 73!</p>
     </div>
 </body>
-</html>`, 
-		data.Timestamp.Format("2006-01-02"),
-		timestamp,
-		data.SolarData.SolarFluxIndex,
-		data.SolarData.SolarActivity,
-		data.GeomagData.KIndex,
-		data.GeomagData.GeomagActivity,
-		data.SolarData.SunspotNumber,
-		formatBestBands(data.Forecast.Today.BestBands),
-		content,
-		solarChart,
-		kIndexChart,
-		bandChart,
-	)
-	
-	return html
+</html>`
+}
+
+// getDefaultCSSStyles returns fallback CSS styles
+func (g *Generator) getDefaultCSSStyles() string {
+	return `body { font-family: Arial, sans-serif; margin: 20px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.header { text-align: center; margin-bottom: 30px; }
+.content { background: white; padding: 20px; }`
 }
 
 // formatBestBands formats the best bands list for display

@@ -3,11 +3,14 @@ package llm
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
-
-	"radiocast/internal/models"
+	"path/filepath"
+	"time"
 
 	"github.com/sashabaranov/go-openai"
+
+	"radiocast/internal/models"
 )
 
 // OpenAIClient handles OpenAI API interactions
@@ -24,12 +27,27 @@ func NewOpenAIClient(apiKey, model string) *OpenAIClient {
 	}
 }
 
-// GenerateReport generates a propagation report using OpenAI LLM
-func (c *OpenAIClient) GenerateReport(ctx context.Context, data *models.PropagationData) (string, error) {
+// GenerateReport generates a propagation report using OpenAI
+func (c *OpenAIClient) GenerateReport(data *models.PropagationData) (string, error) {
+	if c.client == nil {
+		return "", fmt.Errorf("OpenAI client not initialized")
+	}
+
+	log.Printf("Generating report for %s", data.Timestamp.Format("2006-01-02"))
+
+	// Load system prompt from file
+	systemPrompt, err := c.loadSystemPrompt()
+	if err != nil {
+		log.Printf("Failed to load system prompt: %v", err)
+		systemPrompt = c.getDefaultSystemPrompt()
+	}
+
+	// Build prompt with all data
 	prompt := c.buildPrompt(data)
-	
-	log.Println("Sending request to OpenAI API...")
-	
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
 	resp, err := c.client.CreateChatCompletion(
 		ctx,
 		openai.ChatCompletionRequest{
@@ -37,7 +55,7 @@ func (c *OpenAIClient) GenerateReport(ctx context.Context, data *models.Propagat
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleSystem,
-					Content: "You are an expert amateur radio propagation analyst. Generate comprehensive, accurate, and user-friendly daily propagation reports in Markdown format. Include technical details but explain them in accessible terms for amateur radio operators of all experience levels.",
+					Content: systemPrompt,
 				},
 				{
 					Role:    openai.ChatMessageRoleUser,
@@ -45,22 +63,38 @@ func (c *OpenAIClient) GenerateReport(ctx context.Context, data *models.Propagat
 				},
 			},
 			MaxTokens:   2000,
-			Temperature: 0.3, // Lower temperature for more consistent, factual responses
+			Temperature: 0.3,
 		},
 	)
-	
+
 	if err != nil {
-		return "", fmt.Errorf("OpenAI API request failed: %w", err)
+		log.Printf("OpenAI API error: %v", err)
+		return "", fmt.Errorf("OpenAI API error: %w", err)
 	}
-	
+
 	if len(resp.Choices) == 0 {
-		return "", fmt.Errorf("no response choices returned from OpenAI")
+		return "", fmt.Errorf("no response from OpenAI")
 	}
-	
+
 	report := resp.Choices[0].Message.Content
 	log.Printf("Generated report with %d characters", len(report))
 	
 	return report, nil
+}
+
+// loadSystemPrompt loads the system prompt from file
+func (c *OpenAIClient) loadSystemPrompt() (string, error) {
+	promptPath := filepath.Join("internal", "templates", "system_prompt.txt")
+	content, err := ioutil.ReadFile(promptPath)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
+}
+
+// getDefaultSystemPrompt returns a fallback system prompt
+func (c *OpenAIClient) getDefaultSystemPrompt() string {
+	return "You are an expert radio propagation analyst and amateur radio operator. Generate a comprehensive daily radio propagation report in markdown format based on the provided solar and space weather data. Focus on practical advice for amateur radio operators."
 }
 
 // buildPrompt constructs a detailed prompt for the LLM

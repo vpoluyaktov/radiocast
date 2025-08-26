@@ -116,27 +116,77 @@ func main() {
 	log.Println("Server stopped")
 }
 
-// handleRoot serves basic information about the service
+// handleRoot serves the latest generated report or main page
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	
-	info := map[string]interface{}{
-		"service":     "Radio Propagation Service",
-		"version":     "1.0.0",
-		"environment": s.config.Environment,
-		"endpoints": map[string]string{
-			"health":   "/health",
-			"generate": "/generate",
-			"reports":  "/reports",
-		},
-		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	// Try to get the latest report from storage
+	ctx := r.Context()
+	reports, err := s.storage.ListReports(ctx, 1)
+	if err != nil || len(reports) == 0 {
+		log.Printf("No reports available: %v", err)
+		// Fall back to main page if no report available
+		s.serveMainPage(w)
+		return
 	}
 	
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(info)
+	// Get the latest report content
+	latestReportPath := reports[0]
+	reportContent, err := s.storage.GetReport(ctx, latestReportPath)
+	if err != nil {
+		log.Printf("Failed to get latest report content: %v", err)
+		s.serveMainPage(w)
+		return
+	}
+	
+	// Serve the latest report HTML directly
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(reportContent))
+}
+
+// serveMainPage serves the main service information page
+func (s *Server) serveMainPage(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprintf(w, `<!DOCTYPE html>
+<html>
+<head>
+    <title>Radio Propagation Service</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; }
+        .status { background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .endpoints { background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .endpoint { margin: 10px 0; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .note { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📡 Radio Propagation Service</h1>
+        <div class="note">
+            <strong>Note:</strong> No propagation reports have been generated yet. Generate your first report using the /generate endpoint.
+        </div>
+        <div class="status">
+            <strong>Status:</strong> Service is running and ready to generate propagation reports.
+        </div>
+        <div class="endpoints">
+            <h3>Available Endpoints:</h3>
+            <div class="endpoint"><strong>GET /health</strong> - Service health check</div>
+            <div class="endpoint"><strong>POST /generate</strong> - Generate new propagation report</div>
+            <div class="endpoint"><strong>GET /reports</strong> - List recent reports</div>
+        </div>
+        <p style="text-align: center; color: #666; margin-top: 30px;">
+            For amateur radio operators worldwide | 73!
+        </p>
+    </div>
+</body>
+</html>`)
 }
 
 // handleHealth provides health check endpoint
@@ -191,7 +241,7 @@ func (s *Server) handleGenerate(w http.ResponseWriter, r *http.Request) {
 	
 	// Generate report using LLM
 	log.Println("Generating report with OpenAI...")
-	markdownReport, err := s.llmClient.GenerateReport(ctx, data)
+	markdownReport, err := s.llmClient.GenerateReport(data)
 	if err != nil {
 		log.Printf("Report generation failed: %v", err)
 		http.Error(w, fmt.Sprintf("Report generation failed: %v", err), http.StatusInternalServerError)

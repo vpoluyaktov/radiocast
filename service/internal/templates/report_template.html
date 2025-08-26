@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio Propagation Report - {{.Date}}</title>
+    <style>
+{{.CSSStyles}}
+    </style>
+</head>
+<body>
+    <button class="print-button" onclick="window.print()">Print Report</button>
+    <div class="container">
+        <div class="header">
+            <h1>Radio Propagation Report</h1>
+            <h2>{{.Date}}</h2>
+            <div class="generated-time">Generated: {{.GeneratedAt}}</div>
+        </div>
+        <div class="content">
+            {{.Content}}
+        </div>
+        <div class="charts-section">
+            {{.Charts}}
+        </div>
+        <div class="footer">
+            <p>Data sources: NOAA SWPC, N0NBH Solar Data, SIDC</p>
+            <p>Report generated automatically by Radio Propagation Service</p>
+        </div>
+    </div>
+</body>
+</html>

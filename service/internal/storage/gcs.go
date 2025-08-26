@@ -78,8 +78,27 @@ func (g *GCSClient) StoreReport(ctx context.Context, htmlContent string, timesta
 	return publicURL, nil
 }
 
+// GetReport retrieves a specific report content from GCS
+func (g *GCSClient) GetReport(ctx context.Context, objectPath string) (string, error) {
+	bucket := g.client.Bucket(g.bucketName)
+	obj := bucket.Object(objectPath)
+	
+	reader, err := obj.NewReader(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to create reader for %s: %w", objectPath, err)
+	}
+	defer reader.Close()
+	
+	content, err := io.ReadAll(reader)
+	if err != nil {
+		return "", fmt.Errorf("failed to read content from %s: %w", objectPath, err)
+	}
+	
+	return string(content), nil
+}
+
 // ListReports lists recent reports from GCS
-func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]ReportInfo, error) {
+func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]string, error) {
 	bucket := g.client.Bucket(g.bucketName)
 	
 	query := &storage.Query{
@@ -89,7 +108,7 @@ func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]ReportInfo, e
 	
 	it := bucket.Objects(ctx, query)
 	
-	var reports []ReportInfo
+	var reports []string
 	count := 0
 	
 	for count < limit {
@@ -103,13 +122,7 @@ func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]ReportInfo, e
 		
 		// Only include HTML reports
 		if strings.HasSuffix(attrs.Name, ".html") && strings.Contains(attrs.Name, "PropagationReport") {
-			reports = append(reports, ReportInfo{
-				Name:      attrs.Name,
-				URL:       fmt.Sprintf("https://storage.googleapis.com/%s/%s", g.bucketName, attrs.Name),
-				Size:      attrs.Size,
-				Created:   attrs.Created,
-				Updated:   attrs.Updated,
-			})
+			reports = append(reports, attrs.Name)
 			count++
 		}
 	}

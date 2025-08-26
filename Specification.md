@@ -123,7 +123,7 @@ flowchart TB
 | Logging & Monitoring     | Structured logs, error alerts, GCP Operations (Stackdriver) |
 | Security                 | Use service accounts, least privilege, all secrets in Secret Manager |
 | Reliability              | Retries and fallback for failed fetches or OpenAI errors   |
-| Code Structure           | All Golang in `/service`, all infra in `/infra`  |
+| Code Structure           | Go follows standard `/internal` package layout, modular Terraform infrastructure |
 | Portability              | CI/CD deploys same container to both environments |
 | Documentation            | Clear README, usage, and infra instructions      |
 
@@ -135,19 +135,43 @@ flowchart TB
 /radiocast
   /service      // Go application source
     main.go
-    ...
-  /infra        // Terraform, Chef, deployment scripts
-    /stage
-      terraform.tf
-      ...
+    go.mod
+    go.sum
+    Dockerfile
+    .dockerignore
+    main_test.go
+    /internal   // Internal packages (standard Go layout)
+      /config     // Configuration management
+        config.go
+      /fetchers   // Data fetching logic
+        fetcher.go
+        fetcher_test.go
+      /llm        // OpenAI integration
+        openai.go
+      /models     // Data structures
+        data.go
+      /reports    // Report generation
+        generator.go
+      /storage    // GCS storage
+        gcs.go
+  /infra        // Terraform infrastructure (modular)
+    main.tf       // Shared resources
+    variables.tf  // Variable definitions
+    backend.tf    // Backend configuration
+    outputs.tf    // Output definitions
+    stage.tfvars  // Staging environment variables
+    prod.tfvars   // Production environment variables
+    /stage        // Environment-specific backend configs
+      backend.tf
     /prod
-      terraform.tf
-      ...
+      backend.tf
   /.github
     /workflows
-      stage.yml
-      prod.yml
+      stage.yml   // Staging deployment pipeline
+      prod.yml    // Production deployment pipeline
   README.md
+  Specification.md
+  .gitignore
 ```
 
 ---
@@ -169,7 +193,7 @@ flowchart TB
 | HTTP Client     | net/http, github.com/go-resty/resty   |
 | Parsing RSS/XML | github.com/mmcdole/gofeed             |
 | JSON Handling   | encoding/json                         |
-| Markdown->HTML  | github.com/gomarkdown/markdown        |
+| Markdown->HTML  | github.com/russross/blackfriday/v2    |
 | Echarts         | github.com/go-echarts/go-echarts/v2   |
 | Cloud Storage   | cloud.google.com/go/storage           |
 | LLM API         | github.com/sashabaranov/go-openai (or direct HTTP) |
@@ -258,7 +282,9 @@ terraform {
 
 - All configuration (API keys, project IDs, bucket names) must be environment-variable driven.
 - Use IAM/service accounts for Cloud Storage and Secret Manager access.
-- Chef or additional scripts may be used for GCP resource bootstrapping and initialization if needed.
+- Terraform manages all infrastructure with modular configuration files.
+- CI/CD workflows use Terraform for deployment instead of direct gcloud commands.
+- Environment variables passed to Terraform via `TF_VAR_` prefix for secure secret handling.
 
 ---
 
@@ -271,7 +297,29 @@ terraform {
 
 ---
 
-## 14. **Open Questions**
+## 14. **Recent Updates (August 2025)**
+
+### Project Refactoring Completed:
+- **Go Structure**: Migrated to standard `/internal` package layout following Go best practices
+- **Terraform Modularization**: Restructured infrastructure into modular files with shared configurations
+- **Import Path Updates**: All internal package references updated to new structure
+- **CI/CD Enhancement**: Workflows now use Terraform for deployment with proper secret handling
+- **Environment Separation**: Clean separation between staging and production configurations
+
+### Key Architectural Improvements:
+- Maintainable code structure with proper package organization
+- Modular Terraform configuration with environment-specific variables
+- Secure secret management through `TF_VAR_` environment variables
+- Standardized deployment process using infrastructure as code
+
+### Template and Configuration Externalization (Latest Update):
+- **LLM System Prompt**: Externalized to `/service/internal/templates/system_prompt.txt` for easy modification without code changes
+- **HTML Report Template**: Separated into `/service/internal/templates/report_template.html` with placeholder support for dynamic content
+- **CSS Styles**: Moved to `/service/internal/templates/report_styles.css` for independent styling customization
+- **Markdown Conversion**: Adopted `blackfriday/v2` library for reliable markdown to HTML conversion
+- **Root Endpoint Enhancement**: GET `/` now serves the latest generated report HTML directly, falling back to service information page when no reports exist
+
+## 15. **Open Questions**
 
 - Which LLM model/temperature/completion settings required? Use GPT-4.1 for now
 - Exact chart types and data fields to visualize with go-echarts? Up to you
@@ -280,7 +328,7 @@ terraform {
 
 ---
 
-## 15. **Sample External Dependencies**
+## 16. **Sample External Dependencies**
 
 | Type                 | Example URL/Endpoint                                        |
 |----------------------|------------------------------------------------------------|

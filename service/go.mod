@@ -6,8 +6,8 @@ require (
 	cloud.google.com/go/storage v1.35.1
 	github.com/go-echarts/go-echarts/v2 v2.3.3
 	github.com/go-resty/resty/v2 v2.10.0
-	github.com/gomarkdown/markdown v0.0.0-20231222211730-1d6d20845b47
 	github.com/mmcdole/gofeed v1.2.1
+	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sashabaranov/go-openai v1.17.9
 	github.com/sethvargo/go-envconfig v0.9.0
 )
