@@ -1,0 +1,159 @@
+package llm
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"radiocast/internal/models"
+
+	"github.com/sashabaranov/go-openai"
+)
+
+// OpenAIClient handles OpenAI API interactions
+type OpenAIClient struct {
+	client *openai.Client
+	model  string
+}
+
+// NewOpenAIClient creates a new OpenAI client
+func NewOpenAIClient(apiKey, model string) *OpenAIClient {
+	return &OpenAIClient{
+		client: openai.NewClient(apiKey),
+		model:  model,
+	}
+}
+
+// GenerateReport generates a propagation report using OpenAI LLM
+func (c *OpenAIClient) GenerateReport(ctx context.Context, data *models.PropagationData) (string, error) {
+	prompt := c.buildPrompt(data)
+	
+	log.Println("Sending request to OpenAI API...")
+	
+	resp, err := c.client.CreateChatCompletion(
+		ctx,
+		openai.ChatCompletionRequest{
+			Model: c.model,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: "You are an expert amateur radio propagation analyst. Generate comprehensive, accurate, and user-friendly daily propagation reports in Markdown format. Include technical details but explain them in accessible terms for amateur radio operators of all experience levels.",
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: prompt,
+				},
+			},
+			MaxTokens:   2000,
+			Temperature: 0.3, // Lower temperature for more consistent, factual responses
+		},
+	)
+	
+	if err != nil {
+		return "", fmt.Errorf("OpenAI API request failed: %w", err)
+	}
+	
+	if len(resp.Choices) == 0 {
+		return "", fmt.Errorf("no response choices returned from OpenAI")
+	}
+	
+	report := resp.Choices[0].Message.Content
+	log.Printf("Generated report with %d characters", len(report))
+	
+	return report, nil
+}
+
+// buildPrompt constructs a detailed prompt for the LLM
+func (c *OpenAIClient) buildPrompt(data *models.PropagationData) string {
+	prompt := fmt.Sprintf(`Generate a comprehensive daily amateur radio propagation report based on the following current conditions:
+
+## Current Solar and Geomagnetic Data (as of %s)
+
+### Solar Activity:
+- Solar Flux Index (10.7cm): %.1f sfu
+- Sunspot Number: %d
+- Solar Activity Level: %s
+- Proton Flux: %.2e particles/cm²/s
+
+### Geomagnetic Activity:
+- Planetary K-index: %.1f
+- A-index: %.1f
+- Geomagnetic Activity Level: %s
+- Current Conditions: %s
+
+### HF Band Conditions:
+- 80m: Day=%s, Night=%s
+- 40m: Day=%s, Night=%s
+- 20m: Day=%s, Night=%s
+- 17m: Day=%s, Night=%s
+- 15m: Day=%s, Night=%s
+- 12m: Day=%s, Night=%s
+- 10m: Day=%s, Night=%s
+- 6m: Day=%s, Night=%s
+
+### 3-Day Forecast:
+- Today: %s (K-index: %s)
+- Tomorrow: %s (K-index: %s)
+- Day After: %s (K-index: %s)
+- General Outlook: %s`,
+		data.Timestamp.Format("2006-01-02 15:04 UTC"),
+		data.SolarData.SolarFluxIndex,
+		data.SolarData.SunspotNumber,
+		data.SolarData.SolarActivity,
+		data.SolarData.ProtonFlux,
+		data.GeomagData.KIndex,
+		data.GeomagData.AIndex,
+		data.GeomagData.GeomagActivity,
+		data.GeomagData.GeomagConditions,
+		data.BandData.Band80m.Day, data.BandData.Band80m.Night,
+		data.BandData.Band40m.Day, data.BandData.Band40m.Night,
+		data.BandData.Band20m.Day, data.BandData.Band20m.Night,
+		data.BandData.Band17m.Day, data.BandData.Band17m.Night,
+		data.BandData.Band15m.Day, data.BandData.Band15m.Night,
+		data.BandData.Band12m.Day, data.BandData.Band12m.Night,
+		data.BandData.Band10m.Day, data.BandData.Band10m.Night,
+		data.BandData.Band6m.Day, data.BandData.Band6m.Night,
+		data.Forecast.Today.HFConditions, data.Forecast.Today.KIndexForecast,
+		data.Forecast.Tomorrow.HFConditions, data.Forecast.Tomorrow.KIndexForecast,
+		data.Forecast.DayAfter.HFConditions, data.Forecast.DayAfter.KIndexForecast,
+		data.Forecast.Outlook,
+	)
+	
+	// Add recent events if any
+	if len(data.SourceEvents) > 0 {
+		prompt += "\n\n### Recent Solar/Space Weather Events:\n"
+		for _, event := range data.SourceEvents {
+			prompt += fmt.Sprintf("- %s (%s): %s [%s severity]\n",
+				event.EventType, event.Source, event.Description, event.Severity)
+		}
+	}
+	
+	// Add warnings if any
+	if len(data.Forecast.Warnings) > 0 {
+		prompt += "\n\n### Current Warnings:\n"
+		for _, warning := range data.Forecast.Warnings {
+			prompt += fmt.Sprintf("- %s\n", warning)
+		}
+	}
+	
+	prompt += `
+
+## Report Requirements:
+
+Please generate a comprehensive Markdown report that includes:
+
+1. **Executive Summary** - Brief overview of current conditions and key takeaways
+2. **Current Conditions Analysis** - Detailed explanation of solar and geomagnetic data
+3. **Band-by-Band Analysis** - Specific recommendations for each amateur band
+4. **Best Operating Times** - When to operate for optimal propagation
+5. **DX Opportunities** - Specific regions/paths that may be enhanced
+6. **Technical Explanation** - Why conditions are as they are (educational)
+7. **3-Day Forecast** - What to expect in coming days
+8. **Operator Recommendations** - Practical advice for different types of operation
+
+Format the report with proper Markdown headers, bullet points, and emphasis. Make it informative but accessible to both new and experienced amateur radio operators. Include specific frequency recommendations and explain the reasoning behind propagation predictions.
+
+Focus on practical, actionable information that amateur radio operators can use to plan their activities.`
+
+	return prompt
+}

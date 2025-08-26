@@ -1,0 +1,114 @@
+name: Deploy to Stage
+
+on:
+  push:
+    branches: [ stage ]
+  pull_request:
+    branches: [ stage ]
+
+env:
+  PROJECT_ID: dfh-stage
+  SERVICE_NAME: radiocast-stage
+  REGION: us-central1
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+          
+    - name: Install dependencies
+      working-directory: ./service
+      run: go mod download
+      
+    - name: Run tests
+      working-directory: ./service
+      run: go test -v ./...
+      
+    - name: Run go vet
+      working-directory: ./service
+      run: go vet ./...
+      
+    - name: Run staticcheck
+      working-directory: ./service
+      run: |
+        go install honnef.co/go/tools/cmd/staticcheck@latest
+        staticcheck ./...
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/stage'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY_STAGE }}
+        
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+        
+    - name: Configure Docker for GCR
+      run: gcloud auth configure-docker
+      
+    - name: Build Docker image
+      run: |
+        docker build -t gcr.io/$PROJECT_ID/radiocast:$GITHUB_SHA \
+                     -t gcr.io/$PROJECT_ID/radiocast:latest \
+                     -f service/Dockerfile service/
+                     
+    - name: Push Docker image
+      run: |
+        docker push gcr.io/$PROJECT_ID/radiocast:$GITHUB_SHA
+        docker push gcr.io/$PROJECT_ID/radiocast:latest
+        
+    - name: Deploy with Terraform
+      env:
+        TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        cd infra
+        terraform init -backend-config="bucket=dfh-stage-tfstate"
+        terraform plan -var-file="stage.tfvars"
+        terraform apply -var-file="stage.tfvars" -auto-approve
+          
+    - name: Get service URL
+      id: get-url
+      run: |
+        cd infra
+        SERVICE_URL=$(terraform output -raw service_url)
+        echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_OUTPUT
+        echo "Deployed to: $SERVICE_URL"
+        
+    - name: Run smoke test
+      run: |
+        sleep 30  # Wait for service to be ready
+        curl -f ${{ steps.get-url.outputs.SERVICE_URL }}/health || exit 1
+        echo "Health check passed!"
+        
+    - name: Notify deployment
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ Stage deployment successful: ${{ steps.get-url.outputs.SERVICE_URL }}"
+        else
+          echo "❌ Stage deployment failed"
+        fi
