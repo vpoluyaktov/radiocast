@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -67,12 +67,6 @@ func (g *Generator) markdownToHTML(markdownText string) string {
 	return string(htmlBytes)
 }
 
-// convertMarkdownToHTML converts markdown text to HTML using blackfriday
-func (g *Generator) convertMarkdownToHTML(markdownText string) string {
-	// Convert markdown to HTML using blackfriday
-	htmlBytes := blackfriday.Run([]byte(markdownText))
-	return string(htmlBytes)
-}
 
 // ConvertMarkdownToHTML converts markdown content to a complete HTML document using configurable templates
 func (g *Generator) ConvertMarkdownToHTML(markdownContent string, date string) (string, error) {
@@ -293,7 +287,7 @@ func (g *Generator) buildCompleteHTML(content, solarChart, kIndexChart, bandChar
 // loadHTMLTemplate loads the HTML template from file
 func (g *Generator) loadHTMLTemplate() (string, error) {
 	templatePath := filepath.Join("internal", "templates", "report_template.html")
-	content, err := ioutil.ReadFile(templatePath)
+	content, err := os.ReadFile(templatePath)
 	if err != nil {
 		// Return default template if file not found
 		return g.getDefaultHTMLTemplate(), nil
@@ -304,7 +298,7 @@ func (g *Generator) loadHTMLTemplate() (string, error) {
 // loadCSSStyles loads the CSS styles from file
 func (g *Generator) loadCSSStyles() (string, error) {
 	cssPath := filepath.Join("internal", "templates", "report_styles.css")
-	content, err := ioutil.ReadFile(cssPath)
+	content, err := os.ReadFile(cssPath)
 	if err != nil {
 		// Return default styles if file not found
 		return g.getDefaultCSSStyles(), nil
@@ -344,22 +338,3 @@ func (g *Generator) getDefaultCSSStyles() string {
 .content { background: white; padding: 20px; }`
 }
 
-// formatBestBands formats the best bands list for display
-func formatBestBands(bands []string) string {
-	if len(bands) == 0 {
-		return "Check forecast"
-	}
-	
-	result := ""
-	for i, band := range bands {
-		if i > 0 {
-			result += ", "
-		}
-		result += band
-		if i >= 2 { // Limit to first 3 bands
-			break
-		}
-	}
-	
-	return result
-}

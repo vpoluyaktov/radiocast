@@ -3,8 +3,8 @@ package llm
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -85,7 +85,7 @@ func (c *OpenAIClient) GenerateReport(data *models.PropagationData) (string, err
 // loadSystemPrompt loads the system prompt from file
 func (c *OpenAIClient) loadSystemPrompt() (string, error) {
 	promptPath := filepath.Join("internal", "templates", "system_prompt.txt")
-	content, err := ioutil.ReadFile(promptPath)
+	content, err := os.ReadFile(promptPath)
 	if err != nil {
 		return "", err
 	}

@@ -11,6 +11,7 @@ func TestNewDataFetcher(t *testing.T) {
 	fetcher := NewDataFetcher()
 	if fetcher == nil {
 		t.Error("NewDataFetcher returned nil")
+		return
 	}
 	
 	if fetcher.client == nil {
