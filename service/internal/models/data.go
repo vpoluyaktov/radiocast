@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"encoding/xml"
+	"time"
+)
 
 // PropagationData represents normalized radio propagation data from all sources
 type PropagationData struct {
@@ -130,4 +133,37 @@ type N0NBHResponse struct {
 			Location string `json:"location"`
 		} `json:"phenomenon"`
 	} `json:"calculatedvhfconditions"`
+}
+
+// N0NBHXMLResponse represents N0NBH XML API response structure
+type N0NBHXMLResponse struct {
+	XMLName    xml.Name `xml:"solar"`
+	SolarData  struct {
+		Source        string `xml:"source"`
+		Updated       string `xml:"updated"`
+		SolarFlux     string `xml:"solarflux"`
+		AIndex        string `xml:"aindex"`
+		KIndex        string `xml:"kindex"`
+		KIndexNT      string `xml:"kindexnt"`
+		XRay          string `xml:"xray"`
+		SunSpots      string `xml:"sunspots"`
+		HeliumLine    string `xml:"heliumline"`
+		ProtonFlux    string `xml:"protonflux"`
+		ElectronFlux  string `xml:"electonflux"`
+		Aurora        string `xml:"aurora"`
+		Normalization string `xml:"normalization"`
+		LatDegree     string `xml:"latdegree"`
+		SolarWind     string `xml:"solarwind"`
+		MagneticField string `xml:"magneticfield"`
+	} `xml:"solardata"`
+	Time string `xml:"time"`
+	
+	CalculatedConditions struct {
+		Band []struct {
+			Name  string `xml:"name,attr"`
+			Time  string `xml:"time,attr"`
+			Day   string `xml:"day"`
+			Night string `xml:"night"`
+		} `xml:"band"`
+	} `xml:"calculatedconditions"`
 }

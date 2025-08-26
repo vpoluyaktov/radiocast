@@ -86,8 +86,15 @@ func (g *Generator) ConvertMarkdownToHTML(markdownContent string, date string) (
 		return "", fmt.Errorf("failed to load CSS styles: %w", err)
 	}
 	
-	// Parse the HTML template
-	tmpl, err := template.New("report").Parse(htmlTemplate)
+	// Parse the HTML template with proper functions for unescaped content
+	tmpl, err := template.New("report").Funcs(template.FuncMap{
+		"safeHTML": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+		"safeCSS": func(s string) template.CSS {
+			return template.CSS(s)
+		},
+	}).Parse(htmlTemplate)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse HTML template: %w", err)
 	}
@@ -96,15 +103,15 @@ func (g *Generator) ConvertMarkdownToHTML(markdownContent string, date string) (
 	templateData := struct {
 		Date        string
 		GeneratedAt string
-		Content     string
-		CSSStyles   string
-		Charts      string
+		Content     template.HTML
+		CSSStyles   template.CSS
+		Charts      template.HTML
 	}{
 		Date:        date,
 		GeneratedAt: time.Now().Format("2006-01-02 15:04:05 UTC"),
-		Content:     htmlContent,
-		CSSStyles:   cssStyles,
-		Charts:      "", // Charts will be embedded in content
+		Content:     template.HTML(htmlContent),
+		CSSStyles:   template.CSS(cssStyles),
+		Charts:      template.HTML(""), // Charts will be embedded in content
 	}
 	
 	// Execute the template

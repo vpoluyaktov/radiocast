@@ -3,7 +3,7 @@ body {
     line-height: 1.6;
     margin: 0;
     padding: 20px;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     min-height: 100vh;
     color: #333;
 }
@@ -18,10 +18,11 @@ body {
 }
 
 .header {
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-    color: white;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    color: #2c3e50;
     padding: 40px;
     text-align: center;
+    border-bottom: 3px solid #007bff;
 }
 
 .header h1 {
@@ -35,8 +36,8 @@ body {
     margin: 0 0 15px 0;
     font-size: 1.5em;
     font-weight: 300;
-    opacity: 0.9;
-    color: #ecf0f1;
+    opacity: 0.8;
+    color: #6c757d;
 }
 
 .generated-time {
@@ -56,11 +57,12 @@ body {
 }
 
 .footer {
-    background: #2c3e50;
-    color: white;
+    background: #f8f9fa;
+    color: #6c757d;
     padding: 20px 40px;
     text-align: center;
     font-size: 0.9em;
+    border-top: 1px solid #dee2e6;
 }
 
 .footer p {
@@ -70,17 +72,17 @@ body {
 
 h1 { 
     color: #2c3e50; 
-    border-bottom: 3px solid #e74c3c; 
+    border-bottom: 3px solid #007bff; 
     padding-bottom: 10px; 
     margin-top: 30px;
     font-size: 2em;
 }
 
 h2 { 
-    color: #34495e; 
+    color: #495057; 
     margin-top: 25px; 
     font-size: 1.6em;
-    border-left: 4px solid #e74c3c;
+    border-left: 4px solid #007bff;
     padding-left: 15px;
 }
 
@@ -112,7 +114,7 @@ th, td {
 }
 
 th {
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
     color: white;
     font-weight: 600;
     text-transform: uppercase;
@@ -164,19 +166,20 @@ code {
     border-radius: 4px;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 0.9em;
-    color: #e74c3c;
+    color: #007bff;
     border: 1px solid #e1e8ed;
 }
 
 pre {
-    background: #2d3748;
-    color: #e2e8f0;
+    background: #f8f9fa;
+    color: #495057;
     padding: 20px;
     border-radius: 8px;
     overflow-x: auto;
     margin: 20px 0;
-    border-left: 4px solid #e74c3c;
+    border-left: 4px solid #007bff;
     position: relative;
+    border: 1px solid #dee2e6;
 }
 
 pre code {
@@ -189,13 +192,13 @@ pre code {
 }
 
 blockquote {
-    border-left: 4px solid #e74c3c;
+    border-left: 4px solid #007bff;
     margin: 20px 0;
     padding: 10px 20px;
     background: #f8f9fa;
     border-radius: 0 8px 8px 0;
     font-style: italic;
-    color: #5a6c7d;
+    color: #6c757d;
 }
 
 ul, ol {
@@ -222,7 +225,7 @@ em {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: #e74c3c;
+    background: #007bff;
     color: white;
     border: none;
     padding: 12px 20px;
@@ -230,15 +233,15 @@ em {
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
-    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
     transition: all 0.3s ease;
     z-index: 1000;
 }
 
 .print-button:hover {
-    background: #c0392b;
+    background: #0056b3;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
 }
 
 /* Chart containers */

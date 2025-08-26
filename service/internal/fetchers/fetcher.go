@@ -3,6 +3,7 @@ package fetchers
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"log"
 	"strconv"
@@ -137,9 +138,33 @@ func (f *DataFetcher) fetchNOAAKIndex(ctx context.Context, url string) ([]models
 		return nil, fmt.Errorf("NOAA K-index API returned status %d", resp.StatusCode())
 	}
 	
-	var data []models.NOAAKIndexResponse
-	if err := json.Unmarshal(resp.Body(), &data); err != nil {
+	// NOAA returns array of arrays format: [["time_tag","Kp","a_running","station_count"], [data...]]
+	var rawData [][]interface{}
+	if err := json.Unmarshal(resp.Body(), &rawData); err != nil {
 		return nil, fmt.Errorf("failed to parse NOAA K-index response: %w", err)
+	}
+	
+	if len(rawData) < 2 {
+		return nil, fmt.Errorf("NOAA K-index response has insufficient data")
+	}
+	
+	// Skip header row and parse data rows
+	var data []models.NOAAKIndexResponse
+	for i := 1; i < len(rawData); i++ {
+		row := rawData[i]
+		if len(row) < 4 {
+			continue
+		}
+		
+		timeTag, _ := row[0].(string)
+		kpIndex, _ := strconv.ParseFloat(fmt.Sprintf("%v", row[1]), 64)
+		_ = fmt.Sprintf("%v", row[2]) // aRunning - not currently used
+		
+		data = append(data, models.NOAAKIndexResponse{
+			TimeTag:     timeTag,
+			KpIndex:     kpIndex,
+			EstimatedKp: kpIndex, // Use same value for estimated
+		})
 	}
 	
 	return data, nil
@@ -160,19 +185,47 @@ func (f *DataFetcher) fetchNOAASolar(ctx context.Context, url string) ([]models.
 		return nil, fmt.Errorf("NOAA solar API returned status %d", resp.StatusCode())
 	}
 	
-	var data []models.NOAASolarResponse
-	if err := json.Unmarshal(resp.Body(), &data); err != nil {
+	// NOAA returns array of arrays format: [["time_tag","density","speed","temperature"], [data...]]
+	var rawData [][]interface{}
+	if err := json.Unmarshal(resp.Body(), &rawData); err != nil {
 		return nil, fmt.Errorf("failed to parse NOAA solar response: %w", err)
+	}
+	
+	if len(rawData) < 2 {
+		return nil, fmt.Errorf("NOAA solar response has insufficient data")
+	}
+	
+	// Skip header row and parse data rows
+	var data []models.NOAASolarResponse
+	for i := 1; i < len(rawData); i++ {
+		row := rawData[i]
+		if len(row) < 4 {
+			continue
+		}
+		
+		timeTag, _ := row[0].(string)
+		_ = fmt.Sprintf("%v", row[1]) // density - not currently used
+		_ = fmt.Sprintf("%v", row[2]) // speed - not currently used  
+		_ = fmt.Sprintf("%v", row[3]) // temperature - not currently used
+		
+		// Note: This API doesn't provide solar flux or sunspot data directly
+		// We'll use placeholder values and rely on N0NBH for actual solar data
+		data = append(data, models.NOAASolarResponse{
+			TimeTag:           timeTag,
+			SolarFlux:         0, // Not available in this endpoint
+			SunspotNumber:     0, // Not available in this endpoint
+			SolarFluxAdjusted: 0, // Not available in this endpoint
+		})
 	}
 	
 	return data, nil
 }
 
-// fetchN0NBH fetches data from N0NBH solar API
+// fetchN0NBH fetches data from N0NBH solar API (XML format)
 func (f *DataFetcher) fetchN0NBH(ctx context.Context, url string) (*models.N0NBHResponse, error) {
 	resp, err := f.client.R().
 		SetContext(ctx).
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", "application/xml").
 		Get(url)
 	
 	if err != nil {
@@ -183,19 +236,71 @@ func (f *DataFetcher) fetchN0NBH(ctx context.Context, url string) (*models.N0NBH
 		return nil, fmt.Errorf("N0NBH API returned status %d", resp.StatusCode())
 	}
 	
-	var data models.N0NBHResponse
-	if err := json.Unmarshal(resp.Body(), &data); err != nil {
-		return nil, fmt.Errorf("failed to parse N0NBH response: %w", err)
+	// Parse XML response
+	var xmlData models.N0NBHXMLResponse
+	if err := xml.Unmarshal(resp.Body(), &xmlData); err != nil {
+		return nil, fmt.Errorf("failed to parse N0NBH XML response: %w", err)
 	}
 	
-	return &data, nil
+	// Convert XML structure to expected JSON structure
+	data := &models.N0NBHResponse{
+		SolarData: struct {
+			SolarFlux     string `json:"solarflux"`
+			AIndex        string `json:"aindex"`
+			KIndex        string `json:"kindex"`
+			KIndexNT      string `json:"kindexnt"`
+			SunSpots      string `json:"sunspots"`
+			HeliumLine    string `json:"heliumline"`
+			ProtonFlux    string `json:"protonflux"`
+			ElectronFlux  string `json:"electonflux"`
+			Aurora        string `json:"aurora"`
+			NormalizationTime string `json:"normalization"`
+			LatestSWPCReport  string `json:"latestswpcreport"`
+		}{
+			SolarFlux:     xmlData.SolarData.SolarFlux,
+			AIndex:        xmlData.SolarData.AIndex,
+			KIndex:        xmlData.SolarData.KIndex,
+			KIndexNT:      xmlData.SolarData.KIndexNT,
+			SunSpots:      xmlData.SolarData.SunSpots,
+			HeliumLine:    xmlData.SolarData.HeliumLine,
+			ProtonFlux:    xmlData.SolarData.ProtonFlux,
+			ElectronFlux:  xmlData.SolarData.ElectronFlux,
+			Aurora:        xmlData.SolarData.Aurora,
+			NormalizationTime: xmlData.SolarData.Normalization,
+			LatestSWPCReport:  "", // Not in XML
+		},
+		Time: xmlData.Time,
+	}
+	
+	// Convert band conditions
+	for _, band := range xmlData.CalculatedConditions.Band {
+		data.Calculatedconditions.Band = append(data.Calculatedconditions.Band, struct {
+			Name string `json:"name"`
+			Time string `json:"time"`
+			Day  string `json:"day"`
+			Night string `json:"night"`
+		}{
+			Name:  band.Name,
+			Time:  band.Time,
+			Day:   band.Day,
+			Night: band.Night,
+		})
+	}
+	
+	return data, nil
 }
 
 // fetchSIDC fetches RSS data from SIDC
 func (f *DataFetcher) fetchSIDC(ctx context.Context, url string) ([]*gofeed.Item, error) {
+	// Handle the redirect from snmtotcsv.php to snmtotcsv.php (case difference)
+	correctedURL := strings.Replace(url, "snmtotcsv.php", "snmtotcsv.php", 1)
+	if strings.Contains(url, "snmtotcsv.php") {
+		correctedURL = strings.Replace(url, "snmtotcsv.php", "snmtotcsv.php", 1)
+	}
+	
 	resp, err := f.client.R().
 		SetContext(ctx).
-		Get(url)
+		Get(correctedURL)
 	
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch SIDC RSS: %w", err)
@@ -205,12 +310,64 @@ func (f *DataFetcher) fetchSIDC(ctx context.Context, url string) ([]*gofeed.Item
 		return nil, fmt.Errorf("SIDC RSS returned status %d", resp.StatusCode())
 	}
 	
-	feed, err := f.parser.ParseString(string(resp.Body()))
+	// Check if we got HTML instead of RSS/CSV
+	bodyStr := string(resp.Body())
+	if strings.Contains(bodyStr, "<html>") || strings.Contains(bodyStr, "<!DOCTYPE") {
+		return nil, fmt.Errorf("SIDC returned HTML instead of RSS/CSV data")
+	}
+	
+	// Try to parse as RSS first
+	feed, err := f.parser.ParseString(bodyStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse SIDC RSS: %w", err)
+		// If RSS parsing fails, try to parse as CSV data
+		return f.parseSIDCCSV(bodyStr)
 	}
 	
 	return feed.Items, nil
+}
+
+// parseSIDCCSV parses SIDC CSV data and converts to RSS-like items
+func (f *DataFetcher) parseSIDCCSV(csvData string) ([]*gofeed.Item, error) {
+	lines := strings.Split(csvData, "\n")
+	var items []*gofeed.Item
+	
+	// Parse CSV format: Year Month Day Decimal_date SSN_value SSN_error Nb_observations Definitive/Provisional
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		
+		fields := strings.Fields(line)
+		if len(fields) < 5 {
+			continue
+		}
+		
+		// Create a feed item from CSV data
+		item := &gofeed.Item{
+			Title:       fmt.Sprintf("Sunspot Number: %s", fields[4]),
+			Description: fmt.Sprintf("Date: %s-%s-%s, SSN: %s, Error: %s", fields[0], fields[1], fields[2], fields[4], fields[5]),
+		}
+		
+		// Parse date
+		if year, err := strconv.Atoi(fields[0]); err == nil {
+			if month, err := strconv.Atoi(fields[1]); err == nil {
+				if day, err := strconv.Atoi(fields[2]); err == nil {
+					date := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+					item.PublishedParsed = &date
+				}
+			}
+		}
+		
+		items = append(items, item)
+		
+		// Only keep recent items (last 30 days)
+		if len(items) > 30 {
+			break
+		}
+	}
+	
+	return items, nil
 }
 
 // normalizeData combines and normalizes data from all sources
