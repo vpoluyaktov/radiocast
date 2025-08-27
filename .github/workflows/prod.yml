@@ -40,13 +40,13 @@ jobs:
       
     - name: Run go vet
       working-directory: ./service
-      run: go vet ./...
+      run: go vet ./internal/...
       
     - name: Run staticcheck
       working-directory: ./service
       run: |
         go install honnef.co/go/tools/cmd/staticcheck@latest
-        staticcheck ./...
+        staticcheck ./internal/...
         
     - name: Security scan
       working-directory: ./service

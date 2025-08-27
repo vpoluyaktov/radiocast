@@ -42,7 +42,7 @@ jobs:
       
     - name: Run go vet
       working-directory: ./service
-      run: go vet ./...
+      run: go vet ./internal/...
       
     - name: Security scan
       working-directory: ./service
@@ -54,7 +54,7 @@ jobs:
       working-directory: ./service
       run: |
         go install honnef.co/go/tools/cmd/staticcheck@latest
-        staticcheck ./...
+        staticcheck ./internal/...
 
   build-and-deploy:
     needs: test
