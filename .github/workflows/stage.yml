@@ -78,19 +78,19 @@ jobs:
       with:
         terraform_version: "1.5.0"
         
-    - name: Configure Docker for GCR
-      run: gcloud auth configure-docker
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker us-central1-docker.pkg.dev
       
     - name: Build Docker image
       run: |
-        docker build -t gcr.io/$PROJECT_ID/radiocast:$GITHUB_SHA \
-                     -t gcr.io/$PROJECT_ID/radiocast:latest \
+        docker build -t us-central1-docker.pkg.dev/$PROJECT_ID/radiocast/radiocast:$GITHUB_SHA \
+                     -t us-central1-docker.pkg.dev/$PROJECT_ID/radiocast/radiocast:latest \
                      -f service/Dockerfile service/
                      
     - name: Push Docker image
       run: |
-        docker push gcr.io/$PROJECT_ID/radiocast:$GITHUB_SHA
-        docker push gcr.io/$PROJECT_ID/radiocast:latest
+        docker push us-central1-docker.pkg.dev/$PROJECT_ID/radiocast/radiocast:$GITHUB_SHA
+        docker push us-central1-docker.pkg.dev/$PROJECT_ID/radiocast/radiocast:latest
         
     - name: Deploy with Terraform
       env:

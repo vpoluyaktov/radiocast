@@ -11,7 +11,8 @@ resource "google_project_service" "apis" {
     "secretmanager.googleapis.com",
     "cloudscheduler.googleapis.com",
     "logging.googleapis.com",
-    "monitoring.googleapis.com"
+    "monitoring.googleapis.com",
+    "artifactregistry.googleapis.com"
   ])
 
   project = var.project_id
@@ -56,6 +57,17 @@ resource "google_storage_bucket" "reports" {
     }
   }
 
+  depends_on = [google_project_service.apis]
+}
+
+# Artifact Registry repository
+resource "google_artifact_registry_repository" "radiocast" {
+  location      = var.region
+  project       = var.project_id
+  repository_id = "radiocast"
+  description   = "Docker repository for radiocast application"
+  format        = "DOCKER"
+  
   depends_on = [google_project_service.apis]
 }
 
@@ -131,7 +143,7 @@ resource "google_cloud_run_v2_service" "radiocast" {
     }
 
     containers {
-      image = "gcr.io/${var.project_id}/radiocast:latest"
+      image = "us-central1-docker.pkg.dev/${var.project_id}/radiocast/radiocast:latest"
 
       ports {
         container_port = 8080
