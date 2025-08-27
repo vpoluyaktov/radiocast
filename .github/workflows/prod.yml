@@ -5,7 +5,7 @@ on:
     branches: [ main ]
 
 env:
-  PROJECT_ID: dfh-prod-id
+  PROJECT_ID: dfh-prod
   SERVICE_NAME: radiocast-prod
   REGION: us-central1
 
@@ -70,6 +70,11 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
         
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.5.0"
+        
     - name: Configure Docker for GCR
       run: gcloud auth configure-docker
       
@@ -89,7 +94,7 @@ jobs:
         TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
       run: |
         cd infra
-        terraform init -backend-config="bucket=dfh-prod-tfstate"
+        terraform init -backend-config="prod/backend.tf"
         terraform plan -var-file="prod.tfvars"
         terraform apply -var-file="prod.tfvars" -auto-approve
         
