@@ -94,7 +94,8 @@ jobs:
         TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
       run: |
         cd infra
-        terraform init -backend-config-file="prod/backend.tf"
+        cp prod/backend.tf backend.tf
+        terraform init
         terraform plan -var-file="prod.tfvars"
         terraform apply -var-file="prod.tfvars" -auto-approve
         
