@@ -116,6 +116,12 @@ jobs:
         curl -f ${{ steps.get-url.outputs.SERVICE_URL }}/health || exit 1
         echo "Health check passed!"
         
+    - name: Trigger initial report generation
+      run: |
+        echo "Triggering Cloud Scheduler job to generate initial report..."
+        gcloud scheduler jobs run radiocast-daily-report-staging --location=us-central1 --project=dfh-stage-id
+        echo "Report generation triggered successfully!"
+        
     - name: Notify deployment
       if: always()
       run: |

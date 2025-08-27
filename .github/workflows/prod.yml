@@ -111,15 +111,14 @@ jobs:
       run: |
         sleep 30
         curl -f ${{ steps.get-url.outputs.SERVICE_URL }}/health || exit 1
-        echo "Final health check passed!"
+        echo "Health check passed!"
         
-    - name: Clean up old revisions
+    - name: Trigger initial report generation
       run: |
-        # Keep only the latest 3 revisions
-        gcloud run revisions list --service $SERVICE_NAME --region $REGION \
-          --format 'value(metadata.name)' --limit 100 | tail -n +4 | \
-          xargs -I {} gcloud run revisions delete {} --region $REGION --quiet || true
-          
+        echo "Triggering Cloud Scheduler job to generate initial report..."
+        gcloud scheduler jobs run radiocast-daily-report-production --location=us-central1 --project=dfh-prod-id
+        echo "Report generation triggered successfully!"
+        
     - name: Notify deployment
       if: always()
       run: |
