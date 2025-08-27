@@ -22,13 +22,17 @@ FROM alpine:latest
 # Install ca-certificates for HTTPS requests
 RUN apk --no-cache add ca-certificates tzdata
 
-WORKDIR /root/
-
-# Copy the binary from builder stage
-COPY --from=builder /app/radiocast .
-
-# Create non-root user
+# Create non-root user first
 RUN adduser -D -s /bin/sh radiocast
+
+WORKDIR /home/radiocast
+
+# Copy the binary from builder stage with correct ownership
+COPY --from=builder --chown=radiocast:radiocast /app/radiocast .
+
+# Make binary executable
+RUN chmod +x radiocast
+
 USER radiocast
 
 # Expose port
