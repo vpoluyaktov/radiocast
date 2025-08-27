@@ -1,4 +1,4 @@
-project_id          = "dfh-stage"
+project_id            = "dfh-stage-id"
 service_name        = "radiocast-stage"
 environment         = "staging"
 reports_bucket_name = "dfh-stage-reports"
