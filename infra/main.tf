@@ -11,14 +11,16 @@ resource "google_project_service" "apis" {
     "secretmanager.googleapis.com",
     "cloudscheduler.googleapis.com",
     "logging.googleapis.com",
-    "monitoring.googleapis.com"
+    "monitoring.googleapis.com",
+    "iam.googleapis.com",
+    "cloudresourcemanager.googleapis.com"
   ])
-  
+
   project = var.project_id
   service = each.value
-  
+
   disable_dependent_services = false
-  disable_on_destroy        = false
+  disable_on_destroy         = false
 }
 
 # GCS bucket for reports
@@ -26,13 +28,13 @@ resource "google_storage_bucket" "reports" {
   name     = var.reports_bucket_name
   location = var.region
   project  = var.project_id
-  
+
   uniform_bucket_level_access = true
-  
+
   versioning {
     enabled = var.environment == "production"
   }
-  
+
   lifecycle_rule {
     condition {
       age = var.reports_retention_days
@@ -41,7 +43,7 @@ resource "google_storage_bucket" "reports" {
       type = "Delete"
     }
   }
-  
+
   dynamic "lifecycle_rule" {
     for_each = var.environment == "production" ? [1] : []
     content {
@@ -55,7 +57,7 @@ resource "google_storage_bucket" "reports" {
       }
     }
   }
-  
+
   depends_on = [google_project_service.apis]
 }
 
@@ -70,11 +72,11 @@ resource "google_storage_bucket_iam_member" "reports_public" {
 resource "google_secret_manager_secret" "openai_api_key" {
   secret_id = "openai-api-key"
   project   = var.project_id
-  
+
   replication {
     auto {}
   }
-  
+
   depends_on = [google_project_service.apis]
 }
 
@@ -121,47 +123,43 @@ resource "google_cloud_run_v2_service" "radiocast" {
   name     = var.service_name
   location = var.region
   project  = var.project_id
-  
+
   template {
     service_account = google_service_account.radiocast.email
-    
+
     scaling {
       min_instance_count = var.min_instances
       max_instance_count = var.max_instances
     }
-    
+
     containers {
       image = "gcr.io/${var.project_id}/radiocast:latest"
-      
+
       ports {
         container_port = 8080
       }
-      
-      env {
-        name  = "PORT"
-        value = "8080"
-      }
-      
+
+
       env {
         name  = "GCP_PROJECT_ID"
         value = var.project_id
       }
-      
+
       env {
         name  = "GCS_BUCKET"
         value = google_storage_bucket.reports.name
       }
-      
+
       env {
         name  = "ENVIRONMENT"
         value = var.environment
       }
-      
+
       env {
         name  = "LOG_LEVEL"
         value = var.environment == "production" ? "info" : "debug"
       }
-      
+
       env {
         name = "OPENAI_API_KEY"
         value_source {
@@ -171,7 +169,7 @@ resource "google_cloud_run_v2_service" "radiocast" {
           }
         }
       }
-      
+
       resources {
         limits = {
           cpu    = var.cpu_limit
@@ -179,7 +177,7 @@ resource "google_cloud_run_v2_service" "radiocast" {
         }
         cpu_idle = var.environment != "production"
       }
-      
+
       dynamic "startup_probe" {
         for_each = var.environment == "production" ? [1] : []
         content {
@@ -193,7 +191,7 @@ resource "google_cloud_run_v2_service" "radiocast" {
           failure_threshold     = 3
         }
       }
-      
+
       dynamic "liveness_probe" {
         for_each = var.environment == "production" ? [1] : []
         content {
@@ -208,15 +206,15 @@ resource "google_cloud_run_v2_service" "radiocast" {
         }
       }
     }
-    
+
     timeout = var.timeout
   }
-  
+
   traffic {
     percent = 100
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
   }
-  
+
   depends_on = [google_project_service.apis]
 }
 
@@ -231,27 +229,27 @@ resource "google_cloud_run_service_iam_member" "public_access" {
 
 # Cloud Scheduler job
 resource "google_cloud_scheduler_job" "daily_report" {
-  name     = "radiocast-daily-report-${var.environment}"
-  region   = var.region
-  project  = var.project_id
-  
+  name    = "radiocast-daily-report-${var.environment}"
+  region  = var.region
+  project = var.project_id
+
   description = "Generate daily radio propagation report"
   schedule    = "0 0 * * *" # Daily at midnight UTC
   time_zone   = "UTC"
-  
+
   http_target {
     http_method = "POST"
     uri         = "${google_cloud_run_v2_service.radiocast.uri}/generate"
-    
+
     headers = {
       "Content-Type" = "application/json"
     }
-    
+
     oidc_token {
       service_account_email = google_service_account.radiocast.email
     }
   }
-  
+
   retry_config {
     retry_count          = var.environment == "production" ? 5 : 3
     max_retry_duration   = "300s"
@@ -259,7 +257,7 @@ resource "google_cloud_scheduler_job" "daily_report" {
     max_backoff_duration = "60s"
     max_doublings        = 3
   }
-  
+
   depends_on = [google_project_service.apis]
 }
 
@@ -268,7 +266,7 @@ resource "google_monitoring_alert_policy" "report_generation_failures" {
   count        = var.enable_monitoring ? 1 : 0
   display_name = "Radiocast Report Generation Failures"
   project      = var.project_id
-  
+
   conditions {
     display_name = "Cloud Run service error rate"
     
@@ -285,11 +283,13 @@ resource "google_monitoring_alert_policy" "report_generation_failures" {
     }
   }
   
+  combiner = "OR"
+
   notification_channels = []
-  
+
   alert_strategy {
     auto_close = "1800s"
   }
-  
+
   depends_on = [google_project_service.apis]
 }

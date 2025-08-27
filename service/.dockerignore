@@ -8,6 +8,8 @@ README.md
 
 # Tests
 *_test.go
+test_report.go
+local_runner.go
 coverage.out
 
 # Development files

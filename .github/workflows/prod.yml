@@ -36,17 +36,17 @@ jobs:
       
     - name: Run tests
       working-directory: ./service
-      run: go test -v ./...
+      run: go test -v ./internal/...
       
     - name: Run go vet
       working-directory: ./service
-      run: go vet ./...
+      run: go vet ./internal/...
       
     - name: Run staticcheck
       working-directory: ./service
       run: |
         go install honnef.co/go/tools/cmd/staticcheck@latest
-        staticcheck ./...
+        staticcheck ./internal/...
         
     - name: Security scan
       working-directory: ./service
@@ -70,6 +70,11 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
         
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.5.0"
+        
     - name: Configure Docker for GCR
       run: gcloud auth configure-docker
       
@@ -89,7 +94,8 @@ jobs:
         TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
       run: |
         cd infra
-        terraform init -backend-config="bucket=dfh-prod-tfstate"
+        cp prod/backend.tf backend.tf
+        terraform init
         terraform plan -var-file="prod.tfvars"
         terraform apply -var-file="prod.tfvars" -auto-approve
         
@@ -105,15 +111,14 @@ jobs:
       run: |
         sleep 30
         curl -f ${{ steps.get-url.outputs.SERVICE_URL }}/health || exit 1
-        echo "Final health check passed!"
+        echo "Health check passed!"
         
-    - name: Clean up old revisions
+    - name: Trigger initial report generation
       run: |
-        # Keep only the latest 3 revisions
-        gcloud run revisions list --service $SERVICE_NAME --region $REGION \
-          --format 'value(metadata.name)' --limit 100 | tail -n +4 | \
-          xargs -I {} gcloud run revisions delete {} --region $REGION --quiet || true
-          
+        echo "Triggering Cloud Scheduler job to generate initial report..."
+        gcloud scheduler jobs run radiocast-daily-report-production --location=us-central1 --project=dfh-prod-id
+        echo "Report generation triggered successfully!"
+        
     - name: Notify deployment
       if: always()
       run: |
