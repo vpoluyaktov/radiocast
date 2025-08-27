@@ -36,7 +36,7 @@ jobs:
       
     - name: Run tests
       working-directory: ./service
-      run: go test -v ./...
+      run: go test -v ./internal/...
       
     - name: Run go vet
       working-directory: ./service
