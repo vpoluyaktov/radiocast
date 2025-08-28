@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
@@ -97,21 +98,25 @@ func (g *GCSClient) GetReport(ctx context.Context, objectPath string) (string, e
 	return string(content), nil
 }
 
-// ListReports lists recent reports from GCS
+// ListReports lists recent reports from GCS, sorted by creation time (newest first)
 func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]string, error) {
 	bucket := g.client.Bucket(g.bucketName)
 	
 	query := &storage.Query{
 		Prefix: "",
-		// Sort by name (which includes timestamp) in descending order
 	}
 	
 	it := bucket.Objects(ctx, query)
 	
-	var reports []string
-	count := 0
+	// Collect all reports with their creation times
+	type reportInfo struct {
+		name    string
+		created time.Time
+	}
 	
-	for count < limit {
+	var allReports []reportInfo
+	
+	for {
 		attrs, err := it.Next()
 		if err == storage.ErrObjectNotExist {
 			break
@@ -122,9 +127,25 @@ func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]string, error
 		
 		// Only include HTML reports
 		if strings.HasSuffix(attrs.Name, ".html") && strings.Contains(attrs.Name, "PropagationReport") {
-			reports = append(reports, attrs.Name)
-			count++
+			allReports = append(allReports, reportInfo{
+				name:    attrs.Name,
+				created: attrs.Created,
+			})
 		}
+	}
+	
+	// Sort by creation time (newest first)
+	sort.Slice(allReports, func(i, j int) bool {
+		return allReports[i].created.After(allReports[j].created)
+	})
+	
+	// Return only the requested number of reports
+	var reports []string
+	for i, report := range allReports {
+		if i >= limit {
+			break
+		}
+		reports = append(reports, report.name)
 	}
 	
 	return reports, nil
