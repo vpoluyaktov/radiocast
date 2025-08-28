@@ -49,7 +49,7 @@ resource "google_storage_bucket" "reports" {
     content {
       condition {
         age                = 30
-        with_state         = "NONCURRENT"
+        with_state         = "ARCHIVED"
         num_newer_versions = 3
       }
       action {
@@ -273,7 +273,7 @@ resource "google_monitoring_alert_policy" "report_generation_failures" {
     condition_threshold {
       filter         = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${var.service_name}\""
       duration       = "300s"
-      comparison     = "COMPARISON_GREATER_THAN"
+      comparison     = "COMPARISON_GT"
       threshold_value = 0.1
       
       aggregations {
