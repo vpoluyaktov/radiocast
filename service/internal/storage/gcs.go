@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
 )
 
 // GCSClient handles Google Cloud Storage operations
@@ -118,7 +119,7 @@ func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]string, error
 	
 	for {
 		attrs, err := it.Next()
-		if err == storage.ErrObjectNotExist {
+		if err == iterator.Done {
 			break
 		}
 		if err != nil {
