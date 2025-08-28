@@ -92,6 +92,7 @@ jobs:
     - name: Deploy with Terraform
       env:
         TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+        TF_VAR_image_tag: ${{ github.sha }}
       run: |
         cd terraform
         cp prod/backend.tf backend.tf

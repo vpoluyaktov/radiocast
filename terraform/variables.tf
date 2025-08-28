@@ -47,6 +47,12 @@ variable "max_instances" {
   default     = 10
 }
 
+variable "image_tag" {
+  description = "Docker image tag to deploy"
+  type        = string
+  default     = "latest"
+}
+
 variable "cpu_limit" {
   description = "CPU limit for Cloud Run service"
   type        = string
