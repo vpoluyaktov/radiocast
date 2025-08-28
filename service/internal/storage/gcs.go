@@ -239,16 +239,6 @@ func (g *GCSClient) generateObjectPath(timestamp time.Time) string {
 	)
 }
 
-// generateReportFolderPath creates the GCS folder path for a report
-func (g *GCSClient) generateReportFolderPath(timestamp time.Time) string {
-	return fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%s/",
-		timestamp.Year(),
-		timestamp.Month(),
-		timestamp.Day(),
-		timestamp.Format("2006-01-02-15-04-05"),
-	)
-}
-
 // ReportInfo contains information about a stored report
 type ReportInfo struct {
 	Name    string    `json:"name"`
