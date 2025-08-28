@@ -154,7 +154,7 @@ flowchart TB
         generator.go
       /storage    // GCS storage
         gcs.go
-  /infra        // Terraform infrastructure (modular)
+  /terraform    // Terraform infrastructure (modular)
     main.tf       // Shared resources
     variables.tf  // Variable definitions
     backend.tf    // Backend configuration
@@ -235,7 +235,7 @@ flowchart TB
   classDef pipeline fill:#ffe0b2,stroke:#fb8c00,stroke-width:2px
 ```
 
-#### 9.3 Terraform Workflow (Infra)
+#### 9.3 Terraform Workflow (Infrastructure)
 
 ```mermaid
 flowchart TB
