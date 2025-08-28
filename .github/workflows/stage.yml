@@ -99,6 +99,38 @@ jobs:
         cd terraform
         cp stage/backend.tf backend.tf
         terraform init
+        
+        # Check if this is a fresh state (no resources exist)
+        if ! terraform state list >/dev/null 2>&1 || [ -z "$(terraform state list)" ]; then
+          echo "Fresh state detected, importing existing resources..."
+          
+          # Import existing resources if they exist
+          set +e  # Don't fail on import errors
+          
+          # Import service account
+          terraform import google_service_account.radiocast projects/dfh-stage-id/serviceAccounts/radiocast-staging@dfh-stage-id.iam.gserviceaccount.com
+          
+          # Import secret
+          terraform import google_secret_manager_secret.openai_api_key projects/dfh-stage-id/secrets/openai-api-key
+          
+          # Import secret version (get latest version)
+          SECRET_VERSION=$(gcloud secrets versions list openai-api-key --limit=1 --format="value(name)" --project=dfh-stage-id || echo "")
+          if [ -n "$SECRET_VERSION" ]; then
+            terraform import google_secret_manager_secret_version.openai_api_key projects/dfh-stage-id/secrets/openai-api-key/versions/$SECRET_VERSION
+          fi
+          
+          # Import storage bucket
+          terraform import google_storage_bucket.reports dfh-stage-reports
+          
+          # Import Cloud Run service
+          terraform import google_cloud_run_v2_service.radiocast projects/dfh-stage-id/locations/us-central1/services/radiocast-stage
+          
+          # Import Cloud Scheduler job
+          terraform import google_cloud_scheduler_job.daily_report projects/dfh-stage-id/locations/us-central1/jobs/radiocast-daily-report-staging
+          
+          set -e  # Re-enable exit on error
+        fi
+        
         terraform plan -var-file="stage.tfvars"
         terraform apply -var-file="stage.tfvars" -auto-approve
           
