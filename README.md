@@ -91,7 +91,7 @@ gsutil mb gs://dfh-prod-tfstate
 
 2. **Deploy staging infrastructure**:
 ```bash
-cd infra/stage
+cd terraform/stage
 terraform init
 terraform plan -var="openai_api_key=your-key"
 terraform apply
@@ -99,7 +99,7 @@ terraform apply
 
 3. **Deploy production infrastructure**:
 ```bash
-cd infra/prod
+cd terraform/prod
 terraform init
 terraform plan -var="openai_api_key=your-key"
 terraform apply
@@ -199,7 +199,7 @@ radiocast/
 │   ├── storage/            # GCS integration
 │   ├── go.mod              # Go dependencies
 │   └── Dockerfile          # Container build
-├── infra/                  # Terraform infrastructure
+├── terraform/              # Terraform infrastructure
 │   ├── stage/              # Staging environment
 │   └── prod/               # Production environment
 ├── .github/workflows/      # CI/CD pipelines

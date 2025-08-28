@@ -96,7 +96,7 @@ jobs:
       env:
         TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
       run: |
-        cd infra
+        cd terraform
         cp stage/backend.tf backend.tf
         terraform init
         terraform plan -var-file="stage.tfvars"
@@ -105,7 +105,7 @@ jobs:
     - name: Get service URL
       id: get-url
       run: |
-        cd infra
+        cd terraform
         SERVICE_URL=$(terraform output -raw service_url)
         echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_OUTPUT
         echo "Deployed to: $SERVICE_URL"
