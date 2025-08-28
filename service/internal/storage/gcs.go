@@ -81,19 +81,26 @@ func (g *GCSClient) StoreReport(ctx context.Context, htmlContent string, timesta
 }
 
 // GetReport retrieves a specific report content from GCS
-func (g *GCSClient) GetReport(ctx context.Context, objectPath string) (string, error) {
+func (g *GCSClient) GetReport(ctx context.Context, folderPath string) (string, error) {
 	bucket := g.client.Bucket(g.bucketName)
-	obj := bucket.Object(objectPath)
+	
+	// Ensure folderPath ends with / and append index.html
+	if !strings.HasSuffix(folderPath, "/") {
+		folderPath += "/"
+	}
+	indexPath := folderPath + "index.html"
+	
+	obj := bucket.Object(indexPath)
 	
 	reader, err := obj.NewReader(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to create reader for %s: %w", objectPath, err)
+		return "", fmt.Errorf("failed to create reader for %s: %w", indexPath, err)
 	}
 	defer reader.Close()
 	
 	content, err := io.ReadAll(reader)
 	if err != nil {
-		return "", fmt.Errorf("failed to read content from %s: %w", objectPath, err)
+		return "", fmt.Errorf("failed to read content from %s: %w", indexPath, err)
 	}
 	
 	return string(content), nil
@@ -126,10 +133,12 @@ func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]string, error
 			return nil, fmt.Errorf("failed to list objects: %w", err)
 		}
 		
-		// Only include HTML reports
-		if strings.HasSuffix(attrs.Name, ".html") && strings.Contains(attrs.Name, "PropagationReport") {
+		// Only include report folders (look for index.html files in PropagationReport folders)
+		if strings.HasSuffix(attrs.Name, "/index.html") && strings.Contains(attrs.Name, "PropagationReport") {
+			// Extract folder path by removing /index.html
+			folderPath := strings.TrimSuffix(attrs.Name, "/index.html") + "/"
 			allReports = append(allReports, reportInfo{
-				name:    attrs.Name,
+				name:    folderPath,
 				created: attrs.Created,
 			})
 		}
@@ -174,21 +183,45 @@ func (g *GCSClient) DeleteOldReports(ctx context.Context, olderThan time.Duratio
 			return fmt.Errorf("failed to list objects for cleanup: %w", err)
 		}
 		
-		// Only consider HTML reports older than cutoff
-		if strings.HasSuffix(attrs.Name, ".html") && 
+		// Only consider report folders older than cutoff (look for index.html files)
+		if strings.HasSuffix(attrs.Name, "/index.html") && 
 		   strings.Contains(attrs.Name, "PropagationReport") && 
 		   attrs.Created.Before(cutoff) {
-			toDelete = append(toDelete, attrs.Name)
+			// Delete the entire folder by getting the folder path
+			folderPath := strings.TrimSuffix(attrs.Name, "/index.html") + "/"
+			toDelete = append(toDelete, folderPath)
 		}
 	}
 	
-	// Delete old reports
-	for _, objectName := range toDelete {
-		obj := bucket.Object(objectName)
-		if err := obj.Delete(ctx); err != nil {
-			log.Printf("Warning: Failed to delete old report %s: %v", objectName, err)
-		} else {
-			log.Printf("Deleted old report: %s", objectName)
+	// Delete old report folders
+	for _, folderPath := range toDelete {
+		// List all objects in the folder
+		folderQuery := &storage.Query{Prefix: folderPath}
+		folderIt := bucket.Objects(ctx, folderQuery)
+		
+		var folderObjects []string
+		for {
+			attrs, err := folderIt.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				log.Printf("Warning: Failed to list objects in folder %s: %v", folderPath, err)
+				break
+			}
+			folderObjects = append(folderObjects, attrs.Name)
+		}
+		
+		// Delete all objects in the folder
+		for _, objName := range folderObjects {
+			obj := bucket.Object(objName)
+			if err := obj.Delete(ctx); err != nil {
+				log.Printf("Warning: Failed to delete object %s: %v", objName, err)
+			}
+		}
+		
+		if len(folderObjects) > 0 {
+			log.Printf("Deleted old report folder: %s (%d objects)", folderPath, len(folderObjects))
 		}
 	}
 	
@@ -196,9 +229,19 @@ func (g *GCSClient) DeleteOldReports(ctx context.Context, olderThan time.Duratio
 	return nil
 }
 
-// generateObjectPath creates the GCS object path for a report
+// generateObjectPath creates the GCS object path for a report folder
 func (g *GCSClient) generateObjectPath(timestamp time.Time) string {
-	return fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%s.html",
+	return fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%s/index.html",
+		timestamp.Year(),
+		timestamp.Month(),
+		timestamp.Day(),
+		timestamp.Format("2006-01-02-15-04-05"),
+	)
+}
+
+// generateReportFolderPath creates the GCS folder path for a report
+func (g *GCSClient) generateReportFolderPath(timestamp time.Time) string {
+	return fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%s/",
 		timestamp.Year(),
 		timestamp.Month(),
 		timestamp.Day(),
