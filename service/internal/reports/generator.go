@@ -167,7 +167,7 @@ func (g *Generator) generateBandHeatmap(bandConditions []BandCondition) string {
 		}),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "📻 Band Conditions",
-			Subtitle: "Day and Night Propagation Quality",
+			Subtitle: "Day and Night Propagation Quality (0=Closed, 1=Poor, 2=Fair, 3=Good, 4=Excellent)",
 		}),
 		charts.WithXAxisOpts(opts.XAxis{
 			Type: "category",
@@ -184,15 +184,28 @@ func (g *Generator) generateBandHeatmap(bandConditions []BandCondition) string {
 			Show:       true,
 			Orient:     "horizontal",
 			Left:       "center",
-			Bottom:     "10%",
+			Bottom:     "5%",
 			Text:       []string{"Excellent", "Closed"},
+			TextStyle: &opts.TextStyle{
+				Color: "#666",
+				FontSize: 12,
+			},
 			InRange: &opts.VisualMapInRange{
-				Color: []string{"#d73027", "#f46d43", "#fdae61", "#fee090", "#abd9e9"},
+				Color: []string{"#f5f5f5", "#ffcccb", "#ffd4a3", "#b3e5d1", "#a8d8ea"},
 			},
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
 			Show: true,
-			Formatter: "{c}",
+			Formatter: `function(params) {
+				var conditions = ['Closed', 'Poor', 'Fair', 'Good', 'Excellent'];
+				var value = params.value[2];
+				var band = params.value[0];
+				var time = params.value[1] === 0 ? 'Day' : 'Night';
+				return params.seriesName + '<br/>' + 
+					   'Band: ' + params.name + '<br/>' +
+					   'Time: ' + time + '<br/>' +
+					   'Condition: ' + conditions[value] + ' (' + value + ')';
+			}`,
 		}),
 	)
 	
