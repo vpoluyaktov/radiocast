@@ -31,11 +31,49 @@ Writing Style Guidelines:
 - Mention geographic patterns (north-south vs east-west paths)
 - Give contest and DX activity specific advice
 
-For Band Analysis, use this format:
-- **80m/40m (Low Bands)**: [Condition] - [Best times] - [Why]
-- **20m/17m/15m (High Bands)**: [Condition] - [Best times] - [Why]  
-- **12m/10m (VHF Bands)**: [Condition] - [Best times] - [Why]
+For Band Analysis, use this TABLE format:
+
+| Band | Day Condition | Night Condition | Best Times | Notes |
+|------|---------------|-----------------|------------|-------|
+| 80m | 🔴 Poor | 🔵 Good | 2200-0600 UTC | Low noise after sunset |
+| 40m | 🔴 Poor | 🟢 Excellent | 2100-0700 UTC | Best DX band at night |
+| 20m | 🟢 Excellent | 🔵 Good | 1000-2200 UTC | Reliable all day |
+| 17m | 🔵 Good | 🟡 Fair | 1200-2000 UTC | Good for EU/NA |
+| 15m | 🔵 Good | 🔴 Poor | 1400-1800 UTC | Solar dependent |
+| 12m | 🟡 Fair | ⚫ Closed | 1500-1700 UTC | Sporadic openings |
+| 10m | 🟡 Fair | ⚫ Closed | 1600-1700 UTC | Solar cycle dependent |
 
 Use condition indicators: 🟢 Excellent | 🔵 Good | 🟡 Fair | 🔴 Poor | ⚫ Closed
 
 Make the report engaging and easy to scan quickly!
+
+IMPORTANT: At the end of your report, include a special section for chart data:
+
+## Chart Data
+```json
+{
+  "bandConditions": [
+    {"band": "80m", "day": 1, "night": 3, "dayLabel": "Poor", "nightLabel": "Good"},
+    {"band": "40m", "day": 1, "night": 4, "dayLabel": "Poor", "nightLabel": "Excellent"},
+    {"band": "20m", "day": 4, "night": 3, "dayLabel": "Excellent", "nightLabel": "Good"},
+    {"band": "17m", "day": 3, "night": 2, "dayLabel": "Good", "nightLabel": "Fair"},
+    {"band": "15m", "day": 3, "night": 1, "dayLabel": "Good", "nightLabel": "Poor"},
+    {"band": "12m", "day": 2, "night": 0, "dayLabel": "Fair", "nightLabel": "Closed"},
+    {"band": "10m", "day": 2, "night": 0, "dayLabel": "Fair", "nightLabel": "Closed"}
+  ],
+  "solarActivity": {
+    "solarFlux": 100.0,
+    "sunspotNumber": 125,
+    "kIndex": 0.7,
+    "aIndex": 0.0,
+    "trend": "stable"
+  },
+  "forecast": [
+    {"day": "Today", "kIndex": 0.7, "condition": "Quiet"},
+    {"day": "Tomorrow", "kIndex": 1.2, "condition": "Quiet"},
+    {"day": "Day 3", "kIndex": 1.5, "condition": "Unsettled"}
+  ]
+}
+```
+
+Use these numeric scales for conditions: 0=Closed, 1=Poor, 2=Fair, 3=Good, 4=Excellent
