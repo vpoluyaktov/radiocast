@@ -141,7 +141,12 @@ func (f *DataFetcher) fetchNOAAKIndex(ctx context.Context, url string) ([]models
 	// NOAA returns array of arrays format: [["time_tag","Kp","a_running","station_count"], [data...]]
 	var rawData [][]interface{}
 	if err := json.Unmarshal(resp.Body(), &rawData); err != nil {
-		return nil, fmt.Errorf("failed to parse NOAA K-index response: %w", err)
+		// Try to parse as object first (some NOAA endpoints return objects)
+		var objData interface{}
+		if objErr := json.Unmarshal(resp.Body(), &objData); objErr != nil {
+			return nil, fmt.Errorf("failed to parse NOAA K-index response as array or object: %w", err)
+		}
+		return nil, fmt.Errorf("NOAA K-index returned unexpected format (not array of arrays): %T", objData)
 	}
 	
 	if len(rawData) < 2 {
@@ -188,7 +193,12 @@ func (f *DataFetcher) fetchNOAASolar(ctx context.Context, url string) ([]models.
 	// NOAA returns array of arrays format: [["time_tag","density","speed","temperature"], [data...]]
 	var rawData [][]interface{}
 	if err := json.Unmarshal(resp.Body(), &rawData); err != nil {
-		return nil, fmt.Errorf("failed to parse NOAA solar response: %w", err)
+		// Try to parse as object first (some NOAA endpoints return objects)
+		var objData interface{}
+		if objErr := json.Unmarshal(resp.Body(), &objData); objErr != nil {
+			return nil, fmt.Errorf("failed to parse NOAA solar response as array or object: %w", err)
+		}
+		return nil, fmt.Errorf("NOAA solar returned unexpected format (not array of arrays): %T", objData)
 	}
 	
 	if len(rawData) < 2 {
@@ -292,10 +302,10 @@ func (f *DataFetcher) fetchN0NBH(ctx context.Context, url string) (*models.N0NBH
 
 // fetchSIDC fetches RSS data from SIDC
 func (f *DataFetcher) fetchSIDC(ctx context.Context, url string) ([]*gofeed.Item, error) {
-	// Handle the redirect from snmtotcsv.php to snmtotcsv.php (case difference)
-	correctedURL := strings.Replace(url, "snmtotcsv.php", "snmtotcsv.php", 1)
-	if strings.Contains(url, "snmtotcsv.php") {
-		correctedURL = strings.Replace(url, "snmtotcsv.php", "snmtotcsv.php", 1)
+	// Handle HTTP to HTTPS redirect
+	correctedURL := strings.Replace(url, "http://", "https://", 1)
+	if !strings.HasPrefix(correctedURL, "https://") {
+		correctedURL = "https://" + strings.TrimPrefix(correctedURL, "http://")
 	}
 	
 	resp, err := f.client.R().
