@@ -128,11 +128,21 @@ jobs:
         curl -f ${{ steps.get-url.outputs.SERVICE_URL }}/health || exit 1
         echo "Health check passed!"
         
-    - name: Trigger initial report generation
+    - name: Generate new report with updated version
       run: |
-        echo "Triggering Cloud Scheduler job to generate initial report..."
-        gcloud scheduler jobs run radiocast-daily-report-staging --location=us-central1 --project=dfh-stage-id
-        echo "Report generation triggered successfully!"
+        echo "Generating new report with version v${{ steps.version.outputs.VERSION }}..."
+        RESPONSE=$(curl -s -X POST ${{ steps.get-url.outputs.SERVICE_URL }}/generate)
+        echo "Report generation response: $RESPONSE"
+        
+        # Extract report URL from response
+        REPORT_URL=$(echo $RESPONSE | grep -o '"report_url":"[^"]*' | cut -d'"' -f4)
+        if [ ! -z "$REPORT_URL" ]; then
+          echo "✅ New report generated: $REPORT_URL"
+          echo "📄 Report now displays version: v${{ steps.version.outputs.VERSION }}"
+        else
+          echo "⚠️ Report generation may have failed, triggering fallback Cloud Scheduler..."
+          gcloud scheduler jobs run radiocast-daily-report-staging --location=us-central1 --project=dfh-stage-id
+        fi
         
         
     - name: Notify deployment
