@@ -49,7 +49,9 @@ Make the report engaging and easy to scan quickly!
 
 CRITICAL: You MUST include the Band-by-Band Analysis table using the exact format shown above. Do NOT leave this section empty.
 
-CRITICAL: You MUST include the Chart Data JSON section at the end. This is REQUIRED for charts to display:
+CRITICAL: You MUST include the Chart Data JSON section at the end. This is REQUIRED for charts to display.
+
+Generate a report with all sections above, then add this Chart Data section:
 
 ## Chart Data
 ```json
