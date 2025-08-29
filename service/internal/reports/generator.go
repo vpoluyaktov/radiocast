@@ -14,6 +14,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/types"
 	"github.com/russross/blackfriday/v2"
 
+	"radiocast/internal/config"
 	"radiocast/internal/models"
 )
 
@@ -106,12 +107,14 @@ func (g *Generator) ConvertMarkdownToHTML(markdownContent string, date string) (
 		Content     template.HTML
 		CSSStyles   template.CSS
 		Charts      template.HTML
+		Version     string
 	}{
 		Date:        date,
 		GeneratedAt: time.Now().Format("2006-01-02 15:04:05 UTC"),
 		Content:     template.HTML(htmlContent),
 		CSSStyles:   template.CSS(cssStyles),
 		Charts:      template.HTML(""), // Charts will be embedded in content
+		Version:     config.GetVersion(),
 	}
 	
 	// Execute the template
@@ -332,6 +335,10 @@ func (g *Generator) getDefaultHTMLTemplate() string {
         <div class="content">
             {{.Content}}
         </div>
+        <div class="footer">
+            <hr>
+            <p class="version-info">Generated on {{.GeneratedAt}} | Radio Propagation Service v{{.Version}}</p>
+        </div>
     </div>
 </body>
 </html>`
@@ -342,6 +349,8 @@ func (g *Generator) getDefaultCSSStyles() string {
 	return `body { font-family: Arial, sans-serif; margin: 20px; }
 .container { max-width: 1200px; margin: 0 auto; }
 .header { text-align: center; margin-bottom: 30px; }
-.content { background: white; padding: 20px; }`
+.content { background: white; padding: 20px; }
+.footer { margin-top: 30px; text-align: center; }
+.version-info { color: #666; font-size: 0.9em; margin: 10px 0; }`
 }
 

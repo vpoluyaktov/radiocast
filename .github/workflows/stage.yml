@@ -78,24 +78,31 @@ jobs:
       with:
         terraform_version: "1.5.0"
         
+    - name: Get version
+      id: version
+      run: |
+        VERSION=$(cat VERSION)
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+        
     - name: Configure Docker for GCR
       run: gcloud auth configure-docker
       
     - name: Build Docker image
       run: |
-        docker build -t gcr.io/$PROJECT_ID/radiocast:$GITHUB_SHA \
+        docker build -t gcr.io/$PROJECT_ID/radiocast:v${{ steps.version.outputs.VERSION }} \
                      -t gcr.io/$PROJECT_ID/radiocast:latest \
                      -f service/Dockerfile service/
                      
     - name: Push Docker image
       run: |
-        docker push gcr.io/$PROJECT_ID/radiocast:$GITHUB_SHA
+        docker push gcr.io/$PROJECT_ID/radiocast:v${{ steps.version.outputs.VERSION }}
         docker push gcr.io/$PROJECT_ID/radiocast:latest
         
     - name: Deploy with Terraform
       env:
         TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-        TF_VAR_image_tag: ${{ github.sha }}
+        TF_VAR_image_tag: v${{ steps.version.outputs.VERSION }}
       run: |
         cd terraform
         cp stage/backend.tf backend.tf
@@ -123,11 +130,28 @@ jobs:
         gcloud scheduler jobs run radiocast-daily-report-staging --location=us-central1 --project=dfh-stage-id
         echo "Report generation triggered successfully!"
         
+    - name: Bump staging version and commit
+      if: success()
+      run: |
+        # Configure git
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # Bump staging version (creates or increments RC version)
+        chmod +x scripts/bump-version.sh
+        ./scripts/bump-version.sh stage
+        
+        # Commit and push new version
+        git add VERSION
+        git commit -m "chore: bump staging version to $(cat VERSION) [skip ci]"
+        git push
+        
     - name: Notify deployment
       if: always()
       run: |
         if [ ${{ job.status }} == 'success' ]; then
           echo "✅ Stage deployment successful: ${{ steps.get-url.outputs.SERVICE_URL }}"
+          echo "🏷️ Version deployed: v${{ steps.version.outputs.VERSION }}"
         else
           echo "❌ Stage deployment failed"
         fi
