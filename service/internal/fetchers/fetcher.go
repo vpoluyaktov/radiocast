@@ -49,41 +49,54 @@ func (f *DataFetcher) FetchAllData(ctx context.Context, noaaKURL, noaaSolarURL, 
 	
 	// NOAA K-index data
 	go func() {
+		log.Println("Fetching NOAA K-index data...")
 		data, err := f.fetchNOAAKIndex(ctx, noaaKURL)
 		if err != nil {
+			log.Printf("NOAA K-index fetch failed: %v", err)
 			errChan <- fmt.Errorf("NOAA K-index fetch failed: %w", err)
 			return
 		}
+		log.Printf("NOAA K-index fetch successful: %d data points", len(data))
 		kIndexChan <- data
 	}()
 	
 	// NOAA Solar data
 	go func() {
+		log.Println("Fetching NOAA Solar data...")
 		data, err := f.fetchNOAASolar(ctx, noaaSolarURL)
 		if err != nil {
+			log.Printf("NOAA Solar fetch failed: %v", err)
 			errChan <- fmt.Errorf("NOAA Solar fetch failed: %w", err)
 			return
 		}
+		log.Printf("NOAA Solar fetch successful: %d data points", len(data))
 		solarChan <- data
 	}()
 	
 	// N0NBH data
 	go func() {
+		log.Println("Fetching N0NBH solar data...")
 		data, err := f.fetchN0NBH(ctx, n0nbhURL)
 		if err != nil {
+			log.Printf("N0NBH fetch failed: %v", err)
 			errChan <- fmt.Errorf("N0NBH fetch failed: %w", err)
 			return
 		}
+		log.Printf("N0NBH fetch successful: Solar flux=%s, K-index=%s, band conditions=%d", 
+			data.SolarData.SolarFlux, data.SolarData.KIndex, len(data.Calculatedconditions.Band))
 		n0nbhChan <- data
 	}()
 	
 	// SIDC RSS data
 	go func() {
+		log.Println("Fetching SIDC sunspot data...")
 		data, err := f.fetchSIDC(ctx, sidcURL)
 		if err != nil {
+			log.Printf("SIDC fetch failed: %v", err)
 			errChan <- fmt.Errorf("SIDC fetch failed: %w", err)
 			return
 		}
+		log.Printf("SIDC fetch successful: %d data points", len(data))
 		sidcChan <- data
 	}()
 	
@@ -119,7 +132,8 @@ func (f *DataFetcher) FetchAllData(ctx context.Context, noaaKURL, noaaSolarURL, 
 	// Normalize and combine all data
 	propagationData := f.normalizeData(kIndexData, solarData, n0nbhData, sidcData)
 	
-	log.Println("Data fetch and normalization completed successfully")
+	log.Printf("Data fetch and normalization completed successfully - NOAA K-index: %d points, NOAA Solar: %d points, N0NBH: %v, SIDC: %d points", 
+		len(kIndexData), len(solarData), n0nbhData != nil, len(sidcData))
 	return propagationData, nil
 }
 
