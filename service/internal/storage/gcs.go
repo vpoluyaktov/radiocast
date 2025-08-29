@@ -15,9 +15,10 @@ import (
 
 // GCSClient handles Google Cloud Storage operations
 type GCSClient struct {
-	client     *storage.Client
-	bucketName string
+	client *storage.Client
+	bucket string
 }
+
 
 // NewGCSClient creates a new GCS client
 func NewGCSClient(ctx context.Context, bucketName string) (*GCSClient, error) {
@@ -27,8 +28,8 @@ func NewGCSClient(ctx context.Context, bucketName string) (*GCSClient, error) {
 	}
 	
 	return &GCSClient{
-		client:     client,
-		bucketName: bucketName,
+		client: client,
+		bucket: bucketName,
 	}, nil
 }
 
@@ -42,10 +43,10 @@ func (g *GCSClient) StoreReport(ctx context.Context, htmlContent string, timesta
 	// Generate the object path: YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS.html
 	objectPath := g.generateObjectPath(timestamp)
 	
-	log.Printf("Storing report to GCS: gs://%s/%s", g.bucketName, objectPath)
+	log.Printf("Storing report to GCS: gs://%s/%s", g.bucket, objectPath)
 	
 	// Get bucket handle
-	bucket := g.client.Bucket(g.bucketName)
+	bucket := g.client.Bucket(g.bucket)
 	
 	// Create object handle
 	obj := bucket.Object(objectPath)
@@ -74,15 +75,22 @@ func (g *GCSClient) StoreReport(ctx context.Context, htmlContent string, timesta
 	}
 	
 	// Generate public URL
-	publicURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", g.bucketName, objectPath)
+	publicURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", g.bucket, objectPath)
 	
 	log.Printf("Report successfully stored at: %s", publicURL)
-	return publicURL, nil
+	return objectPath, nil
+}
+
+// GetLatestReport gets the most recent report from GCS
+func (c *GCSClient) GetLatestReport() (string, error) {
+	// This is a simplified implementation - in practice you'd want to
+	// list objects and find the most recent one
+	return "", fmt.Errorf("GetLatestReport not implemented for GCS yet")
 }
 
 // GetReport retrieves a specific report content from GCS
 func (g *GCSClient) GetReport(ctx context.Context, folderPath string) (string, error) {
-	bucket := g.client.Bucket(g.bucketName)
+	bucket := g.client.Bucket(g.bucket)
 	
 	// Ensure folderPath ends with / and append index.html
 	if !strings.HasSuffix(folderPath, "/") {
@@ -108,7 +116,7 @@ func (g *GCSClient) GetReport(ctx context.Context, folderPath string) (string, e
 
 // ListReports lists recent reports from GCS, sorted by creation time (newest first)
 func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]string, error) {
-	bucket := g.client.Bucket(g.bucketName)
+	bucket := g.client.Bucket(g.bucket)
 	
 	query := &storage.Query{
 		Prefix: "",
@@ -164,7 +172,7 @@ func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]string, error
 // DeleteOldReports deletes reports older than the specified duration
 func (g *GCSClient) DeleteOldReports(ctx context.Context, olderThan time.Duration) error {
 	cutoff := time.Now().Add(-olderThan)
-	bucket := g.client.Bucket(g.bucketName)
+	bucket := g.client.Bucket(g.bucket)
 	
 	query := &storage.Query{
 		Prefix: "",

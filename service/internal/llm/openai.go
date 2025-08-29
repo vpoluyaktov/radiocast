@@ -97,6 +97,11 @@ func (c *OpenAIClient) getDefaultSystemPrompt() string {
 	return "You are an expert radio propagation analyst and amateur radio operator. Generate a comprehensive daily radio propagation report in markdown format based on the provided solar and space weather data. Focus on practical advice for amateur radio operators."
 }
 
+// BuildPrompt constructs data for the LLM (instructions are in system prompt) - public method
+func (c *OpenAIClient) BuildPrompt(data *models.PropagationData) string {
+	return c.buildPrompt(data)
+}
+
 // buildPrompt constructs data for the LLM (instructions are in system prompt)
 func (c *OpenAIClient) buildPrompt(data *models.PropagationData) string {
 	prompt := fmt.Sprintf(`## Current Solar and Geomagnetic Data (as of %s)

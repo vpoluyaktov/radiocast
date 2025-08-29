@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -31,7 +32,19 @@ type Server struct {
 func NewServer(cfg *config.Config) (*Server, error) {
 	ctx := context.Background()
 	
-	// Initialize GCS client
+	// For local testing, skip GCS entirely
+	if cfg.Environment == "local" {
+		log.Printf("Local mode - skipping GCS storage")
+		return &Server{
+			config:    cfg,
+			fetcher:   fetchers.NewDataFetcher(),
+			llmClient: llm.NewOpenAIClient(cfg.OpenAIAPIKey, cfg.OpenAIModel),
+			generator: reports.NewGenerator(),
+			storage:   nil, // Skip storage for local testing
+		}, nil
+	}
+	
+	// Initialize GCS client for production
 	gcsClient, err := storage.NewGCSClient(ctx, cfg.GCSBucket)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize GCS client: %w", err)
@@ -65,7 +78,11 @@ func main() {
 	
 	log.Printf("Starting Radio Propagation Service on port %s", cfg.Port)
 	log.Printf("Environment: %s", cfg.Environment)
-	log.Printf("GCS Bucket: %s", cfg.GCSBucket)
+	if cfg.Environment == "local" {
+		log.Printf("Local Reports Dir: %s", cfg.LocalReportsDir)
+	} else {
+		log.Printf("GCS Bucket: %s", cfg.GCSBucket)
+	}
 	
 	// Create server
 	server, err := NewServer(cfg)
@@ -125,26 +142,101 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	
 	// Try to get the latest report from storage
 	ctx := r.Context()
-	reports, err := s.storage.ListReports(ctx, 1)
-	if err != nil || len(reports) == 0 {
-		log.Printf("No reports available: %v", err)
-		// Fall back to main page if no report available
+	if s.storage != nil {
+		reports, err := s.storage.ListReports(ctx, 1)
+		if err != nil || len(reports) == 0 {
+			log.Printf("No reports available: %v", err)
+			// Fall back to main page if no report available
+			s.serveMainPage(w)
+			return
+		}
+		
+		// Serve the latest report
+		reportContent, err := s.storage.GetReport(ctx, reports[0])
+		if err != nil {
+			log.Printf("Failed to get report: %v", err)
+			s.serveMainPage(w)
+			return
+		}
+		
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(reportContent))
+		return
+	}
+	
+	// Local mode - generate report on demand
+	log.Println("Local mode: generating report on demand...")
+	
+	// Create timestamped directory for this report
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	reportDir := filepath.Join("reports", timestamp)
+	if err := os.MkdirAll(reportDir, 0755); err != nil {
+		log.Printf("Failed to create report directory: %v", err)
 		s.serveMainPage(w)
 		return
 	}
 	
-	// Get the latest report content
-	latestReportPath := reports[0]
-	reportContent, err := s.storage.GetReport(ctx, latestReportPath)
+	// Fetch data from all sources
+	data, err := s.fetcher.FetchAllData(
+		ctx,
+		s.config.NOAAKIndexURL,
+		s.config.NOAASolarURL,
+		s.config.N0NBHSolarURL,
+		s.config.SIDCRSSURL,
+	)
 	if err != nil {
-		log.Printf("Failed to get latest report content: %v", err)
+		log.Printf("Data fetch failed: %v", err)
 		s.serveMainPage(w)
 		return
 	}
 	
-	// Serve the latest report HTML directly
+	// Save API data as JSON
+	apiDataJSON, _ := json.MarshalIndent(data, "", "  ")
+	apiDataPath := filepath.Join(reportDir, "01_api_data.json")
+	if err := os.WriteFile(apiDataPath, apiDataJSON, 0644); err != nil {
+		log.Printf("Failed to save API data: %v", err)
+	}
+	
+	// Generate LLM prompt and save it
+	llmPrompt := s.llmClient.BuildPrompt(data)
+	promptPath := filepath.Join(reportDir, "02_llm_prompt.txt")
+	if err := os.WriteFile(promptPath, []byte(llmPrompt), 0644); err != nil {
+		log.Printf("Failed to save LLM prompt: %v", err)
+	}
+	
+	// Generate report with LLM
+	markdownReport, err := s.llmClient.GenerateReport(data)
+	if err != nil {
+		log.Printf("Report generation failed: %v", err)
+		s.serveMainPage(w)
+		return
+	}
+	
+	// Save LLM response as markdown
+	markdownPath := filepath.Join(reportDir, "03_llm_response.md")
+	if err := os.WriteFile(markdownPath, []byte(markdownReport), 0644); err != nil {
+		log.Printf("Failed to save markdown report: %v", err)
+	}
+	
+	// Convert to HTML
+	htmlReport, err := s.generator.GenerateHTML(markdownReport, data)
+	if err != nil {
+		log.Printf("HTML generation failed: %v", err)
+		s.serveMainPage(w)
+		return
+	}
+	
+	// Save final HTML report
+	htmlPath := filepath.Join(reportDir, "04_final_report.html")
+	if err := os.WriteFile(htmlPath, []byte(htmlReport), 0644); err != nil {
+		log.Printf("Failed to save HTML report: %v", err)
+	}
+	
+	log.Printf("Report saved to directory: %s", reportDir)
+	
+	// Serve the generated report
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(reportContent))
+	w.Write([]byte(htmlReport))
 }
 
 // serveMainPage serves the main service information page

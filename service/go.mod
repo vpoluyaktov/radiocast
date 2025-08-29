@@ -10,6 +10,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sashabaranov/go-openai v1.17.9
 	github.com/sethvargo/go-envconfig v0.9.0
+	google.golang.org/api v0.152.0
 )
 
 require (
@@ -38,7 +39,6 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
-	google.golang.org/api v0.152.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20231120223509-83a465c0220f // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231120223509-83a465c0220f // indirect
