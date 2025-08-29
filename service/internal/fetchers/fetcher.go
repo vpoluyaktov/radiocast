@@ -138,32 +138,30 @@ func (f *DataFetcher) fetchNOAAKIndex(ctx context.Context, url string) ([]models
 		return nil, fmt.Errorf("NOAA K-index API returned status %d", resp.StatusCode())
 	}
 	
-	// NOAA returns array of arrays format: [["time_tag","Kp","a_running","station_count"], [data...]]
-	var rawData [][]interface{}
+	// NOAA now returns array of objects format: [{"time_tag":"...","kp_index":0,"estimated_kp":0.33,"kp":"0P"}]
+	type NOAAKIndexAPIResponse struct {
+		TimeTag     string  `json:"time_tag"`
+		KpIndex     int     `json:"kp_index"`
+		EstimatedKp float64 `json:"estimated_kp"`
+		Kp          string  `json:"kp"`
+	}
+	
+	var rawData []NOAAKIndexAPIResponse
 	if err := json.Unmarshal(resp.Body(), &rawData); err != nil {
 		return nil, fmt.Errorf("failed to parse NOAA K-index response: %w", err)
 	}
 	
-	if len(rawData) < 2 {
-		return nil, fmt.Errorf("NOAA K-index response has insufficient data")
+	if len(rawData) == 0 {
+		return nil, fmt.Errorf("NOAA K-index response has no data")
 	}
 	
-	// Skip header row and parse data rows
+	// Convert to our internal format
 	var data []models.NOAAKIndexResponse
-	for i := 1; i < len(rawData); i++ {
-		row := rawData[i]
-		if len(row) < 4 {
-			continue
-		}
-		
-		timeTag, _ := row[0].(string)
-		kpIndex, _ := strconv.ParseFloat(fmt.Sprintf("%v", row[1]), 64)
-		_ = fmt.Sprintf("%v", row[2]) // aRunning - not currently used
-		
+	for _, item := range rawData {
 		data = append(data, models.NOAAKIndexResponse{
-			TimeTag:     timeTag,
-			KpIndex:     kpIndex,
-			EstimatedKp: kpIndex, // Use same value for estimated
+			TimeTag:     item.TimeTag,
+			KpIndex:     float64(item.KpIndex),
+			EstimatedKp: item.EstimatedKp,
 		})
 	}
 	
@@ -185,36 +183,49 @@ func (f *DataFetcher) fetchNOAASolar(ctx context.Context, url string) ([]models.
 		return nil, fmt.Errorf("NOAA solar API returned status %d", resp.StatusCode())
 	}
 	
-	// NOAA returns array of arrays format: [["time_tag","density","speed","temperature"], [data...]]
-	var rawData [][]interface{}
+	// NOAA now returns array of objects format: [{"time-tag":"1749-01","ssn":96.7,"f10.7":-1.0}]
+	type NOAASolarAPIResponse struct {
+		TimeTag           string  `json:"time-tag"`
+		SSN               float64 `json:"ssn"`
+		SmoothedSSN       float64 `json:"smoothed_ssn"`
+		ObservedSWPCSSN   float64 `json:"observed_swpc_ssn"`
+		SmoothedSWPCSSN   float64 `json:"smoothed_swpc_ssn"`
+		F107              float64 `json:"f10.7"`
+		SmoothedF107      float64 `json:"smoothed_f10.7"`
+	}
+	
+	var rawData []NOAASolarAPIResponse
 	if err := json.Unmarshal(resp.Body(), &rawData); err != nil {
 		return nil, fmt.Errorf("failed to parse NOAA solar response: %w", err)
 	}
 	
-	if len(rawData) < 2 {
-		return nil, fmt.Errorf("NOAA solar response has insufficient data")
+	if len(rawData) == 0 {
+		return nil, fmt.Errorf("NOAA solar response has no data")
 	}
 	
-	// Skip header row and parse data rows
+	// Convert to our internal format, use most recent data
 	var data []models.NOAASolarResponse
-	for i := 1; i < len(rawData); i++ {
-		row := rawData[i]
-		if len(row) < 4 {
+	for _, item := range rawData {
+		// Skip entries with invalid data
+		if item.F107 < 0 && item.SSN < 0 {
 			continue
 		}
 		
-		timeTag, _ := row[0].(string)
-		_ = fmt.Sprintf("%v", row[1]) // density - not currently used
-		_ = fmt.Sprintf("%v", row[2]) // speed - not currently used  
-		_ = fmt.Sprintf("%v", row[3]) // temperature - not currently used
+		solarFlux := item.F107
+		if solarFlux < 0 {
+			solarFlux = 0 // Use 0 for invalid values
+		}
 		
-		// Note: This API doesn't provide solar flux or sunspot data directly
-		// We'll use placeholder values and rely on N0NBH for actual solar data
+		sunspotNumber := item.SSN
+		if sunspotNumber < 0 {
+			sunspotNumber = 0 // Use 0 for invalid values
+		}
+		
 		data = append(data, models.NOAASolarResponse{
-			TimeTag:           timeTag,
-			SolarFlux:         0, // Not available in this endpoint
-			SunspotNumber:     0, // Not available in this endpoint
-			SolarFluxAdjusted: 0, // Not available in this endpoint
+			TimeTag:           item.TimeTag,
+			SolarFlux:         solarFlux,
+			SunspotNumber:     sunspotNumber,
+			SolarFluxAdjusted: solarFlux, // Use same value
 		})
 	}
 	
