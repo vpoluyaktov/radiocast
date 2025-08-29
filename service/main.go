@@ -133,8 +133,9 @@ func main() {
 	log.Println("Server stopped")
 }
 
-// handleRoot serves the latest generated report or main page
+// handleRoot serves the main page with a generated report
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
+	log.Printf("DEBUG: handleRoot called - method: %s, URL: %s", r.Method, r.URL.Path)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -177,6 +178,7 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Fetch data from all sources
+	log.Println("Starting data fetch from all sources...")
 	data, err := s.fetcher.FetchAllData(
 		ctx,
 		s.config.NOAAKIndexURL,
@@ -189,6 +191,7 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		s.serveMainPage(w)
 		return
 	}
+	log.Printf("Data fetch and normalization completed successfully")
 	
 	// Save API data as JSON
 	apiDataJSON, _ := json.MarshalIndent(data, "", "  ")
@@ -197,38 +200,49 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to save API data: %v", err)
 	}
 	
+	// Save system prompt
+	systemPrompt := s.llmClient.GetSystemPrompt()
+	log.Printf("DEBUG: System prompt length: %d", len(systemPrompt))
+	systemPromptPath := filepath.Join(reportDir, "llm_system_prompt.txt")
+	log.Printf("DEBUG: Writing system prompt to: %s", systemPromptPath)
+	if err := os.WriteFile(systemPromptPath, []byte(systemPrompt), 0644); err != nil {
+		log.Printf("Failed to save system prompt: %v", err)
+	} else {
+		log.Printf("System prompt saved successfully to: %s", systemPromptPath)
+	}
+	
 	// Generate LLM prompt and save it
 	llmPrompt := s.llmClient.BuildPrompt(data)
 	promptPath := filepath.Join(reportDir, "02_llm_prompt.txt")
 	if err := os.WriteFile(promptPath, []byte(llmPrompt), 0644); err != nil {
 		log.Printf("Failed to save LLM prompt: %v", err)
 	}
-	
-	// Generate report with LLM
-	markdownReport, err := s.llmClient.GenerateReport(data)
+
+	log.Printf("Generating report for %s", time.Now().Format("2006-01-02"))
+	markdown, err := s.llmClient.GenerateReport(data)
 	if err != nil {
-		log.Printf("Report generation failed: %v", err)
-		s.serveMainPage(w)
+		log.Printf("Failed to generate report: %v", err)
+		http.Error(w, "Failed to generate report", http.StatusInternalServerError)
 		return
 	}
-	
-	// Save LLM response as markdown
+	log.Printf("Generated report with %d characters", len(markdown))
+
 	markdownPath := filepath.Join(reportDir, "03_llm_response.md")
-	if err := os.WriteFile(markdownPath, []byte(markdownReport), 0644); err != nil {
+	if err := os.WriteFile(markdownPath, []byte(markdown), 0644); err != nil {
 		log.Printf("Failed to save markdown report: %v", err)
 	}
-	
-	// Convert to HTML
-	htmlReport, err := s.generator.GenerateHTML(markdownReport, data)
+
+	log.Printf("Converting markdown to HTML and generating charts...")
+	html, err := s.generator.GenerateHTML(markdown, data)
 	if err != nil {
-		log.Printf("HTML generation failed: %v", err)
-		s.serveMainPage(w)
+		log.Printf("Failed to generate HTML: %v", err)
+		http.Error(w, "Failed to generate HTML", http.StatusInternalServerError)
 		return
 	}
-	
-	// Save final HTML report
+	log.Printf("Generated complete HTML report with %d characters", len(html))
+
 	htmlPath := filepath.Join(reportDir, "04_final_report.html")
-	if err := os.WriteFile(htmlPath, []byte(htmlReport), 0644); err != nil {
+	if err := os.WriteFile(htmlPath, []byte(html), 0644); err != nil {
 		log.Printf("Failed to save HTML report: %v", err)
 	}
 	
@@ -236,7 +250,7 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	
 	// Serve the generated report
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(htmlReport))
+	w.Write([]byte(html))
 }
 
 // serveMainPage serves the main service information page

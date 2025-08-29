@@ -134,28 +134,35 @@ debug_llm() {
     sleep 3
     
     # Generate report via HTTP
-    if curl -s http://localhost:$PORT/ > llm_test_report.html; then
+    REPORT_CONTENT=$(curl -s http://localhost:$PORT/)
+    if [ $? -eq 0 ] && [ -n "$REPORT_CONTENT" ]; then
         kill $SERVER_PID 2>/dev/null || true
         
         # Check report content
-        if grep -q "Radio Propagation Report" llm_test_report.html; then
+        if echo "$REPORT_CONTENT" | grep -q "Radio Propagation Report"; then
             print_success "✅ LLM report generated successfully!"
             
-            if grep -q "chart-container" llm_test_report.html; then
+            if echo "$REPORT_CONTENT" | grep -q "chart-container"; then
                 print_success "✅ Charts found in HTML"
             else
                 print_warning "⚠️  No charts found in HTML"
             fi
             
-            if grep -q "| Band |" llm_test_report.html; then
+            if echo "$REPORT_CONTENT" | grep -q "| Band |"; then
                 print_success "✅ Band-by-Band Analysis table found"
             else
                 print_warning "⚠️  Band-by-Band Analysis table missing"
             fi
             
-            FULL_PATH=$(realpath "llm_test_report.html")
-            print_success "📄 Report saved: llm_test_report.html"
-            print_success "🌐 Open in browser: file://$FULL_PATH"
+            # Find the actual report file in the reports directory
+            LATEST_REPORT=$(find ./reports -name "04_final_report.html" | head -1)
+            if [ -n "$LATEST_REPORT" ]; then
+                FULL_PATH=$(realpath "$LATEST_REPORT")
+                print_success "📄 Report saved: $LATEST_REPORT"
+                print_success "🌐 Open in browser: file://$FULL_PATH"
+            else
+                print_warning "⚠️  Could not locate saved report file"
+            fi
         else
             print_error "❌ Report generation failed"
             kill $SERVER_PID 2>/dev/null || true
@@ -207,34 +214,39 @@ run_test() {
     fi
     
     # Generate and validate report
-    if curl -s http://localhost:$PORT/ > complete_test_report.html; then
+    REPORT_CONTENT=$(curl -s http://localhost:$PORT/)
+    if [ $? -eq 0 ] && [ -n "$REPORT_CONTENT" ]; then
         kill $SERVER_PID 2>/dev/null || true
         
         # Validate report content
-        REPORT_FILE="complete_test_report.html"
-        
-        if grep -q "Radio Propagation Report" "$REPORT_FILE"; then
+        if echo "$REPORT_CONTENT" | grep -q "Radio Propagation Report"; then
             print_success "✅ Report generated successfully"
         else
             print_error "❌ Report generation failed"
             return 1
         fi
         
-        if grep -q "chart-container" "$REPORT_FILE"; then
+        if echo "$REPORT_CONTENT" | grep -q "chart-container"; then
             print_success "✅ Charts found in HTML"
         else
             print_warning "⚠️  No charts found in HTML"
         fi
         
-        if grep -q "| Band |" "$REPORT_FILE"; then
+        if echo "$REPORT_CONTENT" | grep -q "| Band |"; then
             print_success "✅ Band-by-Band Analysis table found"
         else
             print_warning "⚠️  Band-by-Band Analysis table missing"
         fi
         
-        FULL_PATH=$(realpath "$REPORT_FILE")
-        print_success "📄 Report saved: complete_test_report.html"
-        print_success "🌐 Open in browser: file://$FULL_PATH"
+        # Find the actual report file in the reports directory
+        LATEST_REPORT=$(find ./reports -name "04_final_report.html" | head -1)
+        if [ -n "$LATEST_REPORT" ]; then
+            FULL_PATH=$(realpath "$LATEST_REPORT")
+            print_success "📄 Report saved: $LATEST_REPORT"
+            print_success "🌐 Open in browser: file://$FULL_PATH"
+        else
+            print_warning "⚠️  Could not locate saved report file"
+        fi
         
         
         print_success "🎉 Radio Propagation Service is working correctly!"
@@ -303,11 +315,15 @@ run_server() {
         print_warning "⚠️  Band-by-Band Analysis table missing"
     fi
     
-    # Save report for inspection
-    echo "$REPORT_CONTENT" > server_test_report.html
-    FULL_PATH=$(realpath "server_test_report.html")
-    print_status "📄 Report saved: server_test_report.html"
-    print_status "🌐 Open in browser: file://$FULL_PATH"
+    # Find the actual report file in the reports directory
+    LATEST_REPORT=$(find ./reports -name "04_final_report.html" | head -1)
+    if [ -n "$LATEST_REPORT" ]; then
+        FULL_PATH=$(realpath "$LATEST_REPORT")
+        print_status "📄 Report saved: $LATEST_REPORT"
+        print_status "🌐 Open in browser: file://$FULL_PATH"
+    else
+        print_warning "⚠️  Could not locate saved report file"
+    fi
     
     print_success "🎉 Server test completed!"
     print_status "🌐 Server running at: http://localhost:$PORT"

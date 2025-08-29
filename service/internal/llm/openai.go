@@ -84,12 +84,22 @@ func (c *OpenAIClient) GenerateReport(data *models.PropagationData) (string, err
 
 // loadSystemPrompt loads the system prompt from file
 func (c *OpenAIClient) loadSystemPrompt() (string, error) {
-	promptPath := filepath.Join("internal", "templates", "system_prompt.txt")
-	content, err := os.ReadFile(promptPath)
-	if err != nil {
-		return "", err
+	// Try multiple possible paths
+	possiblePaths := []string{
+		filepath.Join("internal", "templates", "system_prompt.txt"),
+		filepath.Join("service", "internal", "templates", "system_prompt.txt"),
+		"internal/templates/system_prompt.txt",
+		"service/internal/templates/system_prompt.txt",
 	}
-	return string(content), nil
+	
+	for _, promptPath := range possiblePaths {
+		content, err := os.ReadFile(promptPath)
+		if err == nil {
+			return string(content), nil
+		}
+	}
+	
+	return "", fmt.Errorf("system prompt file not found in any expected location")
 }
 
 // getDefaultSystemPrompt returns a fallback system prompt
@@ -100,6 +110,16 @@ func (c *OpenAIClient) getDefaultSystemPrompt() string {
 // BuildPrompt constructs data for the LLM (instructions are in system prompt) - public method
 func (c *OpenAIClient) BuildPrompt(data *models.PropagationData) string {
 	return c.buildPrompt(data)
+}
+
+// GetSystemPrompt returns the system prompt used for LLM - public method
+func (c *OpenAIClient) GetSystemPrompt() string {
+	systemPrompt, err := c.loadSystemPrompt()
+	if err != nil {
+		log.Printf("Failed to load system prompt: %v", err)
+		return c.getDefaultSystemPrompt()
+	}
+	return systemPrompt
 }
 
 // buildPrompt constructs data for the LLM (instructions are in system prompt)

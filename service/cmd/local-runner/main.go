@@ -93,6 +93,22 @@ func (lt *LocalTester) GenerateTestReport() error {
 		log.Printf("Failed to save API data: %v", err)
 	}
 
+	// Save system prompt
+	systemPrompt := lt.llmClient.GetSystemPrompt()
+	log.Printf("DEBUG: System prompt length: %d", len(systemPrompt))
+	if len(systemPrompt) > 100 {
+		log.Printf("DEBUG: System prompt preview: %.100s...", systemPrompt)
+	} else {
+		log.Printf("DEBUG: Full system prompt: %s", systemPrompt)
+	}
+	systemPromptPath := filepath.Join(reportDir, "llm_system_prompt.txt")
+	log.Printf("DEBUG: Writing system prompt to: %s", systemPromptPath)
+	if err := os.WriteFile(systemPromptPath, []byte(systemPrompt), 0644); err != nil {
+		log.Printf("Failed to save system prompt: %v", err)
+	} else {
+		log.Printf("System prompt saved successfully to: %s", systemPromptPath)
+	}
+
 	// Generate LLM prompt and save it
 	llmPrompt := lt.llmClient.BuildPrompt(data)
 	promptPath := filepath.Join(reportDir, "02_llm_prompt.txt")
@@ -117,6 +133,7 @@ func (lt *LocalTester) GenerateTestReport() error {
 	log.Printf("📁 Report directory: %s", reportDir)
 	log.Printf("📄 Files saved:")
 	log.Printf("   - API Data: %s", apiDataPath)
+	log.Printf("   - System Prompt: %s", systemPromptPath)
 	log.Printf("   - LLM Prompt: %s", promptPath)
 	log.Printf("   - LLM Response: %s", markdownPath)
 	log.Printf("   - Final Report: %s", htmlPath)

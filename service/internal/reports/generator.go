@@ -133,7 +133,8 @@ func (g *Generator) generateChartsFromLLMData(chartData *ChartData) string {
 		charts = append(charts, forecastChart)
 	}
 	
-	return strings.Join(charts, "\n")
+	// Deduplicate scripts and combine charts
+	return g.combineChartsWithScripts(charts)
 }
 
 // generateFallbackCharts creates basic charts from original data
@@ -151,6 +152,13 @@ func (g *Generator) generateFallbackCharts(data *models.PropagationData) string 
 // generateBandHeatmap creates a heatmap chart for band conditions
 func (g *Generator) generateBandHeatmap(bandConditions []BandCondition) string {
 	heatmap := charts.NewHeatMap()
+	
+	// Extract band names for X-axis
+	var bandNames []string
+	for _, band := range bandConditions {
+		bandNames = append(bandNames, band.Band)
+	}
+	
 	heatmap.SetGlobalOptions(
 		charts.WithInitializationOpts(opts.Initialization{
 			Theme: types.ThemeWesteros,
@@ -160,6 +168,31 @@ func (g *Generator) generateBandHeatmap(bandConditions []BandCondition) string {
 		charts.WithTitleOpts(opts.Title{
 			Title:    "📻 Band Conditions",
 			Subtitle: "Day and Night Propagation Quality",
+		}),
+		charts.WithXAxisOpts(opts.XAxis{
+			Type: "category",
+			Data: bandNames,
+		}),
+		charts.WithYAxisOpts(opts.YAxis{
+			Type: "category",
+			Data: []string{"Day", "Night"},
+		}),
+		charts.WithVisualMapOpts(opts.VisualMap{
+			Calculable: true,
+			Min:        0,
+			Max:        4,
+			Show:       true,
+			Orient:     "horizontal",
+			Left:       "center",
+			Bottom:     "10%",
+			Text:       []string{"Excellent", "Closed"},
+			InRange: &opts.VisualMapInRange{
+				Color: []string{"#d73027", "#f46d43", "#fdae61", "#fee090", "#abd9e9"},
+			},
+		}),
+		charts.WithTooltipOpts(opts.Tooltip{
+			Show: true,
+			Formatter: "{c}",
 		}),
 	)
 	
@@ -178,7 +211,10 @@ func (g *Generator) generateBandHeatmap(bandConditions []BandCondition) string {
 	if err := heatmap.Render(&buf); err != nil {
 		return ""
 	}
-	return fmt.Sprintf("<div class='chart-container'>%s</div>", buf.String())
+	
+	// Extract only the chart content, not the full HTML document
+	chartContent := g.extractChartContent(buf.String())
+	return fmt.Sprintf("<div class='chart-container'>%s</div>", chartContent)
 }
 
 // generateSolarGauge creates a gauge chart for solar activity
@@ -203,7 +239,10 @@ func (g *Generator) generateSolarGauge(solarActivity SolarActivity) string {
 	if err := gauge.Render(&buf); err != nil {
 		return ""
 	}
-	return fmt.Sprintf("<div class='chart-container'>%s</div>", buf.String())
+	
+	// Extract only the chart content, not the full HTML document
+	chartContent := g.extractChartContent(buf.String())
+	return fmt.Sprintf("<div class='chart-container'>%s</div>", chartContent)
 }
 
 // generateForecastChart creates a line chart for K-index forecast
@@ -233,7 +272,10 @@ func (g *Generator) generateForecastChart(forecast []ForecastDay) string {
 	if err := line.Render(&buf); err != nil {
 		return ""
 	}
-	return fmt.Sprintf("<div class='chart-container'>%s</div>", buf.String())
+	
+	// Extract only the chart content, not the full HTML document
+	chartContent := g.extractChartContent(buf.String())
+	return fmt.Sprintf("<div class='chart-container'>%s</div>", chartContent)
 }
 
 // generateSimpleSolarChart creates a simple solar activity chart
@@ -263,7 +305,64 @@ func (g *Generator) generateSimpleSolarChart(data *models.PropagationData) strin
 	if err := bar.Render(&buf); err != nil {
 		return ""
 	}
-	return fmt.Sprintf("<div class='chart-container'>%s</div>", buf.String())
+	
+	// Extract only the chart content, not the full HTML document
+	chartContent := g.extractChartContent(buf.String())
+	return fmt.Sprintf("<div class='chart-container'>%s</div>", chartContent)
+}
+
+// extractChartContent extracts only the chart div and script from full HTML
+func (g *Generator) extractChartContent(fullHTML string) string {
+	// Extract the chart div and script content from the full HTML document
+	// This removes the nested <html>, <head>, <body> tags that break the layout
+	
+	// Find the chart div with id
+	divRegex := regexp.MustCompile(`<div class="item" id="[^"]*"[^>]*>.*?</div>`)
+	divMatch := divRegex.FindString(fullHTML)
+	
+	// Find the script tag with chart initialization
+	scriptRegex := regexp.MustCompile(`<script type="text/javascript">[\s\S]*?</script>`)
+	scriptMatch := scriptRegex.FindString(fullHTML)
+	
+	// Return only the div and script (no external script sources)
+	var result strings.Builder
+	
+	// Add the chart div
+	if divMatch != "" {
+		result.WriteString(divMatch)
+		result.WriteString("\n")
+	}
+	
+	// Add the chart script
+	if scriptMatch != "" {
+		result.WriteString(scriptMatch)
+		result.WriteString("\n")
+	}
+	
+	return result.String()
+}
+
+// combineChartsWithScripts combines multiple charts and adds required scripts once
+func (g *Generator) combineChartsWithScripts(charts []string) string {
+	if len(charts) == 0 {
+		return ""
+	}
+	
+	var result strings.Builder
+	
+	// Add ECharts scripts once at the beginning
+	result.WriteString(`<script src="https://go-echarts.github.io/go-echarts-assets/assets/echarts.min.js"></script>`)
+	result.WriteString("\n")
+	result.WriteString(`<script src="https://go-echarts.github.io/go-echarts-assets/assets/themes/westeros.js"></script>`)
+	result.WriteString("\n")
+	
+	// Add all charts
+	for _, chart := range charts {
+		result.WriteString(chart)
+		result.WriteString("\n")
+	}
+	
+	return result.String()
 }
 
 // markdownToHTML converts markdown to HTML using blackfriday
