@@ -81,7 +81,9 @@ jobs:
     - name: Get version
       id: version
       run: |
-        VERSION=$(cat VERSION)
+        BASE_VERSION=$(cat VERSION)
+        COMMIT_COUNT=$(git rev-list --all --count HEAD)
+        VERSION="$BASE_VERSION.$COMMIT_COUNT-rc.$(date +%s | tail -c 4)"
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
         
@@ -130,21 +132,6 @@ jobs:
         gcloud scheduler jobs run radiocast-daily-report-staging --location=us-central1 --project=dfh-stage-id
         echo "Report generation triggered successfully!"
         
-    - name: Bump staging version and commit
-      if: success()
-      run: |
-        # Configure git
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        
-        # Bump staging version (creates or increments RC version)
-        chmod +x scripts/bump-version.sh
-        ./scripts/bump-version.sh stage
-        
-        # Commit and push new version
-        git add VERSION
-        git commit -m "chore: bump staging version to $(cat VERSION) [skip ci]"
-        git push
         
     - name: Notify deployment
       if: always()

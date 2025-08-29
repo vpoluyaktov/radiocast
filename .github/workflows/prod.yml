@@ -78,7 +78,9 @@ jobs:
     - name: Get version
       id: version
       run: |
-        VERSION=$(cat VERSION)
+        BASE_VERSION=$(cat VERSION)
+        COMMIT_COUNT=$(git rev-list --all --count HEAD)
+        VERSION="$BASE_VERSION.$COMMIT_COUNT"
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
         
@@ -127,21 +129,6 @@ jobs:
         gcloud scheduler jobs run radiocast-daily-report-production --location=us-central1 --project=dfh-prod-id
         echo "Report generation triggered successfully!"
         
-    - name: Bump version and commit
-      if: success()
-      run: |
-        # Configure git
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        
-        # Bump patch version
-        chmod +x scripts/bump-version.sh
-        ./scripts/bump-version.sh patch
-        
-        # Commit and push new version
-        git add VERSION
-        git commit -m "chore: bump version to $(cat VERSION) [skip ci]"
-        git push
         
     - name: Notify deployment
       if: always()
