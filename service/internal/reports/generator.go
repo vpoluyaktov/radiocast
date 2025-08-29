@@ -81,7 +81,7 @@ func (g *Generator) GenerateHTML(markdownReport string, data *models.Propagation
 	}
 	
 	// Combine everything into a complete HTML document
-	fullHTML, err := g.buildCompleteHTML(htmlContent, "", "", charts, data)
+	fullHTML, err := g.buildCompleteHTML(htmlContent, charts, data)
 	if err != nil {
 		return "", fmt.Errorf("failed to build complete HTML: %w", err)
 	}
@@ -330,11 +330,67 @@ func (g *Generator) ConvertMarkdownToHTML(markdownContent string, date string) (
 	return buf.String(), nil
 }
 
+// ConvertMarkdownToHTMLWithCharts converts markdown content to HTML with charts
+func (g *Generator) ConvertMarkdownToHTMLWithCharts(markdownContent string, charts string, date string) (string, error) {
+	// Convert markdown to HTML using blackfriday
+	htmlBytes := blackfriday.Run([]byte(markdownContent))
+	htmlContent := string(htmlBytes)
+	
+	// Load HTML template
+	htmlTemplate, err := g.loadHTMLTemplate()
+	if err != nil {
+		return "", fmt.Errorf("failed to load HTML template: %w", err)
+	}
+	
+	// Load CSS styles
+	cssStyles, err := g.loadCSSStyles()
+	if err != nil {
+		return "", fmt.Errorf("failed to load CSS styles: %w", err)
+	}
+	
+	// Parse the HTML template with proper functions for unescaped content
+	tmpl, err := template.New("report").Funcs(template.FuncMap{
+		"safeHTML": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+		"safeCSS": func(s string) template.CSS {
+			return template.CSS(s)
+		},
+	}).Parse(htmlTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse HTML template: %w", err)
+	}
+	
+	// Prepare template data with charts
+	templateData := struct {
+		Date        string
+		GeneratedAt string
+		Content     template.HTML
+		CSSStyles   template.CSS
+		Charts      template.HTML
+		Version     string
+	}{
+		Date:        date,
+		GeneratedAt: time.Now().Format("2006-01-02 15:04:05 UTC"),
+		Content:     template.HTML(htmlContent),
+		CSSStyles:   template.CSS(cssStyles),
+		Charts:      template.HTML(charts), // Now properly populated with charts
+		Version:     config.GetVersion(),
+	}
+	
+	// Execute the template
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, templateData); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+	
+	return buf.String(), nil
+}
 
 // buildCompleteHTML creates a complete HTML document
-func (g *Generator) buildCompleteHTML(content, solarChart, kIndexChart, bandChart string, data *models.PropagationData) (string, error) {
-	// Use the new template-based conversion
-	result, err := g.ConvertMarkdownToHTML(content, time.Now().Format("2006-01-02"))
+func (g *Generator) buildCompleteHTML(content, charts string, data *models.PropagationData) (string, error) {
+	// Use the new template-based conversion with charts
+	result, err := g.ConvertMarkdownToHTMLWithCharts(content, charts, time.Now().Format("2006-01-02"))
 	if err != nil {
 		return "", err
 	}
