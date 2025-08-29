@@ -47,7 +47,9 @@ Use condition indicators: 🟢 Excellent | 🔵 Good | 🟡 Fair | 🔴 Poor | �
 
 Make the report engaging and easy to scan quickly!
 
-IMPORTANT: At the end of your report, include a special section for chart data:
+CRITICAL: You MUST include the Band-by-Band Analysis table using the exact format shown above. Do NOT leave this section empty.
+
+CRITICAL: You MUST include the Chart Data JSON section at the end. This is REQUIRED for charts to display:
 
 ## Chart Data
 ```json
@@ -76,4 +78,7 @@ IMPORTANT: At the end of your report, include a special section for chart data:
 }
 ```
 
-Use these numeric scales for conditions: 0=Closed, 1=Poor, 2=Fair, 3=Good, 4=Excellent
+IMPORTANT RULES:
+- Use numeric scales: 0=Closed, 1=Poor, 2=Fair, 3=Good, 4=Excellent
+- K-index values must be 0.0 or positive (never negative)
+- Always include both the table AND the Chart Data JSON section
