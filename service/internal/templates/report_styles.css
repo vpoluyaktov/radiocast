@@ -70,6 +70,18 @@ body {
     opacity: 0.8;
 }
 
+.footer a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+.footer a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
 h1 { 
     color: #2c3e50; 
     border-bottom: 3px solid #007bff; 
