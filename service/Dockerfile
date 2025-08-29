@@ -27,8 +27,10 @@ RUN adduser -D -s /bin/sh radiocast
 
 WORKDIR /home/radiocast
 
-# Copy the binary from builder stage with correct ownership
+# Copy the binary and templates from builder stage with correct ownership
 COPY --from=builder --chown=radiocast:radiocast /app/radiocast .
+COPY --from=builder --chown=radiocast:radiocast /app/internal/templates ./internal/templates
+COPY --from=builder --chown=radiocast:radiocast /app/internal/reports ./internal/reports
 
 # Make binary executable
 RUN chmod +x radiocast

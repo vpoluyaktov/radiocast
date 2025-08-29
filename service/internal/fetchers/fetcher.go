@@ -141,12 +141,7 @@ func (f *DataFetcher) fetchNOAAKIndex(ctx context.Context, url string) ([]models
 	// NOAA returns array of arrays format: [["time_tag","Kp","a_running","station_count"], [data...]]
 	var rawData [][]interface{}
 	if err := json.Unmarshal(resp.Body(), &rawData); err != nil {
-		// Try to parse as object first (some NOAA endpoints return objects)
-		var objData interface{}
-		if objErr := json.Unmarshal(resp.Body(), &objData); objErr != nil {
-			return nil, fmt.Errorf("failed to parse NOAA K-index response as array or object: %w", err)
-		}
-		return nil, fmt.Errorf("NOAA K-index returned unexpected format (not array of arrays): %T", objData)
+		return nil, fmt.Errorf("failed to parse NOAA K-index response: %w", err)
 	}
 	
 	if len(rawData) < 2 {
@@ -193,12 +188,7 @@ func (f *DataFetcher) fetchNOAASolar(ctx context.Context, url string) ([]models.
 	// NOAA returns array of arrays format: [["time_tag","density","speed","temperature"], [data...]]
 	var rawData [][]interface{}
 	if err := json.Unmarshal(resp.Body(), &rawData); err != nil {
-		// Try to parse as object first (some NOAA endpoints return objects)
-		var objData interface{}
-		if objErr := json.Unmarshal(resp.Body(), &objData); objErr != nil {
-			return nil, fmt.Errorf("failed to parse NOAA solar response as array or object: %w", err)
-		}
-		return nil, fmt.Errorf("NOAA solar returned unexpected format (not array of arrays): %T", objData)
+		return nil, fmt.Errorf("failed to parse NOAA solar response: %w", err)
 	}
 	
 	if len(rawData) < 2 {
@@ -243,6 +233,11 @@ func (f *DataFetcher) fetchN0NBH(ctx context.Context, url string) (*models.N0NBH
 	}
 	
 	if resp.StatusCode() != 200 {
+		bodyLen := len(resp.Body())
+		if bodyLen > 200 {
+			bodyLen = 200
+		}
+		log.Printf("N0NBH API returned status %d, response: %s", resp.StatusCode(), string(resp.Body()[:bodyLen]))
 		return nil, fmt.Errorf("N0NBH API returned status %d", resp.StatusCode())
 	}
 	
