@@ -155,15 +155,14 @@ type N0NBHXMLResponse struct {
 		LatDegree     string `xml:"latdegree"`
 		SolarWind     string `xml:"solarwind"`
 		MagneticField string `xml:"magneticfield"`
+		
+		CalculatedConditions struct {
+			Band []struct {
+				Name      string `xml:"name,attr"`
+				Time      string `xml:"time,attr"`
+				Condition string `xml:",chardata"`
+			} `xml:"band"`
+		} `xml:"calculatedconditions"`
 	} `xml:"solardata"`
 	Time string `xml:"time"`
-	
-	CalculatedConditions struct {
-		Band []struct {
-			Name  string `xml:"name,attr"`
-			Time  string `xml:"time,attr"`
-			Day   string `xml:"day"`
-			Night string `xml:"night"`
-		} `xml:"band"`
-	} `xml:"calculatedconditions"`
 }

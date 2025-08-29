@@ -2,11 +2,14 @@ package reports
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -14,6 +17,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/types"
 	"github.com/russross/blackfriday/v2"
 
+	"radiocast/internal/config"
 	"radiocast/internal/models"
 )
 
@@ -25,40 +29,353 @@ func NewGenerator() *Generator {
 	return &Generator{}
 }
 
+// ChartData represents the JSON structure from LLM for chart generation
+type ChartData struct {
+	BandConditions []BandCondition `json:"bandConditions"`
+	SolarActivity  SolarActivity   `json:"solarActivity"`
+	Forecast       []ForecastDay   `json:"forecast"`
+}
+
+type BandCondition struct {
+	Band       string `json:"band"`
+	Day        int    `json:"day"`
+	Night      int    `json:"night"`
+	DayLabel   string `json:"dayLabel"`
+	NightLabel string `json:"nightLabel"`
+}
+
+type SolarActivity struct {
+	SolarFlux      float64 `json:"solarFlux"`
+	SunspotNumber  int     `json:"sunspotNumber"`
+	KIndex         float64 `json:"kIndex"`
+	AIndex         float64 `json:"aIndex"`
+	Trend          string  `json:"trend"`
+}
+
+type ForecastDay struct {
+	Day       string  `json:"day"`
+	KIndex    float64 `json:"kIndex"`
+	Condition string  `json:"condition"`
+}
+
 // GenerateHTML converts markdown report to HTML with embedded charts
 func (g *Generator) GenerateHTML(markdownReport string, data *models.PropagationData) (string, error) {
 	log.Println("Converting markdown to HTML and generating charts...")
 	
-	// Convert markdown to HTML
-	htmlContent := g.markdownToHTML(markdownReport)
-	
-	// Generate charts
-	solarChart, err := g.generateSolarChart(data)
+	// Extract chart data from markdown
+	chartData, err := g.extractChartData(markdownReport)
 	if err != nil {
-		log.Printf("Warning: Failed to generate solar chart: %v", err)
-		solarChart = "<p>Solar chart unavailable</p>"
+		log.Printf("Warning: Failed to extract chart data: %v", err)
+		chartData = nil
 	}
 	
-	kIndexChart, err := g.generateKIndexChart(data)
-	if err != nil {
-		log.Printf("Warning: Failed to generate K-index chart: %v", err)
-		kIndexChart = "<p>K-index chart unavailable</p>"
-	}
+	// Convert markdown to HTML (remove chart data section)
+	htmlContent := g.markdownToHTML(g.removeChartDataSection(markdownReport))
 	
-	bandChart, err := g.generateBandChart(data)
-	if err != nil {
-		log.Printf("Warning: Failed to generate band chart: %v", err)
-		bandChart = "<p>Band conditions chart unavailable</p>"
+	// Generate charts using LLM data if available, fallback to original data
+	var charts string
+	if chartData != nil {
+		charts = g.generateChartsFromLLMData(chartData)
+	} else {
+		charts = g.generateFallbackCharts(data)
 	}
 	
 	// Combine everything into a complete HTML document
-	fullHTML, err := g.buildCompleteHTML(htmlContent, solarChart, kIndexChart, bandChart, data)
+	fullHTML, err := g.buildCompleteHTML(htmlContent, charts, data)
 	if err != nil {
 		return "", fmt.Errorf("failed to build complete HTML: %w", err)
 	}
 	
 	log.Printf("Generated complete HTML report with %d characters", len(fullHTML))
 	return fullHTML, nil
+}
+
+// extractChartData extracts JSON chart data from markdown report
+func (g *Generator) extractChartData(markdownReport string) (*ChartData, error) {
+	// Find the Chart Data section with regex
+	re := regexp.MustCompile(`## Chart Data\s*\x60\x60\x60json\s*([\s\S]*?)\s*\x60\x60\x60`)
+	matches := re.FindStringSubmatch(markdownReport)
+	
+	if len(matches) < 2 {
+		return nil, fmt.Errorf("no chart data section found")
+	}
+	
+	var chartData ChartData
+	if err := json.Unmarshal([]byte(matches[1]), &chartData); err != nil {
+		return nil, fmt.Errorf("failed to parse chart data JSON: %w", err)
+	}
+	
+	return &chartData, nil
+}
+
+// removeChartDataSection removes the Chart Data section from markdown
+func (g *Generator) removeChartDataSection(markdownReport string) string {
+	re := regexp.MustCompile(`## Chart Data\s*\x60\x60\x60json[\s\S]*?\x60\x60\x60`)
+	return re.ReplaceAllString(markdownReport, "")
+}
+
+// generateChartsFromLLMData creates charts using LLM-provided data
+func (g *Generator) generateChartsFromLLMData(chartData *ChartData) string {
+	var charts []string
+	
+	// Generate band conditions heatmap
+	if bandChart := g.generateBandHeatmap(chartData.BandConditions); bandChart != "" {
+		charts = append(charts, bandChart)
+	}
+	
+	// Generate solar activity gauge
+	if solarChart := g.generateSolarGauge(chartData.SolarActivity); solarChart != "" {
+		charts = append(charts, solarChart)
+	}
+	
+	// Generate forecast line chart
+	if forecastChart := g.generateForecastChart(chartData.Forecast); forecastChart != "" {
+		charts = append(charts, forecastChart)
+	}
+	
+	// Deduplicate scripts and combine charts
+	return g.combineChartsWithScripts(charts)
+}
+
+// generateFallbackCharts creates basic charts from original data
+func (g *Generator) generateFallbackCharts(data *models.PropagationData) string {
+	var charts []string
+	
+	// Simple solar activity chart
+	if chart := g.generateSimpleSolarChart(data); chart != "" {
+		charts = append(charts, chart)
+	}
+	
+	return strings.Join(charts, "\n")
+}
+
+// generateBandHeatmap creates a heatmap chart for band conditions
+func (g *Generator) generateBandHeatmap(bandConditions []BandCondition) string {
+	heatmap := charts.NewHeatMap()
+	
+	// Extract band names for X-axis
+	var bandNames []string
+	for _, band := range bandConditions {
+		bandNames = append(bandNames, band.Band)
+	}
+	
+	heatmap.SetGlobalOptions(
+		charts.WithInitializationOpts(opts.Initialization{
+			Theme: types.ThemeWesteros,
+			Width: "800px",
+			Height: "400px",
+		}),
+		charts.WithTitleOpts(opts.Title{
+			Title:    "📻 Band Conditions",
+			Subtitle: "Day and Night Propagation Quality (0=Closed, 1=Poor, 2=Fair, 3=Good, 4=Excellent)",
+		}),
+		charts.WithXAxisOpts(opts.XAxis{
+			Type: "category",
+			Data: bandNames,
+		}),
+		charts.WithYAxisOpts(opts.YAxis{
+			Type: "category",
+			Data: []string{"Day", "Night"},
+		}),
+		charts.WithVisualMapOpts(opts.VisualMap{
+			Calculable: true,
+			Min:        0,
+			Max:        4,
+			Show:       true,
+			Orient:     "horizontal",
+			Left:       "center",
+			Bottom:     "5%",
+			Text:       []string{"Excellent", "Closed"},
+			TextStyle: &opts.TextStyle{
+				Color: "#666",
+				FontSize: 12,
+			},
+			InRange: &opts.VisualMapInRange{
+				Color: []string{"#f5f5f5", "#ffcccb", "#ffd4a3", "#b3e5d1", "#a8d8ea"},
+			},
+		}),
+		charts.WithTooltipOpts(opts.Tooltip{
+			Show: true,
+			Formatter: `function(params) {
+				var conditions = ['Closed', 'Poor', 'Fair', 'Good', 'Excellent'];
+				var value = params.value[2];
+				var band = params.value[0];
+				var time = params.value[1] === 0 ? 'Day' : 'Night';
+				return params.seriesName + '<br/>' + 
+					   'Band: ' + params.name + '<br/>' +
+					   'Time: ' + time + '<br/>' +
+					   'Condition: ' + conditions[value] + ' (' + value + ')';
+			}`,
+		}),
+	)
+	
+	// Prepare data for heatmap
+	var heatmapData []opts.HeatMapData
+	for i, band := range bandConditions {
+		heatmapData = append(heatmapData, 
+			opts.HeatMapData{Value: [3]interface{}{i, 0, band.Day}},    // Day
+			opts.HeatMapData{Value: [3]interface{}{i, 1, band.Night}}, // Night
+		)
+	}
+	
+	heatmap.AddSeries("Band Conditions", heatmapData)
+	
+	var buf bytes.Buffer
+	if err := heatmap.Render(&buf); err != nil {
+		return ""
+	}
+	
+	// Extract only the chart content, not the full HTML document
+	chartContent := g.extractChartContent(buf.String())
+	return fmt.Sprintf("<div class='chart-container'>%s</div>", chartContent)
+}
+
+// generateSolarGauge creates a gauge chart for solar activity
+func (g *Generator) generateSolarGauge(solarActivity SolarActivity) string {
+	gauge := charts.NewGauge()
+	gauge.SetGlobalOptions(
+		charts.WithInitializationOpts(opts.Initialization{
+			Theme: types.ThemeWesteros,
+			Width: "400px",
+			Height: "400px",
+		}),
+		charts.WithTitleOpts(opts.Title{
+			Title: "☀️ Solar Activity",
+		}),
+	)
+	
+	gauge.AddSeries("Solar Flux", []opts.GaugeData{
+		{Name: "Solar Flux", Value: solarActivity.SolarFlux},
+	})
+	
+	var buf bytes.Buffer
+	if err := gauge.Render(&buf); err != nil {
+		return ""
+	}
+	
+	// Extract only the chart content, not the full HTML document
+	chartContent := g.extractChartContent(buf.String())
+	return fmt.Sprintf("<div class='chart-container'>%s</div>", chartContent)
+}
+
+// generateForecastChart creates a line chart for K-index forecast
+func (g *Generator) generateForecastChart(forecast []ForecastDay) string {
+	line := charts.NewLine()
+	line.SetGlobalOptions(
+		charts.WithInitializationOpts(opts.Initialization{
+			Theme: types.ThemeWesteros,
+			Width: "600px",
+			Height: "300px",
+		}),
+		charts.WithTitleOpts(opts.Title{
+			Title: "📈 3-Day K-index Forecast",
+		}),
+	)
+	
+	var xAxis []string
+	var yData []opts.LineData
+	for _, day := range forecast {
+		xAxis = append(xAxis, day.Day)
+		yData = append(yData, opts.LineData{Value: day.KIndex})
+	}
+	
+	line.SetXAxis(xAxis).AddSeries("K-index", yData)
+	
+	var buf bytes.Buffer
+	if err := line.Render(&buf); err != nil {
+		return ""
+	}
+	
+	// Extract only the chart content, not the full HTML document
+	chartContent := g.extractChartContent(buf.String())
+	return fmt.Sprintf("<div class='chart-container'>%s</div>", chartContent)
+}
+
+// generateSimpleSolarChart creates a simple solar activity chart
+func (g *Generator) generateSimpleSolarChart(data *models.PropagationData) string {
+	bar := charts.NewBar()
+	bar.SetGlobalOptions(
+		charts.WithInitializationOpts(opts.Initialization{
+			Theme: types.ThemeWesteros,
+			Width: "600px",
+			Height: "300px",
+		}),
+		charts.WithTitleOpts(opts.Title{
+			Title: "Current Solar Conditions",
+		}),
+	)
+	
+	xAxis := []string{"Solar Flux", "Sunspot Number", "K-index"}
+	barData := []opts.BarData{
+		{Value: data.SolarData.SolarFluxIndex},
+		{Value: data.SolarData.SunspotNumber},
+		{Value: data.GeomagData.KIndex * 100}, // Scale K-index for visibility
+	}
+	
+	bar.SetXAxis(xAxis).AddSeries("Values", barData)
+	
+	var buf bytes.Buffer
+	if err := bar.Render(&buf); err != nil {
+		return ""
+	}
+	
+	// Extract only the chart content, not the full HTML document
+	chartContent := g.extractChartContent(buf.String())
+	return fmt.Sprintf("<div class='chart-container'>%s</div>", chartContent)
+}
+
+// extractChartContent extracts only the chart div and script from full HTML
+func (g *Generator) extractChartContent(fullHTML string) string {
+	// Extract the chart div and script content from the full HTML document
+	// This removes the nested <html>, <head>, <body> tags that break the layout
+	
+	// Find the chart div with id
+	divRegex := regexp.MustCompile(`<div class="item" id="[^"]*"[^>]*>.*?</div>`)
+	divMatch := divRegex.FindString(fullHTML)
+	
+	// Find the script tag with chart initialization
+	scriptRegex := regexp.MustCompile(`<script type="text/javascript">[\s\S]*?</script>`)
+	scriptMatch := scriptRegex.FindString(fullHTML)
+	
+	// Return only the div and script (no external script sources)
+	var result strings.Builder
+	
+	// Add the chart div
+	if divMatch != "" {
+		result.WriteString(divMatch)
+		result.WriteString("\n")
+	}
+	
+	// Add the chart script
+	if scriptMatch != "" {
+		result.WriteString(scriptMatch)
+		result.WriteString("\n")
+	}
+	
+	return result.String()
+}
+
+// combineChartsWithScripts combines multiple charts and adds required scripts once
+func (g *Generator) combineChartsWithScripts(charts []string) string {
+	if len(charts) == 0 {
+		return ""
+	}
+	
+	var result strings.Builder
+	
+	// Add ECharts scripts once at the beginning
+	result.WriteString(`<script src="https://go-echarts.github.io/go-echarts-assets/assets/echarts.min.js"></script>`)
+	result.WriteString("\n")
+	result.WriteString(`<script src="https://go-echarts.github.io/go-echarts-assets/assets/themes/westeros.js"></script>`)
+	result.WriteString("\n")
+	
+	// Add all charts
+	for _, chart := range charts {
+		result.WriteString(chart)
+		result.WriteString("\n")
+	}
+	
+	return result.String()
 }
 
 // markdownToHTML converts markdown to HTML using blackfriday
@@ -106,12 +423,14 @@ func (g *Generator) ConvertMarkdownToHTML(markdownContent string, date string) (
 		Content     template.HTML
 		CSSStyles   template.CSS
 		Charts      template.HTML
+		Version     string
 	}{
 		Date:        date,
 		GeneratedAt: time.Now().Format("2006-01-02 15:04:05 UTC"),
 		Content:     template.HTML(htmlContent),
 		CSSStyles:   template.CSS(cssStyles),
 		Charts:      template.HTML(""), // Charts will be embedded in content
+		Version:     config.GetVersion(),
 	}
 	
 	// Execute the template
@@ -123,168 +442,67 @@ func (g *Generator) ConvertMarkdownToHTML(markdownContent string, date string) (
 	return buf.String(), nil
 }
 
-// generateSolarChart creates a solar activity chart
-func (g *Generator) generateSolarChart(data *models.PropagationData) (string, error) {
-	line := charts.NewLine()
-	line.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Theme: types.ThemeWesteros,
-			Width: "800px",
-			Height: "400px",
-		}),
-		charts.WithTitleOpts(opts.Title{
-			Title:    "Solar Activity Trends",
-			Subtitle: "Solar Flux Index and Sunspot Number",
-		}),
-		charts.WithXAxisOpts(opts.XAxis{
-			Name: "Time",
-		}),
-		charts.WithYAxisOpts(opts.YAxis{
-			Name: "Value",
-		}),
-		charts.WithLegendOpts(opts.Legend{
-			Show: true,
-		}),
-	)
+// ConvertMarkdownToHTMLWithCharts converts markdown content to HTML with charts
+func (g *Generator) ConvertMarkdownToHTMLWithCharts(markdownContent string, charts string, date string) (string, error) {
+	// Convert markdown to HTML using blackfriday
+	htmlBytes := blackfriday.Run([]byte(markdownContent))
+	htmlContent := string(htmlBytes)
 	
-	// Generate sample data points for the last 7 days
-	// In a real implementation, you'd fetch historical data
-	xAxis := make([]string, 7)
-	solarFluxData := make([]opts.LineData, 7)
-	sunspotData := make([]opts.LineData, 7)
-	
-	for i := 0; i < 7; i++ {
-		date := time.Now().AddDate(0, 0, -6+i)
-		xAxis[i] = date.Format("01-02")
-		
-		// Use current values with some variation for demonstration
-		solarFlux := data.SolarData.SolarFluxIndex + float64((i-3)*5)
-		sunspots := float64(data.SolarData.SunspotNumber) + float64((i-3)*10)
-		
-		solarFluxData[i] = opts.LineData{Value: solarFlux}
-		sunspotData[i] = opts.LineData{Value: sunspots}
+	// Load HTML template
+	htmlTemplate, err := g.loadHTMLTemplate()
+	if err != nil {
+		return "", fmt.Errorf("failed to load HTML template: %w", err)
 	}
 	
-	line.SetXAxis(xAxis).
-		AddSeries("Solar Flux Index", solarFluxData).
-		AddSeries("Sunspot Number", sunspotData).
-		SetSeriesOptions(charts.WithLineChartOpts(opts.LineChart{Smooth: true}))
+	// Load CSS styles
+	cssStyles, err := g.loadCSSStyles()
+	if err != nil {
+		return "", fmt.Errorf("failed to load CSS styles: %w", err)
+	}
 	
+	// Parse the HTML template with proper functions for unescaped content
+	tmpl, err := template.New("report").Funcs(template.FuncMap{
+		"safeHTML": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+		"safeCSS": func(s string) template.CSS {
+			return template.CSS(s)
+		},
+	}).Parse(htmlTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse HTML template: %w", err)
+	}
+	
+	// Prepare template data with charts
+	templateData := struct {
+		Date        string
+		GeneratedAt string
+		Content     template.HTML
+		CSSStyles   template.CSS
+		Charts      template.HTML
+		Version     string
+	}{
+		Date:        date,
+		GeneratedAt: time.Now().Format("2006-01-02 15:04:05 UTC"),
+		Content:     template.HTML(htmlContent),
+		CSSStyles:   template.CSS(cssStyles),
+		Charts:      template.HTML(charts), // Now properly populated with charts
+		Version:     config.GetVersion(),
+	}
+	
+	// Execute the template
 	var buf bytes.Buffer
-	if err := line.Render(&buf); err != nil {
-		return "", err
-	}
-	
-	return buf.String(), nil
-}
-
-// generateKIndexChart creates a K-index chart
-func (g *Generator) generateKIndexChart(data *models.PropagationData) (string, error) {
-	bar := charts.NewBar()
-	bar.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Theme: types.ThemeWesteros,
-			Width: "800px",
-			Height: "400px",
-		}),
-		charts.WithTitleOpts(opts.Title{
-			Title:    "Geomagnetic Activity",
-			Subtitle: "K-index and A-index Values",
-		}),
-		charts.WithXAxisOpts(opts.XAxis{
-			Name: "Index Type",
-		}),
-		charts.WithYAxisOpts(opts.YAxis{
-			Name: "Value",
-		}),
-	)
-	
-	xAxis := []string{"K-index", "A-index"}
-	kIndexData := []opts.BarData{
-		{Value: data.GeomagData.KIndex},
-		{Value: data.GeomagData.AIndex},
-	}
-	
-	bar.SetXAxis(xAxis).
-		AddSeries("Current Values", kIndexData)
-	
-	var buf bytes.Buffer
-	if err := bar.Render(&buf); err != nil {
-		return "", err
-	}
-	
-	return buf.String(), nil
-}
-
-// generateBandChart creates a band conditions chart
-func (g *Generator) generateBandChart(data *models.PropagationData) (string, error) {
-	heatmap := charts.NewHeatMap()
-	heatmap.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Theme: types.ThemeWesteros,
-			Width: "800px",
-			Height: "400px",
-		}),
-		charts.WithTitleOpts(opts.Title{
-			Title:    "Band Conditions",
-			Subtitle: "Day and Night Propagation Quality",
-		}),
-		charts.WithXAxisOpts(opts.XAxis{
-			Type: "category",
-			Data: []string{"80m", "40m", "20m", "17m", "15m", "12m", "10m", "6m"},
-		}),
-		charts.WithYAxisOpts(opts.YAxis{
-			Type: "category",
-			Data: []string{"Night", "Day"},
-		}),
-		charts.WithVisualMapOpts(opts.VisualMap{
-			Calculable: true,
-			Min:        0,
-			Max:        3,
-			InRange: &opts.VisualMapInRange{
-				Color: []string{"#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#ffffbf", "#fee090", "#fdae61", "#f46d43", "#d73027", "#a50026"},
-			},
-		}),
-	)
-	
-	// Convert band conditions to numeric values
-	conditionToValue := map[string]int{
-		"Poor":      0,
-		"Fair":      1,
-		"Good":      2,
-		"Excellent": 3,
-	}
-	
-	bands := []models.BandCondition{
-		data.BandData.Band80m, data.BandData.Band40m, data.BandData.Band20m, data.BandData.Band17m,
-		data.BandData.Band15m, data.BandData.Band12m, data.BandData.Band10m, data.BandData.Band6m,
-	}
-	
-	var heatmapData []opts.HeatMapData
-	for i, band := range bands {
-		dayValue := conditionToValue[band.Day]
-		nightValue := conditionToValue[band.Night]
-		
-		heatmapData = append(heatmapData,
-			opts.HeatMapData{Value: [3]interface{}{i, 1, dayValue}},   // Day
-			opts.HeatMapData{Value: [3]interface{}{i, 0, nightValue}}, // Night
-		)
-	}
-	
-	heatmap.AddSeries("Band Conditions", heatmapData)
-	
-	var buf bytes.Buffer
-	if err := heatmap.Render(&buf); err != nil {
-		return "", err
+	if err := tmpl.Execute(&buf, templateData); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
 	}
 	
 	return buf.String(), nil
 }
 
 // buildCompleteHTML creates a complete HTML document
-func (g *Generator) buildCompleteHTML(content, solarChart, kIndexChart, bandChart string, data *models.PropagationData) (string, error) {
-	// Use the new template-based conversion
-	result, err := g.ConvertMarkdownToHTML(content, time.Now().Format("2006-01-02"))
+func (g *Generator) buildCompleteHTML(content, charts string, data *models.PropagationData) (string, error) {
+	// Use the new template-based conversion with charts
+	result, err := g.ConvertMarkdownToHTMLWithCharts(content, charts, time.Now().Format("2006-01-02"))
 	if err != nil {
 		return "", err
 	}
@@ -332,6 +550,10 @@ func (g *Generator) getDefaultHTMLTemplate() string {
         <div class="content">
             {{.Content}}
         </div>
+        <div class="footer">
+            <hr>
+            <p class="version-info">Generated on {{.GeneratedAt}} | Radio Propagation Service v{{.Version}}</p>
+        </div>
     </div>
 </body>
 </html>`
@@ -342,6 +564,8 @@ func (g *Generator) getDefaultCSSStyles() string {
 	return `body { font-family: Arial, sans-serif; margin: 20px; }
 .container { max-width: 1200px; margin: 0 auto; }
 .header { text-align: center; margin-bottom: 30px; }
-.content { background: white; padding: 20px; }`
+.content { background: white; padding: 20px; }
+.footer { margin-top: 30px; text-align: center; }
+.version-info { color: #666; font-size: 0.9em; margin: 10px 0; }`
 }
 

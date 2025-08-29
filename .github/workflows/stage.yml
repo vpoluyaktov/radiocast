@@ -64,6 +64,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
       
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
@@ -78,23 +80,33 @@ jobs:
       with:
         terraform_version: "1.5.0"
         
+    - name: Get version
+      id: version
+      run: |
+        BASE_VERSION=$(cat VERSION)
+        COMMIT_COUNT=$(git rev-list --all --count HEAD)
+        VERSION="$BASE_VERSION.$COMMIT_COUNT-rc.$(date +%s | tail -c 4)"
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+        
     - name: Configure Docker for GCR
       run: gcloud auth configure-docker
       
     - name: Build Docker image
       run: |
-        docker build -t gcr.io/$PROJECT_ID/radiocast:$GITHUB_SHA \
+        docker build -t gcr.io/$PROJECT_ID/radiocast:v${{ steps.version.outputs.VERSION }} \
                      -t gcr.io/$PROJECT_ID/radiocast:latest \
                      -f service/Dockerfile service/
                      
     - name: Push Docker image
       run: |
-        docker push gcr.io/$PROJECT_ID/radiocast:$GITHUB_SHA
+        docker push gcr.io/$PROJECT_ID/radiocast:v${{ steps.version.outputs.VERSION }}
         docker push gcr.io/$PROJECT_ID/radiocast:latest
         
     - name: Deploy with Terraform
       env:
         TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+        TF_VAR_image_tag: v${{ steps.version.outputs.VERSION }}
       run: |
         cd terraform
         cp stage/backend.tf backend.tf
@@ -116,17 +128,29 @@ jobs:
         curl -f ${{ steps.get-url.outputs.SERVICE_URL }}/health || exit 1
         echo "Health check passed!"
         
-    - name: Trigger initial report generation
+    - name: Generate new report with updated version
       run: |
-        echo "Triggering Cloud Scheduler job to generate initial report..."
-        gcloud scheduler jobs run radiocast-daily-report-staging --location=us-central1 --project=dfh-stage-id
-        echo "Report generation triggered successfully!"
+        echo "Generating new report with version v${{ steps.version.outputs.VERSION }}..."
+        RESPONSE=$(curl -s -X POST ${{ steps.get-url.outputs.SERVICE_URL }}/generate)
+        echo "Report generation response: $RESPONSE"
+        
+        # Extract report URL from response
+        REPORT_URL=$(echo $RESPONSE | grep -o '"report_url":"[^"]*' | cut -d'"' -f4)
+        if [ ! -z "$REPORT_URL" ]; then
+          echo "✅ New report generated: $REPORT_URL"
+          echo "📄 Report now displays version: v${{ steps.version.outputs.VERSION }}"
+        else
+          echo "⚠️ Report generation may have failed, triggering fallback Cloud Scheduler..."
+          gcloud scheduler jobs run radiocast-daily-report-staging --location=us-central1 --project=dfh-stage-id
+        fi
+        
         
     - name: Notify deployment
       if: always()
       run: |
         if [ ${{ job.status }} == 'success' ]; then
           echo "✅ Stage deployment successful: ${{ steps.get-url.outputs.SERVICE_URL }}"
+          echo "🏷️ Version deployed: v${{ steps.version.outputs.VERSION }}"
         else
           echo "❌ Stage deployment failed"
         fi

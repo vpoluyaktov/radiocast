@@ -16,9 +16,12 @@ type Config struct {
 	OpenAIAPIKey string `env:"OPENAI_API_KEY,required"`
 	OpenAIModel  string `env:"OPENAI_MODEL,default=gpt-4"`
 	
-	// GCP configuration
-	GCPProjectID string `env:"GCP_PROJECT_ID,required"`
-	GCSBucket    string `env:"GCS_BUCKET,required"`
+	// GCP configuration (optional for local testing)
+	GCPProjectID string `env:"GCP_PROJECT_ID"`
+	GCSBucket    string `env:"GCS_BUCKET"`
+	
+	// Local testing configuration
+	LocalReportsDir string `env:"LOCAL_REPORTS_DIR,default=./reports"`
 	
 	// Data source URLs
 	NOAAKIndexURL string `env:"NOAA_K_INDEX_URL,default=https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"`

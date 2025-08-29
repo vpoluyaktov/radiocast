@@ -5,17 +5,20 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
 )
 
 // GCSClient handles Google Cloud Storage operations
 type GCSClient struct {
-	client     *storage.Client
-	bucketName string
+	client *storage.Client
+	bucket string
 }
+
 
 // NewGCSClient creates a new GCS client
 func NewGCSClient(ctx context.Context, bucketName string) (*GCSClient, error) {
@@ -25,8 +28,8 @@ func NewGCSClient(ctx context.Context, bucketName string) (*GCSClient, error) {
 	}
 	
 	return &GCSClient{
-		client:     client,
-		bucketName: bucketName,
+		client: client,
+		bucket: bucketName,
 	}, nil
 }
 
@@ -40,10 +43,10 @@ func (g *GCSClient) StoreReport(ctx context.Context, htmlContent string, timesta
 	// Generate the object path: YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS.html
 	objectPath := g.generateObjectPath(timestamp)
 	
-	log.Printf("Storing report to GCS: gs://%s/%s", g.bucketName, objectPath)
+	log.Printf("Storing report to GCS: gs://%s/%s", g.bucket, objectPath)
 	
 	// Get bucket handle
-	bucket := g.client.Bucket(g.bucketName)
+	bucket := g.client.Bucket(g.bucket)
 	
 	// Create object handle
 	obj := bucket.Object(objectPath)
@@ -72,59 +75,95 @@ func (g *GCSClient) StoreReport(ctx context.Context, htmlContent string, timesta
 	}
 	
 	// Generate public URL
-	publicURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", g.bucketName, objectPath)
+	publicURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", g.bucket, objectPath)
 	
 	log.Printf("Report successfully stored at: %s", publicURL)
-	return publicURL, nil
+	return objectPath, nil
+}
+
+// GetLatestReport gets the most recent report from GCS
+func (c *GCSClient) GetLatestReport() (string, error) {
+	// This is a simplified implementation - in practice you'd want to
+	// list objects and find the most recent one
+	return "", fmt.Errorf("GetLatestReport not implemented for GCS yet")
 }
 
 // GetReport retrieves a specific report content from GCS
-func (g *GCSClient) GetReport(ctx context.Context, objectPath string) (string, error) {
-	bucket := g.client.Bucket(g.bucketName)
-	obj := bucket.Object(objectPath)
+func (g *GCSClient) GetReport(ctx context.Context, folderPath string) (string, error) {
+	bucket := g.client.Bucket(g.bucket)
+	
+	// Ensure folderPath ends with / and append index.html
+	if !strings.HasSuffix(folderPath, "/") {
+		folderPath += "/"
+	}
+	indexPath := folderPath + "index.html"
+	
+	obj := bucket.Object(indexPath)
 	
 	reader, err := obj.NewReader(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to create reader for %s: %w", objectPath, err)
+		return "", fmt.Errorf("failed to create reader for %s: %w", indexPath, err)
 	}
 	defer reader.Close()
 	
 	content, err := io.ReadAll(reader)
 	if err != nil {
-		return "", fmt.Errorf("failed to read content from %s: %w", objectPath, err)
+		return "", fmt.Errorf("failed to read content from %s: %w", indexPath, err)
 	}
 	
 	return string(content), nil
 }
 
-// ListReports lists recent reports from GCS
+// ListReports lists recent reports from GCS, sorted by creation time (newest first)
 func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]string, error) {
-	bucket := g.client.Bucket(g.bucketName)
+	bucket := g.client.Bucket(g.bucket)
 	
 	query := &storage.Query{
 		Prefix: "",
-		// Sort by name (which includes timestamp) in descending order
 	}
 	
 	it := bucket.Objects(ctx, query)
 	
-	var reports []string
-	count := 0
+	// Collect all reports with their creation times
+	type reportInfo struct {
+		name    string
+		created time.Time
+	}
 	
-	for count < limit {
+	var allReports []reportInfo
+	
+	for {
 		attrs, err := it.Next()
-		if err == storage.ErrObjectNotExist {
+		if err == iterator.Done {
 			break
 		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to list objects: %w", err)
 		}
 		
-		// Only include HTML reports
-		if strings.HasSuffix(attrs.Name, ".html") && strings.Contains(attrs.Name, "PropagationReport") {
-			reports = append(reports, attrs.Name)
-			count++
+		// Only include report folders (look for index.html files in PropagationReport folders)
+		if strings.HasSuffix(attrs.Name, "/index.html") && strings.Contains(attrs.Name, "PropagationReport") {
+			// Extract folder path by removing /index.html
+			folderPath := strings.TrimSuffix(attrs.Name, "/index.html") + "/"
+			allReports = append(allReports, reportInfo{
+				name:    folderPath,
+				created: attrs.Created,
+			})
 		}
+	}
+	
+	// Sort by creation time (newest first)
+	sort.Slice(allReports, func(i, j int) bool {
+		return allReports[i].created.After(allReports[j].created)
+	})
+	
+	// Return only the requested number of reports
+	var reports []string
+	for i, report := range allReports {
+		if i >= limit {
+			break
+		}
+		reports = append(reports, report.name)
 	}
 	
 	return reports, nil
@@ -133,7 +172,7 @@ func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]string, error
 // DeleteOldReports deletes reports older than the specified duration
 func (g *GCSClient) DeleteOldReports(ctx context.Context, olderThan time.Duration) error {
 	cutoff := time.Now().Add(-olderThan)
-	bucket := g.client.Bucket(g.bucketName)
+	bucket := g.client.Bucket(g.bucket)
 	
 	query := &storage.Query{
 		Prefix: "",
@@ -152,21 +191,45 @@ func (g *GCSClient) DeleteOldReports(ctx context.Context, olderThan time.Duratio
 			return fmt.Errorf("failed to list objects for cleanup: %w", err)
 		}
 		
-		// Only consider HTML reports older than cutoff
-		if strings.HasSuffix(attrs.Name, ".html") && 
+		// Only consider report folders older than cutoff (look for index.html files)
+		if strings.HasSuffix(attrs.Name, "/index.html") && 
 		   strings.Contains(attrs.Name, "PropagationReport") && 
 		   attrs.Created.Before(cutoff) {
-			toDelete = append(toDelete, attrs.Name)
+			// Delete the entire folder by getting the folder path
+			folderPath := strings.TrimSuffix(attrs.Name, "/index.html") + "/"
+			toDelete = append(toDelete, folderPath)
 		}
 	}
 	
-	// Delete old reports
-	for _, objectName := range toDelete {
-		obj := bucket.Object(objectName)
-		if err := obj.Delete(ctx); err != nil {
-			log.Printf("Warning: Failed to delete old report %s: %v", objectName, err)
-		} else {
-			log.Printf("Deleted old report: %s", objectName)
+	// Delete old report folders
+	for _, folderPath := range toDelete {
+		// List all objects in the folder
+		folderQuery := &storage.Query{Prefix: folderPath}
+		folderIt := bucket.Objects(ctx, folderQuery)
+		
+		var folderObjects []string
+		for {
+			attrs, err := folderIt.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				log.Printf("Warning: Failed to list objects in folder %s: %v", folderPath, err)
+				break
+			}
+			folderObjects = append(folderObjects, attrs.Name)
+		}
+		
+		// Delete all objects in the folder
+		for _, objName := range folderObjects {
+			obj := bucket.Object(objName)
+			if err := obj.Delete(ctx); err != nil {
+				log.Printf("Warning: Failed to delete object %s: %v", objName, err)
+			}
+		}
+		
+		if len(folderObjects) > 0 {
+			log.Printf("Deleted old report folder: %s (%d objects)", folderPath, len(folderObjects))
 		}
 	}
 	
@@ -174,9 +237,9 @@ func (g *GCSClient) DeleteOldReports(ctx context.Context, olderThan time.Duratio
 	return nil
 }
 
-// generateObjectPath creates the GCS object path for a report
+// generateObjectPath creates the GCS object path for a report folder
 func (g *GCSClient) generateObjectPath(timestamp time.Time) string {
-	return fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%s.html",
+	return fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%s/index.html",
 		timestamp.Year(),
 		timestamp.Month(),
 		timestamp.Day(),

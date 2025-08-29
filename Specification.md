@@ -8,7 +8,31 @@ The Radio Propagation Service is a backend application written in Go, designed t
 
 ---
 
-### 2. **Application Architecture Overview**
+### 2. **Versioning Strategy**
+
+The project uses semantic versioning (SemVer) for Docker images and releases:
+
+- **Production Format**: `v{MAJOR}.{MINOR}.{PATCH}` (e.g., `v0.1.0`)
+- **Staging Format**: `v{MAJOR}.{MINOR}.{PATCH}-rc.{N}` (e.g., `v0.1.0-rc.1`)
+- **Docker Tags**: Images are tagged with semantic versions instead of Git SHA
+- **Automatic Increment**: 
+  - Staging deployments automatically increment RC version
+  - Production deployments automatically increment patch version
+- **Manual Control**: Use `./scripts/bump-version.sh [major|minor|patch|stage]` for manual version bumps
+- **Version File**: Current version stored in `/VERSION` file at project root
+
+**Version Increment Rules**:
+- **PATCH**: Bug fixes, minor updates (auto-incremented on prod deployment)
+- **MINOR**: New features, backward-compatible changes (manual)
+- **MAJOR**: Breaking changes, major releases (manual)
+- **STAGE**: Pre-release candidates for staging (auto-incremented on stage deployment)
+
+**Version Flow Example**:
+```
+v0.1.0 → v0.1.0-rc.1 → v0.1.0-rc.2 → v0.1.1 → v0.1.1-rc.1 → v0.1.2
+```
+
+### 3. **Application Architecture Overview**
 
 ```mermaid
 flowchart TB

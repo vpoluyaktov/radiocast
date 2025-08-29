@@ -21,6 +21,16 @@ Data Sources → Data Fetcher → LLM Analysis → Report Generator → GCS Stor
   SIDC RSS                                   go-echarts
 ```
 
+## Versioning
+
+The project uses semantic versioning (SemVer) for Docker images:
+- **Production Format**: `v{MAJOR}.{MINOR}.{PATCH}` (e.g., `v0.1.0`)
+- **Staging Format**: `v{MAJOR}.{MINOR}.{PATCH}-rc.{N}` (e.g., `v0.1.0-rc.1`)
+- **Automatic**: 
+  - Staging deployments auto-increment RC version (`v0.1.0-rc.1` → `v0.1.0-rc.2`)
+  - Production deployments auto-increment patch version (`v0.1.0` → `v0.1.1`)
+- **Manual**: Use `./scripts/bump-version.sh [major|minor|patch|stage]` for manual bumps
+
 ## Quick Start
 
 ### Prerequisites

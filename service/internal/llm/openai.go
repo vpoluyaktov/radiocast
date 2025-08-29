@@ -62,7 +62,7 @@ func (c *OpenAIClient) GenerateReport(data *models.PropagationData) (string, err
 					Content: prompt,
 				},
 			},
-			MaxTokens:   2000,
+			MaxTokens:   4000,
 			Temperature: 0.3,
 		},
 	)
@@ -84,12 +84,22 @@ func (c *OpenAIClient) GenerateReport(data *models.PropagationData) (string, err
 
 // loadSystemPrompt loads the system prompt from file
 func (c *OpenAIClient) loadSystemPrompt() (string, error) {
-	promptPath := filepath.Join("internal", "templates", "system_prompt.txt")
-	content, err := os.ReadFile(promptPath)
-	if err != nil {
-		return "", err
+	// Try multiple possible paths
+	possiblePaths := []string{
+		filepath.Join("internal", "templates", "system_prompt.txt"),
+		filepath.Join("service", "internal", "templates", "system_prompt.txt"),
+		"internal/templates/system_prompt.txt",
+		"service/internal/templates/system_prompt.txt",
 	}
-	return string(content), nil
+	
+	for _, promptPath := range possiblePaths {
+		content, err := os.ReadFile(promptPath)
+		if err == nil {
+			return string(content), nil
+		}
+	}
+	
+	return "", fmt.Errorf("system prompt file not found in any expected location")
 }
 
 // getDefaultSystemPrompt returns a fallback system prompt
@@ -97,11 +107,24 @@ func (c *OpenAIClient) getDefaultSystemPrompt() string {
 	return "You are an expert radio propagation analyst and amateur radio operator. Generate a comprehensive daily radio propagation report in markdown format based on the provided solar and space weather data. Focus on practical advice for amateur radio operators."
 }
 
-// buildPrompt constructs a detailed prompt for the LLM
-func (c *OpenAIClient) buildPrompt(data *models.PropagationData) string {
-	prompt := fmt.Sprintf(`Generate a comprehensive daily amateur radio propagation report based on the following current conditions:
+// BuildPrompt constructs data for the LLM (instructions are in system prompt) - public method
+func (c *OpenAIClient) BuildPrompt(data *models.PropagationData) string {
+	return c.buildPrompt(data)
+}
 
-## Current Solar and Geomagnetic Data (as of %s)
+// GetSystemPrompt returns the system prompt used for LLM - public method
+func (c *OpenAIClient) GetSystemPrompt() string {
+	systemPrompt, err := c.loadSystemPrompt()
+	if err != nil {
+		log.Printf("Failed to load system prompt: %v", err)
+		return c.getDefaultSystemPrompt()
+	}
+	return systemPrompt
+}
+
+// buildPrompt constructs data for the LLM (instructions are in system prompt)
+func (c *OpenAIClient) buildPrompt(data *models.PropagationData) string {
+	prompt := fmt.Sprintf(`## Current Solar and Geomagnetic Data (as of %s)
 
 ### Solar Activity:
 - Solar Flux Index (10.7cm): %.1f sfu
@@ -169,25 +192,6 @@ func (c *OpenAIClient) buildPrompt(data *models.PropagationData) string {
 			prompt += fmt.Sprintf("- %s\n", warning)
 		}
 	}
-	
-	prompt += `
-
-## Report Requirements:
-
-Please generate a comprehensive Markdown report that includes:
-
-1. **Executive Summary** - Brief overview of current conditions and key takeaways
-2. **Current Conditions Analysis** - Detailed explanation of solar and geomagnetic data
-3. **Band-by-Band Analysis** - Specific recommendations for each amateur band
-4. **Best Operating Times** - When to operate for optimal propagation
-5. **DX Opportunities** - Specific regions/paths that may be enhanced
-6. **Technical Explanation** - Why conditions are as they are (educational)
-7. **3-Day Forecast** - What to expect in coming days
-8. **Operator Recommendations** - Practical advice for different types of operation
-
-Format the report with proper Markdown headers, bullet points, and emphasis. Make it informative but accessible to both new and experienced amateur radio operators. Include specific frequency recommendations and explain the reasoning behind propagation predictions.
-
-Focus on practical, actionable information that amateur radio operators can use to plan their activities.`
 
 	return prompt
 }

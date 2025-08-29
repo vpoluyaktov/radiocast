@@ -133,7 +133,7 @@ resource "google_cloud_run_v2_service" "radiocast" {
     }
 
     containers {
-      image = "gcr.io/${var.project_id}/radiocast:latest"
+      image = "gcr.io/${var.project_id}/radiocast:${var.image_tag}"
 
       ports {
         container_port = 8080
@@ -158,6 +158,11 @@ resource "google_cloud_run_v2_service" "radiocast" {
       env {
         name  = "LOG_LEVEL"
         value = var.environment == "production" ? "info" : "debug"
+      }
+
+      env {
+        name  = "APP_VERSION"
+        value = var.image_tag
       }
 
       env {

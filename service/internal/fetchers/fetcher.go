@@ -49,41 +49,54 @@ func (f *DataFetcher) FetchAllData(ctx context.Context, noaaKURL, noaaSolarURL, 
 	
 	// NOAA K-index data
 	go func() {
+		log.Println("Fetching NOAA K-index data...")
 		data, err := f.fetchNOAAKIndex(ctx, noaaKURL)
 		if err != nil {
+			log.Printf("NOAA K-index fetch failed: %v", err)
 			errChan <- fmt.Errorf("NOAA K-index fetch failed: %w", err)
 			return
 		}
+		log.Printf("NOAA K-index fetch successful: %d data points", len(data))
 		kIndexChan <- data
 	}()
 	
 	// NOAA Solar data
 	go func() {
+		log.Println("Fetching NOAA Solar data...")
 		data, err := f.fetchNOAASolar(ctx, noaaSolarURL)
 		if err != nil {
+			log.Printf("NOAA Solar fetch failed: %v", err)
 			errChan <- fmt.Errorf("NOAA Solar fetch failed: %w", err)
 			return
 		}
+		log.Printf("NOAA Solar fetch successful: %d data points", len(data))
 		solarChan <- data
 	}()
 	
 	// N0NBH data
 	go func() {
+		log.Println("Fetching N0NBH solar data...")
 		data, err := f.fetchN0NBH(ctx, n0nbhURL)
 		if err != nil {
+			log.Printf("N0NBH fetch failed: %v", err)
 			errChan <- fmt.Errorf("N0NBH fetch failed: %w", err)
 			return
 		}
+		log.Printf("N0NBH fetch successful: Solar flux=%s, K-index=%s, band conditions=%d", 
+			data.SolarData.SolarFlux, data.SolarData.KIndex, len(data.Calculatedconditions.Band))
 		n0nbhChan <- data
 	}()
 	
 	// SIDC RSS data
 	go func() {
+		log.Println("Fetching SIDC sunspot data...")
 		data, err := f.fetchSIDC(ctx, sidcURL)
 		if err != nil {
+			log.Printf("SIDC fetch failed: %v", err)
 			errChan <- fmt.Errorf("SIDC fetch failed: %w", err)
 			return
 		}
+		log.Printf("SIDC fetch successful: %d data points", len(data))
 		sidcChan <- data
 	}()
 	
@@ -119,7 +132,8 @@ func (f *DataFetcher) FetchAllData(ctx context.Context, noaaKURL, noaaSolarURL, 
 	// Normalize and combine all data
 	propagationData := f.normalizeData(kIndexData, solarData, n0nbhData, sidcData)
 	
-	log.Println("Data fetch and normalization completed successfully")
+	log.Printf("Data fetch and normalization completed successfully - NOAA K-index: %d points, NOAA Solar: %d points, N0NBH: %v, SIDC: %d points", 
+		len(kIndexData), len(solarData), n0nbhData != nil, len(sidcData))
 	return propagationData, nil
 }
 
@@ -138,32 +152,30 @@ func (f *DataFetcher) fetchNOAAKIndex(ctx context.Context, url string) ([]models
 		return nil, fmt.Errorf("NOAA K-index API returned status %d", resp.StatusCode())
 	}
 	
-	// NOAA returns array of arrays format: [["time_tag","Kp","a_running","station_count"], [data...]]
-	var rawData [][]interface{}
+	// NOAA returns array of objects format: [{"time_tag":"...","kp_index":0,"estimated_kp":0.33,"kp":"0P"}]
+	type NOAAKIndexAPIResponse struct {
+		TimeTag     string  `json:"time_tag"`
+		KpIndex     int     `json:"kp_index"`
+		EstimatedKp float64 `json:"estimated_kp"`
+		Kp          string  `json:"kp"`
+	}
+
+	var rawData []NOAAKIndexAPIResponse
 	if err := json.Unmarshal(resp.Body(), &rawData); err != nil {
 		return nil, fmt.Errorf("failed to parse NOAA K-index response: %w", err)
 	}
-	
-	if len(rawData) < 2 {
-		return nil, fmt.Errorf("NOAA K-index response has insufficient data")
+
+	if len(rawData) == 0 {
+		return nil, fmt.Errorf("NOAA K-index response has no data")
 	}
-	
-	// Skip header row and parse data rows
+
+	// Convert to our internal format
 	var data []models.NOAAKIndexResponse
-	for i := 1; i < len(rawData); i++ {
-		row := rawData[i]
-		if len(row) < 4 {
-			continue
-		}
-		
-		timeTag, _ := row[0].(string)
-		kpIndex, _ := strconv.ParseFloat(fmt.Sprintf("%v", row[1]), 64)
-		_ = fmt.Sprintf("%v", row[2]) // aRunning - not currently used
-		
+	for _, item := range rawData {
 		data = append(data, models.NOAAKIndexResponse{
-			TimeTag:     timeTag,
-			KpIndex:     kpIndex,
-			EstimatedKp: kpIndex, // Use same value for estimated
+			TimeTag:     item.TimeTag,
+			KpIndex:     item.EstimatedKp, // Use estimated_kp instead of kp_index
+			EstimatedKp: item.EstimatedKp,
 		})
 	}
 	
@@ -185,36 +197,55 @@ func (f *DataFetcher) fetchNOAASolar(ctx context.Context, url string) ([]models.
 		return nil, fmt.Errorf("NOAA solar API returned status %d", resp.StatusCode())
 	}
 	
-	// NOAA returns array of arrays format: [["time_tag","density","speed","temperature"], [data...]]
-	var rawData [][]interface{}
+	// NOAA now returns array of objects format: [{"time-tag":"1749-01","ssn":96.7,"f10.7":-1.0}]
+	type NOAASolarAPIResponse struct {
+		TimeTag           string  `json:"time-tag"`
+		SSN               float64 `json:"ssn"`
+		SmoothedSSN       float64 `json:"smoothed_ssn"`
+		ObservedSWPCSSN   float64 `json:"observed_swpc_ssn"`
+		SmoothedSWPCSSN   float64 `json:"smoothed_swpc_ssn"`
+		F107              float64 `json:"f10.7"`
+		SmoothedF107      float64 `json:"smoothed_f10.7"`
+	}
+	
+	var rawData []NOAASolarAPIResponse
 	if err := json.Unmarshal(resp.Body(), &rawData); err != nil {
 		return nil, fmt.Errorf("failed to parse NOAA solar response: %w", err)
 	}
 	
-	if len(rawData) < 2 {
-		return nil, fmt.Errorf("NOAA solar response has insufficient data")
+	if len(rawData) == 0 {
+		return nil, fmt.Errorf("NOAA solar response has no data")
 	}
 	
-	// Skip header row and parse data rows
+	// Convert to our internal format, prioritize entries with valid data
 	var data []models.NOAASolarResponse
-	for i := 1; i < len(rawData); i++ {
-		row := rawData[i]
-		if len(row) < 4 {
+	for _, item := range rawData {
+		// Skip entries where both critical values are invalid
+		if item.F107 < 0 && item.SSN < 0 {
 			continue
 		}
 		
-		timeTag, _ := row[0].(string)
-		_ = fmt.Sprintf("%v", row[1]) // density - not currently used
-		_ = fmt.Sprintf("%v", row[2]) // speed - not currently used  
-		_ = fmt.Sprintf("%v", row[3]) // temperature - not currently used
+		// Only include entries with at least one valid value
+		solarFlux := item.F107
+		sunspotNumber := item.SSN
 		
-		// Note: This API doesn't provide solar flux or sunspot data directly
-		// We'll use placeholder values and rely on N0NBH for actual solar data
+		// Skip entries with invalid solar flux but keep if SSN is valid
+		if solarFlux < 0 && sunspotNumber >= 0 {
+			// Use a reasonable default for solar flux when missing
+			solarFlux = 100.0 // Typical quiet sun value
+		} else if solarFlux < 0 {
+			continue // Skip if solar flux is invalid and no valid SSN
+		}
+		
+		if sunspotNumber < 0 {
+			sunspotNumber = 0 // Use 0 for invalid sunspot numbers
+		}
+		
 		data = append(data, models.NOAASolarResponse{
-			TimeTag:           timeTag,
-			SolarFlux:         0, // Not available in this endpoint
-			SunspotNumber:     0, // Not available in this endpoint
-			SolarFluxAdjusted: 0, // Not available in this endpoint
+			TimeTag:           item.TimeTag,
+			SolarFlux:         solarFlux,
+			SunspotNumber:     sunspotNumber,
+			SolarFluxAdjusted: solarFlux, // Use same value
 		})
 	}
 	
@@ -223,16 +254,24 @@ func (f *DataFetcher) fetchNOAASolar(ctx context.Context, url string) ([]models.
 
 // fetchN0NBH fetches data from N0NBH solar API (XML format)
 func (f *DataFetcher) fetchN0NBH(ctx context.Context, url string) (*models.N0NBHResponse, error) {
+	// Use the working XML endpoint instead of the broken JSON endpoint
+	workingURL := "https://www.hamqsl.com/solarxml.php"
+	
 	resp, err := f.client.R().
 		SetContext(ctx).
 		SetHeader("Accept", "application/xml").
-		Get(url)
+		Get(workingURL)
 	
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch N0NBH data: %w", err)
 	}
 	
 	if resp.StatusCode() != 200 {
+		bodyLen := len(resp.Body())
+		if bodyLen > 200 {
+			bodyLen = 200
+		}
+		log.Printf("N0NBH API returned status %d, response: %s", resp.StatusCode(), string(resp.Body()[:bodyLen]))
 		return nil, fmt.Errorf("N0NBH API returned status %d", resp.StatusCode())
 	}
 	
@@ -272,99 +311,132 @@ func (f *DataFetcher) fetchN0NBH(ctx context.Context, url string) (*models.N0NBH
 		Time: xmlData.Time,
 	}
 	
-	// Convert band conditions
-	for _, band := range xmlData.CalculatedConditions.Band {
+	// Convert band conditions - XML has separate entries for day/night
+	bandConditions := make(map[string]struct {
+		Name  string `json:"name"`
+		Time  string `json:"time"`
+		Day   string `json:"day"`
+		Night string `json:"night"`
+	})
+	
+	for _, band := range xmlData.SolarData.CalculatedConditions.Band {
+		key := band.Name
+		if existing, ok := bandConditions[key]; ok {
+			// Update existing entry
+			if band.Time == "day" {
+				existing.Day = band.Condition
+			} else if band.Time == "night" {
+				existing.Night = band.Condition
+			}
+			bandConditions[key] = existing
+		} else {
+			// Create new entry
+			newBand := struct {
+				Name  string `json:"name"`
+				Time  string `json:"time"`
+				Day   string `json:"day"`
+				Night string `json:"night"`
+			}{
+				Name: band.Name,
+				Time: band.Time,
+			}
+			if band.Time == "day" {
+				newBand.Day = band.Condition
+			} else if band.Time == "night" {
+				newBand.Night = band.Condition
+			}
+			bandConditions[key] = newBand
+		}
+	}
+
+	// Convert map to slice
+	for _, bandCond := range bandConditions {
 		data.Calculatedconditions.Band = append(data.Calculatedconditions.Band, struct {
-			Name string `json:"name"`
-			Time string `json:"time"`
-			Day  string `json:"day"`
+			Name  string `json:"name"`
+			Time  string `json:"time"`
+			Day   string `json:"day"`
 			Night string `json:"night"`
 		}{
-			Name:  band.Name,
-			Time:  band.Time,
-			Day:   band.Day,
-			Night: band.Night,
+			Name:  bandCond.Name,
+			Time:  bandCond.Time,
+			Day:   bandCond.Day,
+			Night: bandCond.Night,
 		})
 	}
 	
 	return data, nil
 }
 
-// fetchSIDC fetches RSS data from SIDC
+// fetchSIDC fetches sunspot data from SIDC (CSV format)
 func (f *DataFetcher) fetchSIDC(ctx context.Context, url string) ([]*gofeed.Item, error) {
-	// Handle the redirect from snmtotcsv.php to snmtotcsv.php (case difference)
-	correctedURL := strings.Replace(url, "snmtotcsv.php", "snmtotcsv.php", 1)
-	if strings.Contains(url, "snmtotcsv.php") {
-		correctedURL = strings.Replace(url, "snmtotcsv.php", "snmtotcsv.php", 1)
-	}
+	// Use the working CSV endpoint instead of the broken RSS endpoint
+	workingURL := "https://www.sidc.be/SILSO/INFO/snmtotcsv.php"
 	
 	resp, err := f.client.R().
 		SetContext(ctx).
-		Get(correctedURL)
+		Get(workingURL)
 	
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch SIDC RSS: %w", err)
+		return nil, fmt.Errorf("failed to fetch SIDC data: %w", err)
 	}
 	
 	if resp.StatusCode() != 200 {
-		return nil, fmt.Errorf("SIDC RSS returned status %d", resp.StatusCode())
+		return nil, fmt.Errorf("SIDC API returned status %d", resp.StatusCode())
 	}
 	
-	// Check if we got HTML instead of RSS/CSV
 	bodyStr := string(resp.Body())
-	if strings.Contains(bodyStr, "<html>") || strings.Contains(bodyStr, "<!DOCTYPE") {
-		return nil, fmt.Errorf("SIDC returned HTML instead of RSS/CSV data")
-	}
 	
-	// Try to parse as RSS first
-	feed, err := f.parser.ParseString(bodyStr)
-	if err != nil {
-		// If RSS parsing fails, try to parse as CSV data
-		return f.parseSIDCCSV(bodyStr)
-	}
-	
-	return feed.Items, nil
+	// Parse as CSV data (SIDC format: Year;Month;Date_fraction;SSN_value;SSN_error;Nb_observations;Definitive)
+	return f.parseSIDCCSV(bodyStr)
 }
 
 // parseSIDCCSV parses SIDC CSV data and converts to RSS-like items
+// Format: Year;Month;Date_fraction;SSN_value;SSN_error;Nb_observations;Definitive
 func (f *DataFetcher) parseSIDCCSV(csvData string) ([]*gofeed.Item, error) {
 	lines := strings.Split(csvData, "\n")
 	var items []*gofeed.Item
 	
-	// Parse CSV format: Year Month Day Decimal_date SSN_value SSN_error Nb_observations Definitive/Provisional
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
+	// Get recent entries (last 100 lines for recent months)
+	startIdx := len(lines) - 100
+	if startIdx < 0 {
+		startIdx = 0
+	}
+	
+	for i := startIdx; i < len(lines); i++ {
+		line := strings.TrimSpace(lines[i])
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
 		
-		fields := strings.Fields(line)
-		if len(fields) < 5 {
+		// Parse semicolon-separated values
+		fields := strings.Split(line, ";")
+		if len(fields) < 4 {
+			continue
+		}
+		
+		year := strings.TrimSpace(fields[0])
+		month := strings.TrimSpace(fields[1])
+		ssnValue := strings.TrimSpace(fields[3])
+		
+		if year == "" || month == "" || ssnValue == "" {
 			continue
 		}
 		
 		// Create a feed item from CSV data
 		item := &gofeed.Item{
-			Title:       fmt.Sprintf("Sunspot Number: %s", fields[4]),
-			Description: fmt.Sprintf("Date: %s-%s-%s, SSN: %s, Error: %s", fields[0], fields[1], fields[2], fields[4], fields[5]),
+			Title:       fmt.Sprintf("Monthly Sunspot Number: %s", ssnValue),
+			Description: fmt.Sprintf("Date: %s-%s, SSN: %s", year, month, ssnValue),
 		}
 		
-		// Parse date
-		if year, err := strconv.Atoi(fields[0]); err == nil {
-			if month, err := strconv.Atoi(fields[1]); err == nil {
-				if day, err := strconv.Atoi(fields[2]); err == nil {
-					date := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-					item.PublishedParsed = &date
-				}
+		// Parse date (year and month only for monthly data)
+		if yearInt, err := strconv.Atoi(year); err == nil {
+			if monthInt, err := strconv.Atoi(month); err == nil {
+				date := time.Date(yearInt, time.Month(monthInt), 1, 0, 0, 0, 0, time.UTC)
+				item.PublishedParsed = &date
 			}
 		}
 		
 		items = append(items, item)
-		
-		// Only keep recent items (last 30 days)
-		if len(items) > 30 {
-			break
-		}
 	}
 	
 	return items, nil

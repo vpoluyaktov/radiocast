@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -31,7 +32,19 @@ type Server struct {
 func NewServer(cfg *config.Config) (*Server, error) {
 	ctx := context.Background()
 	
-	// Initialize GCS client
+	// For local testing, skip GCS entirely
+	if cfg.Environment == "local" {
+		log.Printf("Local mode - skipping GCS storage")
+		return &Server{
+			config:    cfg,
+			fetcher:   fetchers.NewDataFetcher(),
+			llmClient: llm.NewOpenAIClient(cfg.OpenAIAPIKey, cfg.OpenAIModel),
+			generator: reports.NewGenerator(),
+			storage:   nil, // Skip storage for local testing
+		}, nil
+	}
+	
+	// Initialize GCS client for production
 	gcsClient, err := storage.NewGCSClient(ctx, cfg.GCSBucket)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize GCS client: %w", err)
@@ -65,7 +78,11 @@ func main() {
 	
 	log.Printf("Starting Radio Propagation Service on port %s", cfg.Port)
 	log.Printf("Environment: %s", cfg.Environment)
-	log.Printf("GCS Bucket: %s", cfg.GCSBucket)
+	if cfg.Environment == "local" {
+		log.Printf("Local Reports Dir: %s", cfg.LocalReportsDir)
+	} else {
+		log.Printf("GCS Bucket: %s", cfg.GCSBucket)
+	}
 	
 	// Create server
 	server, err := NewServer(cfg)
@@ -116,8 +133,9 @@ func main() {
 	log.Println("Server stopped")
 }
 
-// handleRoot serves the latest generated report or main page
+// handleRoot serves the main page with a generated report
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
+	log.Printf("DEBUG: handleRoot called - method: %s, URL: %s", r.Method, r.URL.Path)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -125,26 +143,114 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	
 	// Try to get the latest report from storage
 	ctx := r.Context()
-	reports, err := s.storage.ListReports(ctx, 1)
-	if err != nil || len(reports) == 0 {
-		log.Printf("No reports available: %v", err)
-		// Fall back to main page if no report available
+	if s.storage != nil {
+		reports, err := s.storage.ListReports(ctx, 1)
+		if err != nil || len(reports) == 0 {
+			log.Printf("No reports available: %v", err)
+			// Fall back to main page if no report available
+			s.serveMainPage(w)
+			return
+		}
+		
+		// Serve the latest report
+		reportContent, err := s.storage.GetReport(ctx, reports[0])
+		if err != nil {
+			log.Printf("Failed to get report: %v", err)
+			s.serveMainPage(w)
+			return
+		}
+		
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(reportContent))
+		return
+	}
+	
+	// Local mode - generate report on demand
+	log.Println("Local mode: generating report on demand...")
+	
+	// Create timestamped directory for this report
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	reportDir := filepath.Join("reports", timestamp)
+	if err := os.MkdirAll(reportDir, 0755); err != nil {
+		log.Printf("Failed to create report directory: %v", err)
 		s.serveMainPage(w)
 		return
 	}
 	
-	// Get the latest report content
-	latestReportPath := reports[0]
-	reportContent, err := s.storage.GetReport(ctx, latestReportPath)
+	// Fetch data from all sources
+	log.Println("Starting data fetch from all sources...")
+	data, err := s.fetcher.FetchAllData(
+		ctx,
+		s.config.NOAAKIndexURL,
+		s.config.NOAASolarURL,
+		s.config.N0NBHSolarURL,
+		s.config.SIDCRSSURL,
+	)
 	if err != nil {
-		log.Printf("Failed to get latest report content: %v", err)
+		log.Printf("Data fetch failed: %v", err)
 		s.serveMainPage(w)
 		return
 	}
+	log.Printf("Data fetch and normalization completed successfully")
 	
-	// Serve the latest report HTML directly
+	// Save API data as JSON
+	apiDataJSON, _ := json.MarshalIndent(data, "", "  ")
+	apiDataPath := filepath.Join(reportDir, "01_api_data.json")
+	if err := os.WriteFile(apiDataPath, apiDataJSON, 0644); err != nil {
+		log.Printf("Failed to save API data: %v", err)
+	}
+	
+	// Save system prompt
+	systemPrompt := s.llmClient.GetSystemPrompt()
+	log.Printf("DEBUG: System prompt length: %d", len(systemPrompt))
+	systemPromptPath := filepath.Join(reportDir, "llm_system_prompt.txt")
+	log.Printf("DEBUG: Writing system prompt to: %s", systemPromptPath)
+	if err := os.WriteFile(systemPromptPath, []byte(systemPrompt), 0644); err != nil {
+		log.Printf("Failed to save system prompt: %v", err)
+	} else {
+		log.Printf("System prompt saved successfully to: %s", systemPromptPath)
+	}
+	
+	// Generate LLM prompt and save it
+	llmPrompt := s.llmClient.BuildPrompt(data)
+	promptPath := filepath.Join(reportDir, "02_llm_prompt.txt")
+	if err := os.WriteFile(promptPath, []byte(llmPrompt), 0644); err != nil {
+		log.Printf("Failed to save LLM prompt: %v", err)
+	}
+
+	log.Printf("Generating report for %s", time.Now().Format("2006-01-02"))
+	markdown, err := s.llmClient.GenerateReport(data)
+	if err != nil {
+		log.Printf("Failed to generate report: %v", err)
+		http.Error(w, "Failed to generate report", http.StatusInternalServerError)
+		return
+	}
+	log.Printf("Generated report with %d characters", len(markdown))
+
+	markdownPath := filepath.Join(reportDir, "03_llm_response.md")
+	if err := os.WriteFile(markdownPath, []byte(markdown), 0644); err != nil {
+		log.Printf("Failed to save markdown report: %v", err)
+	}
+
+	log.Printf("Converting markdown to HTML and generating charts...")
+	html, err := s.generator.GenerateHTML(markdown, data)
+	if err != nil {
+		log.Printf("Failed to generate HTML: %v", err)
+		http.Error(w, "Failed to generate HTML", http.StatusInternalServerError)
+		return
+	}
+	log.Printf("Generated complete HTML report with %d characters", len(html))
+
+	htmlPath := filepath.Join(reportDir, "04_final_report.html")
+	if err := os.WriteFile(htmlPath, []byte(html), 0644); err != nil {
+		log.Printf("Failed to save HTML report: %v", err)
+	}
+	
+	log.Printf("Report saved to directory: %s", reportDir)
+	
+	// Serve the generated report
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(reportContent))
+	w.Write([]byte(html))
 }
 
 // serveMainPage serves the main service information page
