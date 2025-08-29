@@ -97,11 +97,9 @@ func (c *OpenAIClient) getDefaultSystemPrompt() string {
 	return "You are an expert radio propagation analyst and amateur radio operator. Generate a comprehensive daily radio propagation report in markdown format based on the provided solar and space weather data. Focus on practical advice for amateur radio operators."
 }
 
-// buildPrompt constructs a detailed prompt for the LLM
+// buildPrompt constructs data for the LLM (instructions are in system prompt)
 func (c *OpenAIClient) buildPrompt(data *models.PropagationData) string {
-	prompt := fmt.Sprintf(`Generate a comprehensive daily amateur radio propagation report based on the following current conditions:
-
-## Current Solar and Geomagnetic Data (as of %s)
+	prompt := fmt.Sprintf(`## Current Solar and Geomagnetic Data (as of %s)
 
 ### Solar Activity:
 - Solar Flux Index (10.7cm): %.1f sfu
@@ -169,25 +167,6 @@ func (c *OpenAIClient) buildPrompt(data *models.PropagationData) string {
 			prompt += fmt.Sprintf("- %s\n", warning)
 		}
 	}
-	
-	prompt += `
-
-## Report Requirements:
-
-Please generate a comprehensive Markdown report that includes:
-
-1. **Executive Summary** - Brief overview of current conditions and key takeaways
-2. **Current Conditions Analysis** - Detailed explanation of solar and geomagnetic data
-3. **Band-by-Band Analysis** - Specific recommendations for each amateur band
-4. **Best Operating Times** - When to operate for optimal propagation
-5. **DX Opportunities** - Specific regions/paths that may be enhanced
-6. **Technical Explanation** - Why conditions are as they are (educational)
-7. **3-Day Forecast** - What to expect in coming days
-8. **Operator Recommendations** - Practical advice for different types of operation
-
-Format the report with proper Markdown headers, bullet points, and emphasis. Make it informative but accessible to both new and experienced amateur radio operators. Include specific frequency recommendations and explain the reasoning behind propagation predictions.
-
-Focus on practical, actionable information that amateur radio operators can use to plan their activities.`
 
 	return prompt
 }
