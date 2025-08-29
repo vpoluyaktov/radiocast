@@ -8,8 +8,14 @@ import (
 	"strings"
 )
 
-// GetVersion calculates version using base version + git commit count
+// GetVersion returns version from environment variable or calculates from git
 func GetVersion() string {
+	// First try to get version from environment variable (set by CI/CD)
+	if envVersion := os.Getenv("APP_VERSION"); envVersion != "" {
+		return envVersion
+	}
+	
+	// Fallback to calculating from git (for local development)
 	baseVersion := getBaseVersion()
 	commitCount := getGitCommitCount()
 	

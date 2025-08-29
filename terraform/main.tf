@@ -161,6 +161,11 @@ resource "google_cloud_run_v2_service" "radiocast" {
       }
 
       env {
+        name  = "APP_VERSION"
+        value = var.image_tag
+      }
+
+      env {
         name = "OPENAI_API_KEY"
         value_source {
           secret_key_ref {
