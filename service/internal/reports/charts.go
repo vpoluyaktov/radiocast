@@ -104,7 +104,7 @@ func (cg *ChartGenerator) generateSolarActivityChart(data *models.PropagationDat
 		return "", fmt.Errorf("failed to render solar activity chart: %w", err)
 	}
 
-	return "solar_activity.png", nil
+	return filename, nil
 }
 
 // generateKIndexChart creates a time series chart for K-index
@@ -209,7 +209,7 @@ func (cg *ChartGenerator) generateKIndexChart(data *models.PropagationData) (str
 		return "", fmt.Errorf("failed to render K-index chart: %w", err)
 	}
 
-	return "k_index_trend.png", nil
+	return filename, nil
 }
 
 // generateBandConditionsChart creates a heatmap-style chart for band conditions
@@ -313,7 +313,7 @@ func (cg *ChartGenerator) generateBandConditionsChart(data *models.PropagationDa
 		return "", fmt.Errorf("failed to render band conditions chart: %w", err)
 	}
 
-	return "band_conditions.png", nil
+	return filename, nil
 }
 
 // generateForecastChart creates a forecast chart
@@ -398,7 +398,7 @@ func (cg *ChartGenerator) generateForecastChart(data *models.PropagationData) (s
 		return "", fmt.Errorf("failed to render forecast chart: %w", err)
 	}
 
-	return "forecast.png", nil
+	return filename, nil
 }
 
 // Helper functions
