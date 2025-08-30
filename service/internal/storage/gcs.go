@@ -81,6 +81,87 @@ func (g *GCSClient) StoreReport(ctx context.Context, htmlContent string, timesta
 	return objectPath, nil
 }
 
+// StoreChartImage stores a chart image in GCS in the same folder as the report
+func (g *GCSClient) StoreChartImage(ctx context.Context, imageData []byte, filename string, timestamp time.Time) (string, error) {
+	// Generate the folder path for this report
+	folderPath := g.generateFolderPath(timestamp)
+	objectPath := folderPath + filename
+	
+	log.Printf("Storing chart image to GCS: gs://%s/%s", g.bucket, objectPath)
+	
+	// Get bucket handle
+	bucket := g.client.Bucket(g.bucket)
+	
+	// Create object handle
+	obj := bucket.Object(objectPath)
+	
+	// Create writer
+	writer := obj.NewWriter(ctx)
+	writer.ContentType = "image/png"
+	writer.CacheControl = "public, max-age=86400" // Cache for 24 hours
+	
+	// Set metadata
+	writer.Metadata = map[string]string{
+		"generated-at":   timestamp.Format(time.RFC3339),
+		"content-type":   "chart-image",
+		"chart-filename": filename,
+	}
+	
+	// Write image data
+	if _, err := writer.Write(imageData); err != nil {
+		writer.Close()
+		return "", fmt.Errorf("failed to write image to GCS: %w", err)
+	}
+	
+	// Close writer to finalize upload
+	if err := writer.Close(); err != nil {
+		return "", fmt.Errorf("failed to finalize GCS image upload: %w", err)
+	}
+	
+	// Return the public URL
+	publicURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", g.bucket, objectPath)
+	log.Printf("Chart image successfully stored at: %s", publicURL)
+	return publicURL, nil
+}
+
+// GetChartImage retrieves a chart image from GCS
+func (g *GCSClient) GetChartImage(ctx context.Context, imagePath string) ([]byte, error) {
+	bucket := g.client.Bucket(g.bucket)
+	obj := bucket.Object(imagePath)
+	
+	reader, err := obj.NewReader(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create reader for chart image %s: %w", imagePath, err)
+	}
+	defer reader.Close()
+	
+	imageData, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read chart image %s: %w", imagePath, err)
+	}
+	
+	return imageData, nil
+}
+
+// GetFile retrieves any file from GCS
+func (g *GCSClient) GetFile(ctx context.Context, filePath string) ([]byte, error) {
+	bucket := g.client.Bucket(g.bucket)
+	obj := bucket.Object(filePath)
+	
+	reader, err := obj.NewReader(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create reader for file %s: %w", filePath, err)
+	}
+	defer reader.Close()
+	
+	fileData, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
+	}
+	
+	return fileData, nil
+}
+
 // GetLatestReport gets the most recent report from GCS
 func (c *GCSClient) GetLatestReport() (string, error) {
 	// This is a simplified implementation - in practice you'd want to
@@ -240,6 +321,16 @@ func (g *GCSClient) DeleteOldReports(ctx context.Context, olderThan time.Duratio
 // generateObjectPath creates the GCS object path for a report folder
 func (g *GCSClient) generateObjectPath(timestamp time.Time) string {
 	return fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%s/index.html",
+		timestamp.Year(),
+		timestamp.Month(),
+		timestamp.Day(),
+		timestamp.Format("2006-01-02-15-04-05"),
+	)
+}
+
+// generateFolderPath creates the GCS folder path for a report
+func (g *GCSClient) generateFolderPath(timestamp time.Time) string {
+	return fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%s/",
 		timestamp.Year(),
 		timestamp.Month(),
 		timestamp.Day(),

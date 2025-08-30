@@ -9,12 +9,14 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
 	"radiocast/internal/config"
 	"radiocast/internal/fetchers"
 	"radiocast/internal/llm"
+	"radiocast/internal/models"
 	"radiocast/internal/reports"
 	"radiocast/internal/storage"
 )
@@ -97,6 +99,7 @@ func main() {
 	mux.HandleFunc("/health", server.handleHealth)
 	mux.HandleFunc("/generate", server.handleGenerate)
 	mux.HandleFunc("/reports", server.handleListReports)
+	mux.HandleFunc("/files/", server.handleFileProxy)
 	
 	// Create HTTP server
 	httpServer := &http.Server{
@@ -233,12 +236,78 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Converting markdown to HTML and generating charts...")
-	html, err := s.generator.GenerateHTML(markdown, data)
-	if err != nil {
-		log.Printf("Failed to generate HTML: %v", err)
-		http.Error(w, "Failed to generate HTML", http.StatusInternalServerError)
-		return
+	
+	var html string
+	var reportPath string
+	
+	// For production/staging, store in GCS and upload charts
+	if s.storage != nil {
+		// Generate charts first
+		chartGen := reports.NewChartGenerator(reportDir)
+		chartFiles, err := chartGen.GenerateCharts(data)
+		if err != nil {
+			log.Printf("Warning: Failed to generate charts: %v", err)
+			chartFiles = []string{}
+		}
+		
+		// Upload chart images to GCS
+		timestamp := time.Now()
+		folderPath := ""
+		
+		for _, chartFile := range chartFiles {
+			imageData, err := os.ReadFile(chartFile)
+			if err != nil {
+				log.Printf("Failed to read chart file %s: %v", chartFile, err)
+				continue
+			}
+			
+			filename := filepath.Base(chartFile)
+			publicURL, err := s.storage.StoreChartImage(ctx, imageData, filename, timestamp)
+			if err != nil {
+				log.Printf("Failed to store chart image %s: %v", filename, err)
+				continue
+			}
+			
+			// Extract folder path from first successful upload
+			if folderPath == "" {
+				// Extract folder path from public URL
+				// URL format: https://storage.googleapis.com/bucket/YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS/filename
+				parts := strings.Split(publicURL, "/")
+				if len(parts) >= 7 {
+					folderPath = strings.Join(parts[4:len(parts)-1], "/")
+				}
+			}
+			
+			log.Printf("Chart image uploaded: %s", publicURL)
+		}
+		
+		// Generate HTML with proper folder path for chart proxy URLs
+		html, err = s.generateHTMLWithCharts(markdown, data, chartFiles, folderPath)
+		if err != nil {
+			log.Printf("Failed to generate HTML: %v", err)
+			http.Error(w, "Failed to generate HTML", http.StatusInternalServerError)
+			return
+		}
+		
+		// Store HTML report in GCS
+		reportPath, err = s.storage.StoreReport(ctx, html, timestamp)
+		if err != nil {
+			log.Printf("Failed to store report: %v", err)
+			http.Error(w, "Failed to store report", http.StatusInternalServerError)
+			return
+		}
+		
+		log.Printf("Report stored in GCS at: %s", reportPath)
+	} else {
+		// For local mode, use existing logic
+		html, err = s.generator.GenerateHTML(markdown, data)
+		if err != nil {
+			log.Printf("Failed to generate HTML: %v", err)
+			http.Error(w, "Failed to generate HTML", http.StatusInternalServerError)
+			return
+		}
 	}
+	
 	log.Printf("Generated complete HTML report with %d characters", len(html))
 
 	htmlPath := filepath.Join(reportDir, "04_final_report.html")
@@ -437,4 +506,113 @@ func (s *Server) handleListReports(w http.ResponseWriter, r *http.Request) {
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// handleFileProxy serves any file from report folders through the service
+func (s *Server) handleFileProxy(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	// Extract the file path from URL: /files/{folder}/{filename}
+	path := strings.TrimPrefix(r.URL.Path, "/files/")
+	if path == "" {
+		http.Error(w, "File path required", http.StatusBadRequest)
+		return
+	}
+	
+	ctx := r.Context()
+	
+	// For local mode, serve from local filesystem
+	if s.config.Environment == "local" {
+		// Serve from local reports directory
+		localPath := filepath.Join(s.config.LocalReportsDir, path)
+		
+		// Security check - ensure path doesn't escape reports directory
+		absReportsDir, _ := filepath.Abs(s.config.LocalReportsDir)
+		absPath, _ := filepath.Abs(localPath)
+		if !strings.HasPrefix(absPath, absReportsDir) {
+			http.Error(w, "Invalid path", http.StatusBadRequest)
+			return
+		}
+		
+		// Check if file exists and serve it
+		if _, err := os.Stat(localPath); os.IsNotExist(err) {
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+		
+		// Set content type based on file extension
+		contentType := s.getContentType(filepath.Ext(localPath))
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+		http.ServeFile(w, r, localPath)
+		return
+	}
+	
+	// For GCS mode, proxy from GCS
+	if s.storage == nil {
+		http.Error(w, "Storage not configured", http.StatusInternalServerError)
+		return
+	}
+	
+	// Get file from GCS
+	fileData, err := s.storage.GetFile(ctx, path)
+	if err != nil {
+		log.Printf("Failed to get file %s: %v", path, err)
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+	
+	// Set content type based on file extension
+	contentType := s.getContentType(filepath.Ext(path))
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+	w.Write(fileData)
+}
+
+// generateHTMLWithCharts generates HTML with charts using the specified folder path
+func (s *Server) generateHTMLWithCharts(markdown string, data *models.PropagationData, chartFiles []string, folderPath string) (string, error) {
+	// Convert markdown to HTML
+	htmlContent := s.generator.MarkdownToHTML(markdown)
+	
+	// Build chart HTML references with folder path
+	chartsHTML := s.generator.BuildChartsHTML(chartFiles, folderPath)
+	
+	// Combine everything into a complete HTML document
+	fullHTML, err := s.generator.BuildCompleteHTML(htmlContent, chartsHTML, data)
+	if err != nil {
+		return "", fmt.Errorf("failed to build complete HTML: %w", err)
+	}
+	
+	return fullHTML, nil
+}
+
+// getContentType returns the appropriate content type for a file extension
+func (s *Server) getContentType(ext string) string {
+	switch strings.ToLower(ext) {
+	case ".png":
+		return "image/png"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".gif":
+		return "image/gif"
+	case ".svg":
+		return "image/svg+xml"
+	case ".html", ".htm":
+		return "text/html"
+	case ".css":
+		return "text/css"
+	case ".js":
+		return "application/javascript"
+	case ".json":
+		return "application/json"
+	case ".txt", ".md":
+		return "text/plain"
+	case ".pdf":
+		return "application/pdf"
+	default:
+		return "application/octet-stream"
+	}
 }

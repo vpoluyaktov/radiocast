@@ -42,13 +42,13 @@ func (g *Generator) GenerateHTML(markdownReport string, data *models.Propagation
 	}
 	
 	// Convert markdown to HTML
-	htmlContent := g.markdownToHTML(markdownReport)
+	htmlContent := g.MarkdownToHTML(markdownReport)
 	
-	// Build chart HTML references
-	chartsHTML := g.buildChartsHTML(chartFiles)
+	// Build chart HTML references (empty folderPath for now - will be updated for GCS)
+	chartsHTML := g.BuildChartsHTML(chartFiles, "")
 	
 	// Combine everything into a complete HTML document
-	fullHTML, err := g.buildCompleteHTML(htmlContent, chartsHTML, data)
+	fullHTML, err := g.BuildCompleteHTML(htmlContent, chartsHTML, data)
 	if err != nil {
 		return "", fmt.Errorf("failed to build complete HTML: %w", err)
 	}
@@ -57,48 +57,53 @@ func (g *Generator) GenerateHTML(markdownReport string, data *models.Propagation
 	return fullHTML, nil
 }
 
-// buildChartsHTML creates HTML references to chart image files
-func (g *Generator) buildChartsHTML(chartFiles []string) string {
+// BuildChartsHTML creates HTML for chart images using proxy URLs
+func (g *Generator) BuildChartsHTML(chartFiles []string, folderPath string) string {
 	if len(chartFiles) == 0 {
-		return ""
+		return "<p>No charts available</p>"
 	}
 	
 	var html strings.Builder
-	html.WriteString("<div class='charts-section'>\n")
-	html.WriteString("<h2>📊 Propagation Charts</h2>\n")
+	html.WriteString("<div class=\"charts-section\">\n")
+	html.WriteString("<h2>Charts and Analysis</h2>\n")
+	html.WriteString("<div class=\"charts-grid\">\n")
 	
 	for _, chartFile := range chartFiles {
-		// Create a descriptive title based on filename
-		title := g.getChartTitle(chartFile)
-		html.WriteString("<div class='chart-container'>\n")
-		html.WriteString(fmt.Sprintf("<h3>%s</h3>\n", title))
-		html.WriteString(fmt.Sprintf("<img src='%s' alt='%s' class='chart-image'/>\n", chartFile, title))
-		html.WriteString("</div>\n")
+		// Extract filename from path for display
+		filename := filepath.Base(chartFile)
+		// Remove file extension for title
+		title := strings.TrimSuffix(filename, filepath.Ext(filename))
+		// Convert underscores to spaces and title case
+		title = strings.ReplaceAll(title, "_", " ")
+		title = strings.Title(title)
+		
+		// Build proxy URL path
+		var imageSrc string
+		if folderPath != "" {
+			// For GCS deployment, use proxy URL with folder path
+			imageSrc = fmt.Sprintf("/files/%s/%s", folderPath, filename)
+		} else {
+			// For local deployment, use proxy URL with just filename
+			imageSrc = fmt.Sprintf("/files/%s", filename)
+		}
+		
+		html.WriteString(fmt.Sprintf(`
+		<div class="chart-container">
+			<h3>%s</h3>
+			<img src="%s" alt="%s" class="chart-image">
+		</div>
+		`, title, imageSrc, title))
 	}
 	
 	html.WriteString("</div>\n")
+	html.WriteString("</div>\n")
+	
 	return html.String()
 }
 
-// getChartTitle returns a human-readable title for a chart file
-func (g *Generator) getChartTitle(filename string) string {
-	switch filename {
-	case "solar_activity.png":
-		return "Current Solar Activity"
-	case "k_index_trend.png":
-		return "K-index Trend (24 Hours)"
-	case "band_conditions.png":
-		return "HF Band Conditions"
-	case "forecast.png":
-		return "3-Day K-index Forecast"
-	default:
-		return strings.TrimSuffix(filename, ".png")
-	}
-}
 
-
-// markdownToHTML converts markdown to HTML using blackfriday
-func (g *Generator) markdownToHTML(markdownText string) string {
+// MarkdownToHTML converts markdown to HTML using blackfriday
+func (g *Generator) MarkdownToHTML(markdownText string) string {
 	htmlBytes := blackfriday.Run([]byte(markdownText))
 	return string(htmlBytes)
 }
@@ -218,8 +223,8 @@ func (g *Generator) ConvertMarkdownToHTMLWithCharts(markdownContent string, char
 	return buf.String(), nil
 }
 
-// buildCompleteHTML creates a complete HTML document
-func (g *Generator) buildCompleteHTML(content, charts string, data *models.PropagationData) (string, error) {
+// BuildCompleteHTML creates a complete HTML document
+func (g *Generator) BuildCompleteHTML(content, charts string, data *models.PropagationData) (string, error) {
 	// Use the new template-based conversion with charts
 	result, err := g.ConvertMarkdownToHTMLWithCharts(content, charts, time.Now().Format("2006-01-02"))
 	if err != nil {
