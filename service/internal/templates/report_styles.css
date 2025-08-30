@@ -462,11 +462,32 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     border: 1px solid #e0e0e0;
+    text-align: center;
+}
+
+.chart-container h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+    font-weight: 600;
 }
 
 .chart-container canvas {
     max-width: 100%;
     height: auto;
+}
+
+.chart-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.chart-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 /* Chart grid layout */

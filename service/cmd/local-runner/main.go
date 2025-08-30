@@ -26,7 +26,7 @@ func NewLocalTester(openaiKey, model string) *LocalTester {
 	return &LocalTester{
 		fetcher:   fetchers.NewDataFetcher(),
 		llmClient: llm.NewOpenAIClient(openaiKey, model),
-		generator: reports.NewGenerator(),
+		generator: reports.NewGenerator("reports"), // Use reports directory
 	}
 }
 

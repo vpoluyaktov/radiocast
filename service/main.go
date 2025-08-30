@@ -39,7 +39,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 			config:    cfg,
 			fetcher:   fetchers.NewDataFetcher(),
 			llmClient: llm.NewOpenAIClient(cfg.OpenAIAPIKey, cfg.OpenAIModel),
-			generator: reports.NewGenerator(),
+			generator: reports.NewGenerator(cfg.LocalReportsDir),
 			storage:   nil, // Skip storage for local testing
 		}, nil
 	}
@@ -54,7 +54,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		config:    cfg,
 		fetcher:   fetchers.NewDataFetcher(),
 		llmClient: llm.NewOpenAIClient(cfg.OpenAIAPIKey, cfg.OpenAIModel),
-		generator: reports.NewGenerator(),
+		generator: reports.NewGenerator(""), // Empty for GCS mode
 		storage:   gcsClient,
 	}, nil
 }
