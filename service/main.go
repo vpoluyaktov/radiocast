@@ -241,7 +241,9 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	var reportPath string
 	
 	// For production/staging, store in GCS and upload charts
+	log.Printf("DEBUG: Storage client status: %v", s.storage != nil)
 	if s.storage != nil {
+		log.Printf("DEBUG: Entering GCS deployment mode with PNG chart generation")
 		// Generate charts first
 		chartGen := reports.NewChartGenerator(reportDir)
 		log.Printf("Generating PNG charts in directory: %s", reportDir)
