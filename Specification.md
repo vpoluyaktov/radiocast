@@ -1,5 +1,15 @@
 # Radio Propagation Service – Specification
 
+## Architecture Overview
+
+The Radio Propagation Service is a Go-based microservice deployed on Google Cloud Run that:
+- Fetches real-time space weather data from NOAA SWPC, N0NBH, and SIDC APIs
+- Uses OpenAI GPT models to generate intelligent propagation analysis
+- Creates static PNG charts using go-chart library
+- Stores reports in timestamped GCS folder structure
+- Provides REST API endpoints for report generation and file serving
+- Implements universal file proxy system for serving any file type from report folders
+
 ## 1. Project Overview
 
 The Radio Propagation Service is a Go-based application that generates daily radio propagation reports for amateur radio operators. It fetches solar and geomagnetic data from multiple sources, uses OpenAI LLM to generate comprehensive reports, and creates both interactive HTML charts and PNG chart images for enhanced visualization.
@@ -8,34 +18,23 @@ The Radio Propagation Service is a Go-based application that generates daily rad
 - Automated data collection from NOAA SWPC, N0NBH, and SIDC sources
 - AI-powered report generation using OpenAI GPT models
 - Interactive HTML charts with go-echarts library
-- PNG chart image generation and GCS upload for production deployment
+- PNG chart generation and upload to GCS bucket
 - Dual deployment modes: local testing and GCP Cloud Run production
 - Comprehensive CI/CD pipeline with GitHub Actions
 - Infrastructure as Code using Terraform
 
 ## 2. Versioning Strategy
 
-The project uses semantic versioning (SemVer) for Docker images and releases:
-
-- **Production Format**: `v{MAJOR}.{MINOR}.{PATCH}` (e.g., `v0.1.0`)
-- **Staging Format**: `v{MAJOR}.{MINOR}.{PATCH}-rc.{N}` (e.g., `v0.1.0-rc.1`)
-- **Docker Tags**: Images are tagged with semantic versions instead of Git SHA
-- **Automatic Increment**: 
-  - Staging deployments automatically increment RC version
-  - Production deployments automatically increment patch version
-- **Manual Control**: Use `./scripts/bump-version.sh [major|minor|patch|stage]` for manual version bumps
-- **Version File**: Current version stored in `/VERSION` file at project root
+- **Git-Based Versioning**: Version calculated as `{BASE_VERSION}.{COMMIT_COUNT}` from `/VERSION` file and git commit count
+- **Stage Environment**: Appends `-rc.{timestamp_suffix}` to version (e.g., `0.1.0.1234-rc.5678`)
+- **Production Environment**: Uses clean format `{BASE_VERSION}.{COMMIT_COUNT}` (e.g., `0.1.0.1234`)
+- **Implementation**: GitHub Actions workflows calculate version using `git rev-list --all --count HEAD`
+- **Base Version**: Stored in `/VERSION` file at project root, manually updated for major/minor releases
 
 **Version Increment Rules**:
 - **PATCH**: Bug fixes, minor updates (auto-incremented on prod deployment)
 - **MINOR**: New features, backward-compatible changes (manual)
 - **MAJOR**: Breaking changes, major releases (manual)
-- **STAGE**: Pre-release candidates for staging (auto-incremented on stage deployment)
-
-**Version Flow Example**:
-```
-v0.1.0 → v0.1.0-rc.1 → v0.1.0-rc.2 → v0.1.1 → v0.1.1-rc.1 → v0.1.2
-```
 
 ## 3. Application Architecture
 
@@ -91,7 +90,7 @@ flowchart TB
 | OpenAI Integration        | Calls OpenAI LLM (e.g., GPT-4 API) with prompt, receives Markdown summary report.        |
 | Report Generator          | Renders Markdown as HTML, embeds go-echarts charts (solar activity, K-index, etc).      |
 | Scheduler                 | Uses GCP Scheduler to hit /generate endpoint daily (UTC midnight or customized).         |
-| Storage Handler           | Saves generated report as HTML to GCS bucket (with pathing: YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MI-SS.html). |
+| Storage Handler           | Saves generated report as HTML to GCS bucket with timestamped folder structure: `YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS/index.html` and chart images in same folder. |
 | Configuration/Secrets     | Managed via GCP Secret Manager or env vars (for OpenAI keys, API keys, etc.)            |
 | Infra Provisioning        | Infrastructure managed via Terraform/Chef, with backend on GCS; separate state for stage/prod. |
 | CI/CD Pipeline            | Uses Github Actions for build, test, deploy workflows; deploys stage branch to dfh-stage, main to dfh-prod. |
@@ -115,19 +114,27 @@ flowchart TB
 - Calls OpenAI LLM, passing data prompt; expects Markdown summary as output.
 - Handles LLM response formatting and error handling.
 
-#### 5.4 Report Rendering & Chart Generation
-- **HTML Reports**: Converts LLM Markdown to structured HTML with embedded interactive charts
-- **Interactive Charts** (go-echarts): Solar activity, K-index trends, band conditions, forecasts
-- **PNG Chart Images** (go-chart): Generated for GCS deployment mode with direct URL references
-- **Dual Chart System**: Interactive charts for user experience + PNG images for reliable display
-- **Chart Upload**: PNG images automatically uploaded to GCS bucket during production deployment
+#### 4.4 Report Rendering & Chart Generation
+- **Chart Library**: `github.com/wcharczuk/go-chart/v2` for static PNG generation with precise styling control
+- **Chart Types**: 
+  - Bar charts: Solar activity metrics, HF band conditions with color-coded quality levels
+  - Time series: K-index trends with reference lines for quiet/active thresholds
+  - Forecast charts: 3-day K-index predictions with orange trend lines
+- **Chart Specifications**:
+  - Resolution: 600x400px (solar/band), 500x300px (forecast), 600x300px (K-index)
+  - Color scheme: Green (excellent), Yellow (good), Orange (fair), Red (poor), Gray (closed)
+  - Font: Arial with size-specific styling (16px titles, 12px labels, 10px axes)
+- **Deployment Modes**:
+  - **Local**: Charts saved to `./test_charts_output/` or `./reports/timestamp/`
+  - **GCS**: Charts uploaded to timestamped folder alongside HTML report
+- **File Names**: `solar_activity.png`, `k_index_trend.png`, `band_conditions.png`, `forecast.png`
 
 #### 4.5 Scheduling & Automation
 - Exposes `/generate` REST endpoint.
 - GCP Scheduler triggers this endpoint on a set schedule (e.g., each day at 00:00 UTC).
 
 #### 5.6 Report Storage
-- **HTML Reports**: Stored in GCS with timestamp-based structure:
+- **HTML Reports**: Stored in GCS with timestamped folder structure:
     ```
     gs://bucket/YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS/index.html
     ```
@@ -144,20 +151,23 @@ flowchart TB
 
 #### 4.7 Environment Separation & Deployment
 - **Two GCP Projects**:
-    - dfh-stage (stage branch)
-    - dfh-prod (main branch)
-- All configuration, GCS buckets, and backends separated per project/env.
+    - **dfh-stage-id**: Stage environment (stage branch) with `-rc` version suffix
+    - **dfh-prod-id**: Production environment (main branch) with clean versioning
+- **Infrastructure Isolation**: Separate Terraform backends, GCS buckets, service accounts, and IAM policies
+- **Configuration Management**: Environment-specific `.tfvars` files, Secret Manager per project
+- **Deployment Strategy**: Identical container images with environment-specific configuration injection
 
 ## 6. Non-functional Requirements
 
-| Requirement              | Details                                           |
+| Requirement              | Technical Implementation                          |
 |--------------------------|---------------------------------------------------|
-| Logging & Monitoring     | Structured logs, error alerts, GCP Operations (Stackdriver) |
-| Security                 | Use service accounts, least privilege, all secrets in Secret Manager |
-| Reliability              | Retries and fallback for failed fetches or OpenAI errors   |
-| Code Structure           | Go follows standard `/internal` package layout, modular Terraform infrastructure |
-| Portability              | CI/CD deploys same container to both environments |
-| Documentation            | Clear README, usage, and infra instructions      |
+| **Logging & Monitoring** | Structured logging with `log.Printf()`, GCP Cloud Monitoring alerts, health probe endpoints, error tracking |
+| **Security**             | Service account authentication, Secret Manager integration, IAM least privilege, path traversal protection in file proxy |
+| **Reliability**          | HTTP client timeouts, retry logic in fetchers, fallback data handling, graceful degradation for missing APIs |
+| **Code Structure**       | Standard Go `/internal` layout, dependency injection, modular Terraform with shared/environment-specific configs |
+| **Performance**          | HTTP cache headers (`max-age=3600/86400`), efficient PNG chart generation, minimal memory footprint |
+| **Testing**              | Comprehensive unit tests with real API validation, local testing suite, automated smoke tests in CI/CD |
+| **Configuration**        | Environment-based config with `github.com/sethvargo/go-envconfig`, default values, validation |
 
 ## 7. Project Structure
 
@@ -196,18 +206,43 @@ flowchart TB
 
 ## 8. Development & Testing Modes
 
-### 8.1 Local Testing Mode
-**Purpose**: Test functionality locally before pushing to GitHub
+### 8.1 Local Testing Workflow (Pre-GitHub Validation)
+**Purpose**: Comprehensive local validation before pushing to GitHub branches
 
-**Setup**:
+**Prerequisites**:
 ```bash
-cd service
-export OPENAI_API_KEY="your-key-here"
-./run_local.sh
+# Required environment setup
+export OPENAI_API_KEY="sk-your-key-here"
+export OPENAI_MODEL="gpt-4o-mini"  # Optional, defaults to gpt-4
+export PORT="8080"                  # Optional, defaults to 8080
 ```
 
-**Features**:
-- Generates reports in local `test_charts_output/` directory
+**Testing Commands**:
+```bash
+cd service
+
+# 1. Unit tests (no API key required)
+./run_local.sh unit-tests
+
+# 2. API connectivity check (no API key required)
+./run_local.sh debug-apis
+
+# 3. LLM integration test
+./run_local.sh debug-llm
+
+# 4. Complete end-to-end test
+./run_local.sh test
+
+# 5. Local server with manual testing
+./run_local.sh server
+```
+
+**Local Testing Features**:
+- **Timestamped Reports**: Saves to `./reports/YYYY-MM-DD_HH-MM-SS/` directory structure
+- **Debug Artifacts**: Saves API data JSON, LLM prompts, markdown responses, and final HTML
+- **Chart Generation**: Creates PNG charts in local output directory using `go-chart/v2`
+- **Health Checks**: Validates server startup, API connectivity, and report generation
+- **Real API Data**: Tests against live NOAA, N0NBH, and SIDC endpoints
 - Creates both interactive HTML charts and PNG images
 - No GCS upload - purely local file system
 - Serves reports on `http://localhost:8080`
@@ -426,10 +461,21 @@ terraform {
 ## 18. External Data Sources
 
 | Type                 | Example URL/Endpoint                                        |
-|----------------------|------------------------------------------------------------|
-| NOAA SWPC RSS        | https://services.swpc.noaa.gov/json/planetary_k_index_1m.json |
-| N0NBH Solar API      | https://www.hamqsl.com/solarapi.php?format=json            |
-| SIDC RSS             | https://www.sidc.be/products/meu                              |
-| OpenAI API           | https://api.openai.com/v1/chat/completions                  |
 
----
+## API Endpoints
+
+### Core Endpoints
+
+| Endpoint | Method | Description | Response | Technical Notes |
+|----------|--------|-------------|----------|----------------|
+| `/health` | GET | Health check endpoint | `{"status": "healthy", "timestamp": "..."}` | Used by Cloud Run health probes |
+| `/generate` | POST | Generate new propagation report | `{"message": "...", "report_url": "..."}` | Triggers full data fetch, LLM analysis, chart generation, and GCS storage |
+| `/latest` | GET | Retrieve latest report | HTML content | Serves most recent report from GCS |
+| `/reports` | GET | List recent reports | JSON array of report metadata | Paginated list with creation timestamps |
+| `/files/{path}` | GET | Universal file proxy | Any file type with proper MIME headers | Serves PNG, HTML, CSS, JS, JSON, TXT, MD, PDF from report folders |
+
+### File Proxy System
+- **Local Mode**: `/files/{filename}` - serves from local filesystem
+- **GCS Mode**: `/files/{YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS}/{filename}` - serves from GCS
+- **Security**: Path traversal protection, content-type detection
+- **Performance**: Cache headers (`max-age=3600` for files, `max-age=86400` for images)
