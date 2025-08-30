@@ -252,8 +252,16 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		
 		// Upload chart images to GCS
 		timestamp := time.Now()
-		folderPath := ""
 		
+		// Generate folder path using the same logic as StoreChartImage
+		folderPath := fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%04d-%02d-%02d-%02d-%02d-%02d",
+			timestamp.Year(), timestamp.Month(), timestamp.Day(),
+			timestamp.Year(), timestamp.Month(), timestamp.Day(),
+			timestamp.Hour(), timestamp.Minute(), timestamp.Second())
+		
+		log.Printf("Using folder path for charts: %s", folderPath)
+		
+		uploadedCharts := []string{}
 		for _, chartFile := range chartFiles {
 			imageData, err := os.ReadFile(chartFile)
 			if err != nil {
@@ -268,21 +276,13 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			
-			// Extract folder path from first successful upload
-			if folderPath == "" {
-				// Extract folder path from public URL
-				// URL format: https://storage.googleapis.com/bucket/YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS/filename
-				parts := strings.Split(publicURL, "/")
-				if len(parts) >= 7 {
-					folderPath = strings.Join(parts[4:len(parts)-1], "/")
-				}
-			}
-			
+			// Keep track of successfully uploaded charts
+			uploadedCharts = append(uploadedCharts, filename)
 			log.Printf("Chart image uploaded: %s", publicURL)
 		}
 		
 		// Generate HTML with proper folder path for chart proxy URLs
-		html, err = s.generateHTMLWithCharts(markdown, data, chartFiles, folderPath)
+		html, err = s.generateHTMLWithCharts(markdown, data, uploadedCharts, folderPath)
 		if err != nil {
 			log.Printf("Failed to generate HTML: %v", err)
 			http.Error(w, "Failed to generate HTML", http.StatusInternalServerError)
