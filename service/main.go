@@ -2,23 +2,20 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
-	"radiocast/internal/config"
-	"radiocast/internal/fetchers"
-	"radiocast/internal/llm"
-	"radiocast/internal/models"
-	"radiocast/internal/reports"
-	"radiocast/internal/storage"
+	"github.com/vpoluyaktov/radiocast/service/internal/config"
+	"github.com/vpoluyaktov/radiocast/service/internal/fetchers"
+	"github.com/vpoluyaktov/radiocast/service/internal/llm"
+	"github.com/vpoluyaktov/radiocast/service/internal/reports"
+	"github.com/vpoluyaktov/radiocast/service/internal/storage"
 )
 
 // Server represents the main application server
@@ -430,6 +427,63 @@ func (s *Server) handleGenerate(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Report generation failed: %v", err)
 		http.Error(w, fmt.Sprintf("Report generation failed: %v", err), http.StatusInternalServerError)
 		return
+	}
+	
+	// Generate PNG charts for GCS deployment
+	log.Printf("DEBUG: Storage client status: %v", s.storage != nil)
+	if s.storage != nil {
+		log.Printf("DEBUG: Entering GCS deployment mode with PNG chart generation")
+		
+		// Create temporary directory for chart generation
+		reportDir := filepath.Join(os.TempDir(), fmt.Sprintf("report_%d", time.Now().Unix()))
+		if err := os.MkdirAll(reportDir, 0755); err != nil {
+			log.Printf("Failed to create report directory: %v", err)
+		} else {
+			defer os.RemoveAll(reportDir)
+			
+			// Generate PNG charts
+			chartGen := reports.NewChartGenerator(reportDir)
+			log.Printf("Generating PNG charts in directory: %s", reportDir)
+			chartFiles, err := chartGen.GenerateCharts(data)
+			if err != nil {
+				log.Printf("Warning: Failed to generate charts: %v", err)
+				chartFiles = []string{}
+			} else {
+				log.Printf("Successfully generated %d chart files: %v", len(chartFiles), chartFiles)
+			}
+			
+			// Upload chart images to GCS
+			timestamp := time.Now()
+			folderPath := fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%04d-%02d-%02d-%02d-%02d-%02d",
+				timestamp.Year(), timestamp.Month(), timestamp.Day(),
+				timestamp.Year(), timestamp.Month(), timestamp.Day(),
+				timestamp.Hour(), timestamp.Minute(), timestamp.Second())
+			
+			log.Printf("Using folder path for charts: %s", folderPath)
+			
+			uploadedCharts := []string{}
+			for _, chartFile := range chartFiles {
+				log.Printf("Reading chart file: %s", chartFile)
+				imageData, err := os.ReadFile(chartFile)
+				if err != nil {
+					log.Printf("Failed to read chart file %s: %v", chartFile, err)
+					continue
+				}
+				
+				filename := filepath.Base(chartFile)
+				log.Printf("Uploading chart image: %s (size: %d bytes)", filename, len(imageData))
+				publicURL, err := s.storage.StoreChartImage(ctx, imageData, filename, timestamp)
+				if err != nil {
+					log.Printf("Failed to store chart image %s: %v", filename, err)
+					continue
+				}
+				
+				log.Printf("Chart image uploaded successfully: %s", publicURL)
+				uploadedCharts = append(uploadedCharts, publicURL)
+			}
+			
+			log.Printf("Total charts uploaded: %d", len(uploadedCharts))
+		}
 	}
 	
 	// Convert to HTML with charts
