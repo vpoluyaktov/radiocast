@@ -434,6 +434,7 @@ func (s *Server) handleGenerate(w http.ResponseWriter, r *http.Request) {
 	
 	// Generate PNG charts for GCS deployment
 	log.Printf("DEBUG: Storage client status: %v", s.storage != nil)
+	var uploadedCharts []string
 	if s.storage != nil {
 		log.Printf("DEBUG: Entering GCS deployment mode with PNG chart generation")
 		
@@ -464,7 +465,6 @@ func (s *Server) handleGenerate(w http.ResponseWriter, r *http.Request) {
 			
 			log.Printf("Using folder path for charts: %s", folderPath)
 			
-			uploadedCharts := []string{}
 			for _, chartFile := range chartFiles {
 				log.Printf("Reading chart file: %s", chartFile)
 				imageData, err := os.ReadFile(chartFile)
@@ -491,7 +491,15 @@ func (s *Server) handleGenerate(w http.ResponseWriter, r *http.Request) {
 	
 	// Convert to HTML with charts
 	log.Println("Converting to HTML and generating charts...")
-	htmlReport, err := s.generator.GenerateHTML(markdownReport, data)
+	var htmlReport string
+	if s.storage != nil && len(uploadedCharts) > 0 {
+		// Use GCS-uploaded chart URLs for HTML generation
+		log.Printf("Using %d uploaded chart URLs for HTML generation", len(uploadedCharts))
+		htmlReport, err = s.generator.GenerateHTMLWithChartURLs(markdownReport, data, uploadedCharts)
+	} else {
+		// Fallback to local chart generation
+		htmlReport, err = s.generator.GenerateHTML(markdownReport, data)
+	}
 	if err != nil {
 		log.Printf("HTML generation failed: %v", err)
 		http.Error(w, fmt.Sprintf("HTML generation failed: %v", err), http.StatusInternalServerError)

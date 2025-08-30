@@ -58,6 +58,26 @@ func (g *Generator) GenerateHTML(markdownReport string, data *models.Propagation
 	return fullHTML, nil
 }
 
+// GenerateHTMLWithChartURLs converts markdown report to HTML using provided chart URLs
+func (g *Generator) GenerateHTMLWithChartURLs(markdownReport string, data *models.PropagationData, chartURLs []string) (string, error) {
+	log.Printf("Converting markdown to HTML with %d provided chart URLs...", len(chartURLs))
+	
+	// Convert markdown to HTML
+	htmlContent := g.MarkdownToHTML(markdownReport)
+	
+	// Build chart HTML references using provided URLs
+	chartsHTML := g.BuildChartsHTMLFromURLs(chartURLs)
+	
+	// Combine everything into a complete HTML document
+	fullHTML, err := g.BuildCompleteHTML(htmlContent, chartsHTML, data)
+	if err != nil {
+		return "", fmt.Errorf("failed to build complete HTML: %w", err)
+	}
+	
+	log.Printf("Generated complete HTML report with %d characters and %d chart URLs", len(fullHTML), len(chartURLs))
+	return fullHTML, nil
+}
+
 // BuildChartsHTML creates HTML for chart images using proxy URLs
 func (g *Generator) BuildChartsHTML(chartFiles []string, folderPath string) string {
 	if len(chartFiles) == 0 {
@@ -94,6 +114,50 @@ func (g *Generator) BuildChartsHTML(chartFiles []string, folderPath string) stri
 			<img src="%s" alt="%s" class="chart-image">
 		</div>
 		`, title, imageSrc, title))
+	}
+	
+	html.WriteString("</div>\n")
+	html.WriteString("</div>\n")
+	
+	return html.String()
+}
+
+// BuildChartsHTMLFromURLs creates HTML for chart images using provided URLs
+func (g *Generator) BuildChartsHTMLFromURLs(chartURLs []string) string {
+	if len(chartURLs) == 0 {
+		return "<p>No charts available</p>"
+	}
+	
+	var html strings.Builder
+	html.WriteString("<div class=\"charts-section\">\n")
+	html.WriteString("<h2>Charts and Analysis</h2>\n")
+	html.WriteString("<div class=\"charts-grid\">\n")
+	
+	// Define chart titles in expected order
+	chartTitles := map[string]string{
+		"solar_activity.png":   "Solar Activity",
+		"k_index_trend.png":    "K Index Trend", 
+		"band_conditions.png":  "Band Conditions",
+		"forecast.png":         "Forecast",
+	}
+	
+	for _, chartURL := range chartURLs {
+		// Extract filename from URL for title lookup
+		filename := filepath.Base(chartURL)
+		title, exists := chartTitles[filename]
+		if !exists {
+			// Fallback: convert filename to title
+			title = strings.TrimSuffix(filename, filepath.Ext(filename))
+			title = strings.ReplaceAll(title, "_", " ")
+			title = toTitleCase(title)
+		}
+		
+		html.WriteString(fmt.Sprintf(`
+		<div class="chart-container">
+			<h3>%s</h3>
+			<img src="%s" alt="%s" class="chart-image">
+		</div>
+		`, title, chartURL, title))
 	}
 	
 	html.WriteString("</div>\n")
