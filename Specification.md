@@ -17,7 +17,7 @@ The Radio Propagation Service is a Go-based application that generates daily rad
 **Key Features:**
 - Automated data collection from NOAA SWPC, N0NBH, and SIDC sources
 - AI-powered report generation using OpenAI GPT models
-- Interactive HTML charts with go-echarts library
+- Static PNG chart generation with go-chart library
 - PNG chart generation and upload to GCS bucket
 - Dual deployment modes: local testing and GCP Cloud Run production
 - Comprehensive CI/CD pipeline with GitHub Actions
@@ -51,7 +51,7 @@ flowchart TB
     Fetch["Data Aggregator"]
     GenPrompt["Prompt Builder"]
     OpenAI["OpenAI LLM API"]
-    ReportGen["Markdown & HTML Report Generator<br>+ Charts (go-echarts)"]
+    ReportGen["Markdown & HTML Report Generator<br>+ Charts (go-chart PNG)"]
     Store["Store Report to GCS"]
   end
 
@@ -88,9 +88,9 @@ flowchart TB
 | Data Normalizer           | Normalizes all incoming data to a common internal struct format.                         |
 | Prompt Builder            | Generates a detailed prompt (with all relevant data) for OpenAI API.                     |
 | OpenAI Integration        | Calls OpenAI LLM (e.g., GPT-4 API) with prompt, receives Markdown summary report.        |
-| Report Generator          | Renders Markdown as HTML, embeds go-echarts charts (solar activity, K-index, etc).      |
+| Report Generator          | Renders Markdown as HTML, embeds static PNG charts (solar activity, K-index, etc).      |
 | Scheduler                 | Uses GCP Scheduler to hit /generate endpoint daily (UTC midnight or customized).         |
-| Storage Handler           | Saves generated report as HTML to GCS bucket with timestamped folder structure: `YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS/index.html` and chart images in same folder. |
+| Storage Handler           | Saves generated report as HTML to GCS bucket with timestamped folder structure: `YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS/index.html` and PNG chart images in same folder. |
 | Configuration/Secrets     | Managed via GCP Secret Manager or env vars (for OpenAI keys, API keys, etc.)            |
 | Infra Provisioning        | Infrastructure managed via Terraform/Chef, with backend on GCS; separate state for stage/prod. |
 | CI/CD Pipeline            | Uses Github Actions for build, test, deploy workflows; deploys stage branch to dfh-stage, main to dfh-prod. |
@@ -281,7 +281,7 @@ go run cmd/test_charts.go  # Generate test charts only
 | Parsing RSS/XML | github.com/mmcdole/gofeed             |
 | JSON Handling   | encoding/json                         |
 | Markdown->HTML  | github.com/russross/blackfriday/v2    |
-| Interactive Charts | github.com/go-echarts/go-echarts/v2   |
+| Static PNG Charts | github.com/wcharczuk/go-chart/v2      |
 | PNG Charts      | github.com/wcharczuk/go-chart/v2      |
 | Cloud Storage   | cloud.google.com/go/storage           |
 | LLM API         | github.com/sashabaranov/go-openai (or direct HTTP) |
@@ -352,7 +352,7 @@ flowchart TB
   Normalizer --> PromptB["Prompt Builder"]
   PromptB --> LLMAPI["OpenAI LLM Query"]
   LLMAPI --> MarkDownReport["LLM Markdown Report"]
-  MarkDownReport --> HTMLGen["Markdown->HTML + go-echarts"]
+  MarkDownReport --> HTMLGen["Markdown->HTML + PNG Charts"]
   HTMLGen --> GCSStore["GCS<br>Store HTML Report"]
 
   class Sched,GenAPI,Fetcher,Normalizer,PromptB,LLMAPI,MarkDownReport,HTMLGen,GCSStore mainstep
@@ -403,7 +403,7 @@ terraform {
 **HTML Report Components**:
 - **Header**: Date, summary, key indicators (K-index, Solar Flux, Sunspot Number)
 - **AI-Generated Content**: LLM analysis with band recommendations and operating advice
-- **Interactive Charts**: Real-time data visualization with go-echarts
+- **Static PNG Charts**: Data visualization with go-chart library
 - **PNG Chart Images**: Reliable fallback images hosted on GCS
 - **Technical Data**: Raw measurements and data sources
 - **Responsive Design**: Mobile-friendly CSS with modern styling
@@ -440,7 +440,7 @@ terraform {
 ## 17. Recent Implementation Updates (August 2025)
 
 ### Chart Generation System Enhancement:
-- **Dual Chart Architecture**: Interactive go-echarts + PNG go-chart images
+- **PNG Chart Architecture**: Static PNG images using go-chart library
 - **GCS Integration**: Automatic PNG upload during production deployment
 - **Chart Display Fix**: HTML reports now properly reference GCS-hosted PNG images
 - **Local Testing**: Complete chart generation testing in local mode
