@@ -244,10 +244,13 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	if s.storage != nil {
 		// Generate charts first
 		chartGen := reports.NewChartGenerator(reportDir)
+		log.Printf("Generating PNG charts in directory: %s", reportDir)
 		chartFiles, err := chartGen.GenerateCharts(data)
 		if err != nil {
 			log.Printf("Warning: Failed to generate charts: %v", err)
 			chartFiles = []string{}
+		} else {
+			log.Printf("Successfully generated %d chart files: %v", len(chartFiles), chartFiles)
 		}
 		
 		// Upload chart images to GCS
@@ -262,7 +265,9 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Using folder path for charts: %s", folderPath)
 		
 		uploadedCharts := []string{}
+		log.Printf("Starting chart upload process for %d files", len(chartFiles))
 		for _, chartFile := range chartFiles {
+			log.Printf("Attempting to read chart file: %s", chartFile)
 			imageData, err := os.ReadFile(chartFile)
 			if err != nil {
 				log.Printf("Failed to read chart file %s: %v", chartFile, err)
@@ -270,6 +275,7 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 			}
 			
 			filename := filepath.Base(chartFile)
+			log.Printf("Uploading chart image %s (%d bytes) to GCS", filename, len(imageData))
 			publicURL, err := s.storage.StoreChartImage(ctx, imageData, filename, timestamp)
 			if err != nil {
 				log.Printf("Failed to store chart image %s: %v", filename, err)
@@ -278,8 +284,9 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 			
 			// Keep track of successfully uploaded charts
 			uploadedCharts = append(uploadedCharts, filename)
-			log.Printf("Chart image uploaded: %s", publicURL)
+			log.Printf("Chart image uploaded successfully: %s", publicURL)
 		}
+		log.Printf("Chart upload completed. Successfully uploaded %d out of %d charts", len(uploadedCharts), len(chartFiles))
 		
 		// Generate HTML with proper folder path for chart proxy URLs
 		html, err = s.generateHTMLWithCharts(markdown, data, uploadedCharts, folderPath)
