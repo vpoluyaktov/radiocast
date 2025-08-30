@@ -2,20 +2,24 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
-	"github.com/vpoluyaktov/radiocast/service/internal/config"
-	"github.com/vpoluyaktov/radiocast/service/internal/fetchers"
-	"github.com/vpoluyaktov/radiocast/service/internal/llm"
-	"github.com/vpoluyaktov/radiocast/service/internal/reports"
-	"github.com/vpoluyaktov/radiocast/service/internal/storage"
+	"radiocast/internal/config"
+	"radiocast/internal/fetchers"
+	"radiocast/internal/llm"
+	"radiocast/internal/models"
+	"radiocast/internal/reports"
+	"radiocast/internal/storage"
 )
 
 // Server represents the main application server
