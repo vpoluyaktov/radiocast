@@ -70,7 +70,7 @@ func (g *Generator) buildChartsHTML(chartFiles []string) string {
 	for _, chartFile := range chartFiles {
 		// Create a descriptive title based on filename
 		title := g.getChartTitle(chartFile)
-		html.WriteString(fmt.Sprintf("<div class='chart-container'>\n"))
+		html.WriteString("<div class='chart-container'>\n")
 		html.WriteString(fmt.Sprintf("<h3>%s</h3>\n", title))
 		html.WriteString(fmt.Sprintf("<img src='%s' alt='%s' class='chart-image'/>\n", chartFile, title))
 		html.WriteString("</div>\n")
