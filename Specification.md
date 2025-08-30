@@ -1,14 +1,19 @@
-## Radio Propagation Service – Detailed Specification
+# Radio Propagation Service – Specification
 
----
+## 1. Project Overview
 
-### 1. **Project Overview**
+The Radio Propagation Service is a Go-based application that generates daily radio propagation reports for amateur radio operators. It fetches solar and geomagnetic data from multiple sources, uses OpenAI LLM to generate comprehensive reports, and creates both interactive HTML charts and PNG chart images for enhanced visualization.
 
-The Radio Propagation Service is a backend application written in Go, designed to collect, analyze, and report daily radio propagation conditions for amateur radio enthusiasts. It consolidates solar and space weather data from authoritative sources, generates Markdown reports via OpenAI LLM, converts reports to structured HTML (including charts via go-echarts), and stores them in Google Cloud Storage (GCS). The service supports staged and production deployments via CI/CD on GCP Cloud Run.
+**Key Features:**
+- Automated data collection from NOAA SWPC, N0NBH, and SIDC sources
+- AI-powered report generation using OpenAI GPT models
+- Interactive HTML charts with go-echarts library
+- PNG chart image generation and GCS upload for production deployment
+- Dual deployment modes: local testing and GCP Cloud Run production
+- Comprehensive CI/CD pipeline with GitHub Actions
+- Infrastructure as Code using Terraform
 
----
-
-### 2. **Versioning Strategy**
+## 2. Versioning Strategy
 
 The project uses semantic versioning (SemVer) for Docker images and releases:
 
@@ -32,7 +37,7 @@ The project uses semantic versioning (SemVer) for Docker images and releases:
 v0.1.0 → v0.1.0-rc.1 → v0.1.0-rc.2 → v0.1.1 → v0.1.1-rc.1 → v0.1.2
 ```
 
-### 3. **Application Architecture Overview**
+## 3. Application Architecture
 
 ```mermaid
 flowchart TB
@@ -76,9 +81,7 @@ flowchart TB
   classDef section fill:#f1f8e9,stroke:#388e3c,stroke-width:2px
 ```
 
----
-
-### 3. **Component Details**
+## 4. Component Details
 
 | Component                 | Description                                                                              |
 |---------------------------|------------------------------------------------------------------------------------------|
@@ -93,9 +96,7 @@ flowchart TB
 | Infra Provisioning        | Infrastructure managed via Terraform/Chef, with backend on GCS; separate state for stage/prod. |
 | CI/CD Pipeline            | Uses Github Actions for build, test, deploy workflows; deploys stage branch to dfh-stage, main to dfh-prod. |
 
----
-
-### 4. **Functional Requirements**
+## 5. Functional Requirements
 
 #### 4.1 Data Ingestion
 - Fetches and parses:
@@ -114,23 +115,32 @@ flowchart TB
 - Calls OpenAI LLM, passing data prompt; expects Markdown summary as output.
 - Handles LLM response formatting and error handling.
 
-#### 4.4 Report Rendering (HTML/charts)
-- Converts LLM Markdown report to HTML.
-- Generates interactive charts (using go-echarts) for:
-    - Solar flux/SSN trends
-    - K/P indices over time
-    - Band condition recommendations
-- Embeds all graphs/charts and annotations in final HTML.
+#### 5.4 Report Rendering & Chart Generation
+- **HTML Reports**: Converts LLM Markdown to structured HTML with embedded interactive charts
+- **Interactive Charts** (go-echarts): Solar activity, K-index trends, band conditions, forecasts
+- **PNG Chart Images** (go-chart): Generated for GCS deployment mode with direct URL references
+- **Dual Chart System**: Interactive charts for user experience + PNG images for reliable display
+- **Chart Upload**: PNG images automatically uploaded to GCS bucket during production deployment
 
 #### 4.5 Scheduling & Automation
 - Exposes `/generate` REST endpoint.
 - GCP Scheduler triggers this endpoint on a set schedule (e.g., each day at 00:00 UTC).
 
-#### 4.6 Report Storage
-- Saves the HTML report to the GCS bucket as:
+#### 5.6 Report Storage
+- **HTML Reports**: Stored in GCS with timestamp-based structure:
     ```
-    <bucket>/{YYYY}/{MM}/{DD}/PropagationReport-YYYY-MM-DD-HH-MM-SS.html
+    gs://bucket/YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS/index.html
     ```
+- **PNG Chart Images**: Stored alongside reports for direct access:
+    ```
+    gs://bucket/YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS/
+    ├── index.html
+    ├── solar_activity.png
+    ├── k_index_trend.png
+    ├── band_conditions.png
+    └── forecast.png
+    ```
+- **File Proxy System**: `/files/` endpoint serves any file type from report folders
 
 #### 4.7 Environment Separation & Deployment
 - **Two GCP Projects**:
@@ -138,9 +148,7 @@ flowchart TB
     - dfh-prod (main branch)
 - All configuration, GCS buckets, and backends separated per project/env.
 
----
-
-### 5. **Non-functional Requirements**
+## 6. Non-functional Requirements
 
 | Requirement              | Details                                           |
 |--------------------------|---------------------------------------------------|
@@ -151,44 +159,32 @@ flowchart TB
 | Portability              | CI/CD deploys same container to both environments |
 | Documentation            | Clear README, usage, and infra instructions      |
 
----
-
-### 6. **Folder Structure**
+## 7. Project Structure
 
 ```plain
 /radiocast
   /service      // Go application source
     main.go
-    go.mod
-    go.sum
-    Dockerfile
-    .dockerignore
-    main_test.go
-    /internal   // Internal packages (standard Go layout)
-      /config     // Configuration management
-        config.go
-      /fetchers   // Data fetching logic
-        fetcher.go
-        fetcher_test.go
-      /llm        // OpenAI integration
-        openai.go
-      /models     // Data structures
-        data.go
-      /reports    // Report generation
-        generator.go
-      /storage    // GCS storage
-        gcs.go
-  /terraform    // Terraform infrastructure (modular)
-    main.tf       // Shared resources
-    variables.tf  // Variable definitions
-    backend.tf    // Backend configuration
-    outputs.tf    // Output definitions
-    stage.tfvars  // Staging environment variables
-    prod.tfvars   // Production environment variables
-    /stage        // Environment-specific backend configs
-      backend.tf
-    /prod
-      backend.tf
+    go.mod, go.sum
+    Dockerfile, .dockerignore
+    run_local.sh              // Local testing script
+    /cmd
+      /local-runner           // Local testing mode
+      /test_charts.go         // Chart generation testing
+    /internal                 // Standard Go layout
+      /config                 // Configuration management
+      /fetchers               // Data fetching with comprehensive tests
+      /llm                    // OpenAI integration
+      /models                 // Data structures
+      /reports                // Report & chart generation
+        generator.go          // HTML report generation
+        charts.go             // PNG chart generation (go-chart)
+      /storage                // GCS storage client
+    /test_charts_output       // Local chart testing output
+  /terraform    // Infrastructure as Code
+    main.tf, variables.tf, backend.tf, outputs.tf
+    stage.tfvars, prod.tfvars     // Environment configurations
+    /stage, /prod                 // Environment-specific backends
   /.github
     /workflows
       stage.yml   // Staging deployment pipeline
@@ -198,9 +194,43 @@ flowchart TB
   .gitignore
 ```
 
----
+## 8. Development & Testing Modes
 
-### 7. **CI/CD Requirements**
+### 8.1 Local Testing Mode
+**Purpose**: Test functionality locally before pushing to GitHub
+
+**Setup**:
+```bash
+cd service
+export OPENAI_API_KEY="your-key-here"
+./run_local.sh
+```
+
+**Features**:
+- Generates reports in local `test_charts_output/` directory
+- Creates both interactive HTML charts and PNG images
+- No GCS upload - purely local file system
+- Serves reports on `http://localhost:8080`
+- Essential for validating changes before deployment
+
+**Chart Testing**:
+```bash
+go run cmd/test_charts.go  # Generate test charts only
+```
+
+### 8.2 GCP Cloud Run Mode
+**Purpose**: Production deployment with full GCS integration
+
+**Features**:
+- PNG chart generation and upload to GCS bucket
+- HTML reports reference GCS-hosted chart images
+- Automatic report storage with timestamp-based paths
+- Scalable Cloud Run deployment
+- Integrated with GitHub Actions CI/CD
+
+**Critical Requirement**: Always test locally before pushing to GitHub to avoid build failures
+
+## 9. CI/CD Pipeline
 
 | Environment  | Github Branch | CI/CD Triggers (Github Actions)                                 | GCP Project    | GCS bucket Separation            |
 |--------------|--------------|-----------------------------------------------------------------|---------------|-----------------------------------|
@@ -208,9 +238,7 @@ flowchart TB
 | Production   | main         | On push/PR to main: build/test/deploy to CloudRun (dfh-prod)    | dfh-prod      | e.g. gs://dfh-prod-reports/      |
 | Both         | Any          | GCS backend for Terraform state storage, isolated per project   | Both          | e.g. gs://dfh-stage-tfstate/, gs://dfh-prod-tfstate/ |
 
----
-
-### 8. **Key Go Packages to Use**
+## 10. Key Dependencies
 
 | Purpose         | Go Package                             |
 |-----------------|---------------------------------------|
@@ -218,17 +246,68 @@ flowchart TB
 | Parsing RSS/XML | github.com/mmcdole/gofeed             |
 | JSON Handling   | encoding/json                         |
 | Markdown->HTML  | github.com/russross/blackfriday/v2    |
-| Echarts         | github.com/go-echarts/go-echarts/v2   |
+| Interactive Charts | github.com/go-echarts/go-echarts/v2   |
+| PNG Charts      | github.com/wcharczuk/go-chart/v2      |
 | Cloud Storage   | cloud.google.com/go/storage           |
 | LLM API         | github.com/sashabaranov/go-openai (or direct HTTP) |
 | Scheduling      | Trigger from GCP Scheduler (REST call to /generate) |
 | Env/Secrets     | os, github.com/sethvargo/go-envconfig, Secret Manager API |
 
----
+## 11. Operational Guides
 
-### 9. **Detailed Workflows**
+### 11.1 Monitoring GitHub Actions
+**Check build status**:
+```bash
+gh run list --branch stage --limit 5
+gh run watch <run-id>                    # Watch specific build
+gh run view <run-id> --log               # View build logs
+```
 
-#### 9.1 Daily Propagation Report Generation
+### 11.2 Checking Cloud Run Logs
+**View application logs**:
+```bash
+# Recent logs
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=radiocast-stage" --limit=50 --project=dfh-stage-id
+
+# PNG chart generation logs
+gcloud logging read "resource.type=cloud_run_revision AND textPayload:'DEBUG: Storage client status'" --limit=10 --project=dfh-stage-id
+
+# Chart upload logs
+gcloud logging read "resource.type=cloud_run_revision AND textPayload:'Chart image uploaded'" --limit=10 --project=dfh-stage-id
+```
+
+### 11.3 GCS Bucket Management
+**Check bucket contents**:
+```bash
+# List recent reports
+gsutil ls -la gs://dfh-stage-reports/2025/08/30/
+
+# Check specific report folder
+gsutil ls -la gs://dfh-stage-reports/YYYY/MM/DD/PropagationReport-*/
+
+# Verify PNG charts are uploaded
+gsutil ls gs://dfh-stage-reports/**/PropagationReport-*/*.png
+```
+
+### 11.4 Testing Deployed Service
+**Last Updated**: August 30, 2025  
+**Status**: Production Ready  
+**Staging URL**: https://stage.radio-propagation.net  
+**Production URL**: https://radio-propagation.net
+
+**Manual report generation**:
+```bash
+curl -X POST https://stage.radio-propagation.net/generate
+```
+
+**Health check**:
+```bash
+curl https://stage.radio-propagation.net/health
+```
+
+## 12. Detailed Workflows
+
+### 12.1 Report Generation Flow
 
 ```mermaid
 flowchart TB
@@ -245,7 +324,7 @@ flowchart TB
   classDef mainstep fill:#b3e5fc,stroke:#0288d1,stroke-width:2px
 ```
 
-#### 9.2 CI/CD Workflow
+### 12.2 CI/CD Workflow
 
 ```mermaid
 flowchart TB
@@ -259,7 +338,7 @@ flowchart TB
   classDef pipeline fill:#ffe0b2,stroke:#fb8c00,stroke-width:2px
 ```
 
-#### 9.3 Terraform Workflow (Infrastructure)
+### 12.3 Infrastructure Management
 
 ```mermaid
 flowchart TB
@@ -272,9 +351,7 @@ flowchart TB
   classDef infra fill:#e0f7fa,stroke:#00838f,stroke-width:2px
 ```
 
----
-
-### 10. **Terraform State Backend Example**
+## 13. Infrastructure Configuration
 
 **Sample backend config (for each env/proj):**
 ```hcl
@@ -286,23 +363,23 @@ terraform {
 }
 ```
 
----
+## 14. Report Structure
 
-## 11. **Report Structure (HTML Output Example)**
+**HTML Report Components**:
+- **Header**: Date, summary, key indicators (K-index, Solar Flux, Sunspot Number)
+- **AI-Generated Content**: LLM analysis with band recommendations and operating advice
+- **Interactive Charts**: Real-time data visualization with go-echarts
+- **PNG Chart Images**: Reliable fallback images hosted on GCS
+- **Technical Data**: Raw measurements and data sources
+- **Responsive Design**: Mobile-friendly CSS with modern styling
 
-- Header: Date, summary, quick indicators (A-index, K-index, SFI, etc.)
-- Body
-    - Explanation (from LLM) in well-structured sections
-    - Suggested best bands, times for DX, general advice
-    - Highlights of solar/space weather events
-    - Interactive charts:
-        - SFI/K-Index/P-index 72 hour trend
-        - Band opening likelihoods
-    - Source references
+**Chart Types**:
+- Solar Activity (flux, sunspot trends)
+- K-Index Trend (geomagnetic activity)
+- Band Conditions (day/night propagation matrix)
+- 3-Day Forecast (predicted conditions)
 
----
-
-### 12. **Deployment Notes**
+## 15. Deployment Requirements
 
 - All configuration (API keys, project IDs, bucket names) must be environment-variable driven.
 - Use IAM/service accounts for Cloud Storage and Secret Manager access.
@@ -310,49 +387,43 @@ terraform {
 - CI/CD workflows use Terraform for deployment instead of direct gcloud commands.
 - Environment variables passed to Terraform via `TF_VAR_` prefix for secure secret handling.
 
----
+## 16. Testing & Quality Assurance
 
-### 13. **Testing & Monitoring**
+**Testing Strategy**:
+- **Local Testing**: Always test locally before GitHub pushes
+- **Unit Tests**: Comprehensive coverage for fetchers, data validation, chart generation
+- **Integration Tests**: Real API data validation and error handling
+- **Build Verification**: Local `go build` and `go test ./...` before deployment
+- **End-to-End Testing**: Full report generation pipeline validation
 
-- Unit tests for key components (fetchers, parser, LLM handler, renderer)
-- Integration/E2E tests for `/generate` endpoint
-- Healthcheck endpoint for Cloud Run
-- Log to stdout/stderr (GCP Cloud Logging pickup)
+**Quality Gates**:
+- All tests must pass in GitHub Actions
+- Docker build must succeed locally and in CI
+- Chart generation must produce valid PNG files
+- GCS upload functionality must be verified in logs
 
----
+## 17. Recent Implementation Updates (August 2025)
 
-## 14. **Recent Updates (August 2025)**
+### Chart Generation System Enhancement:
+- **Dual Chart Architecture**: Interactive go-echarts + PNG go-chart images
+- **GCS Integration**: Automatic PNG upload during production deployment
+- **Chart Display Fix**: HTML reports now properly reference GCS-hosted PNG images
+- **Local Testing**: Complete chart generation testing in local mode
+- **Debug Logging**: Comprehensive logging for chart generation and upload process
 
-### Project Refactoring Completed:
-- **Go Structure**: Migrated to standard `/internal` package layout following Go best practices
-- **Terraform Modularization**: Restructured infrastructure into modular files with shared configurations
-- **Import Path Updates**: All internal package references updated to new structure
-- **CI/CD Enhancement**: Workflows now use Terraform for deployment with proper secret handling
-- **Environment Separation**: Clean separation between staging and production configurations
+### Development Workflow Improvements:
+- **Local-First Testing**: Mandatory local testing before GitHub pushes
+- **Build Verification**: Local compilation checks prevent CI/CD failures
+- **Operational Guides**: Complete documentation for monitoring and troubleshooting
+- **Error Handling**: Robust error handling for API failures and chart generation
 
-### Key Architectural Improvements:
-- Maintainable code structure with proper package organization
-- Modular Terraform configuration with environment-specific variables
-- Secure secret management through `TF_VAR_` environment variables
-- Standardized deployment process using infrastructure as code
+### Infrastructure Maturity:
+- **Production-Ready**: Full GCS integration with reliable chart image serving
+- **Monitoring**: Complete logging and debugging capabilities
+- **Scalability**: Cloud Run deployment with proper resource management
+- **Security**: Service account-based authentication and secret management
 
-### Template and Configuration Externalization (Latest Update):
-- **LLM System Prompt**: Externalized to `/service/internal/templates/system_prompt.txt` for easy modification without code changes
-- **HTML Report Template**: Separated into `/service/internal/templates/report_template.html` with placeholder support for dynamic content
-- **CSS Styles**: Moved to `/service/internal/templates/report_styles.css` for independent styling customization
-- **Markdown Conversion**: Adopted `blackfriday/v2` library for reliable markdown to HTML conversion
-- **Root Endpoint Enhancement**: GET `/` now serves the latest generated report HTML directly, falling back to service information page when no reports exist
-
-## 15. **Open Questions**
-
-- Which LLM model/temperature/completion settings required? Use GPT-4.1 for now
-- Exact chart types and data fields to visualize with go-echarts? Up to you
-- Is multi-language reporting required (now or future)? No
-- Any manual override/edit for reports, or system-generated only? No
-
----
-
-## 16. **Sample External Dependencies**
+## 18. External Data Sources
 
 | Type                 | Example URL/Endpoint                                        |
 |----------------------|------------------------------------------------------------|
