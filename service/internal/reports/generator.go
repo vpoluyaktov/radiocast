@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/russross/blackfriday/v2"
 
@@ -75,7 +76,7 @@ func (g *Generator) BuildChartsHTML(chartFiles []string, folderPath string) stri
 		title := strings.TrimSuffix(filename, filepath.Ext(filename))
 		// Convert underscores to spaces and title case
 		title = strings.ReplaceAll(title, "_", " ")
-		title = strings.Title(title)
+		title = toTitleCase(title)
 		
 		// Build proxy URL path
 		var imageSrc string
@@ -291,5 +292,25 @@ func (g *Generator) getDefaultCSSStyles() string {
 .content { background: white; padding: 20px; }
 .footer { margin-top: 30px; text-align: center; }
 .version-info { color: #666; font-size: 0.9em; margin: 10px 0; }`
+}
+
+// toTitleCase converts a string to title case (first letter of each word capitalized)
+func toTitleCase(s string) string {
+	if s == "" {
+		return s
+	}
+	
+	words := strings.Fields(s)
+	for i, word := range words {
+		if len(word) > 0 {
+			runes := []rune(word)
+			runes[0] = unicode.ToUpper(runes[0])
+			for j := 1; j < len(runes); j++ {
+				runes[j] = unicode.ToLower(runes[j])
+			}
+			words[i] = string(runes)
+		}
+	}
+	return strings.Join(words, " ")
 }
 
