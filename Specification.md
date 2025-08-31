@@ -288,15 +288,73 @@ cd service
 | Scheduling      | Trigger from GCP Scheduler (REST call to /generate) |
 | Env/Secrets     | os, github.com/sethvargo/go-envconfig, Secret Manager API |
 
-## 11. Operational Guides
+## 11. Development Workflow
 
-### 11.1 Monitoring GitHub Actions
+### 11.1 Pre-Deployment Testing Requirements
+
+**CRITICAL**: Always perform comprehensive local testing before pushing to stage branch.
+
+**Required Local Testing Steps**:
+```bash
+cd service
+
+# 1. Run unit tests
+go test -v ./...
+
+# 2. Verify build
+go build -o radiocast
+
+# 3. Test chart generation
+./radiocast -test-charts
+
+# 4. Test server startup and health
+timeout 10s ./radiocast -deployment local &
+sleep 2
+curl -f http://localhost:8080/health
+pkill radiocast
+
+# 5. Run comprehensive test suite
+./run_local.sh unit-tests
+```
+
+**Never push to stage without passing all local tests first.**
+
+### 11.2 Monitoring GitHub Actions
+
 **Check build status**:
 ```bash
 gh run list --branch stage --limit 5
-gh run watch <run-id>                    # Watch specific build
-gh run view <run-id> --log               # View build logs
+gh run watch <run-id>                    # Watch specific build in real-time
+gh run view <run-id> --log               # View complete build logs
+gh run view <run-id>                     # View build summary
 ```
+
+**If build fails**:
+1. Check logs: `gh run view <run-id> --log`
+2. Fix issues locally
+3. Test fixes thoroughly (see 11.1)
+4. Commit and push fixes
+5. Monitor new build
+
+### 11.3 Stage Deployment Verification
+
+**After successful stage deployment**:
+```bash
+# Check deployment health
+curl https://stage.radio-propagation.net/health
+
+# Verify report generation
+curl -X POST https://stage.radio-propagation.net/generate
+
+# List available reports
+curl https://stage.radio-propagation.net/reports
+```
+
+**Manual verification**:
+- Visit https://stage.radio-propagation.net in browser
+- Generate a test report via web interface
+- Verify charts render correctly
+- Check report content and formatting
 
 ### 11.2 Checking Cloud Run Logs
 **View application logs**:
