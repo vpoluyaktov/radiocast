@@ -1,0 +1,29 @@
+## Current Solar and Geomagnetic Data (as of 2025-08-30 19:34 UTC)
+
+### Solar Activity:
+- Solar Flux Index (10.7cm): 317.0 sfu
+- Sunspot Number: 0
+- Solar Activity Level: 
+- Proton Flux: 3.10e+02 particles/cm²/s
+
+### Geomagnetic Activity:
+- Planetary K-index: 0.0
+- A-index: 0.0
+- Geomagnetic Activity Level: 
+- Current Conditions: 
+
+### HF Band Conditions:
+- 80m: Day=Poor, Night=Good
+- 40m: Day=Poor, Night=Good
+- 20m: Day=Good, Night=Good
+- 17m: Day=Good, Night=Good
+- 15m: Day=Good, Night=Good
+- 12m: Day=Good, Night=Poor
+- 10m: Day=Good, Night=Poor
+- 6m: Day=, Night=
+
+### 3-Day Forecast:
+- Today: Good to Excellent (K-index: 0.0)
+- Tomorrow: Good to Excellent (K-index: -0.5-0.5)
+- Day After: Good to Excellent (K-index: -1.0-1.0)
+- General Outlook: Stable geomagnetic conditions expected. Good propagation likely.
