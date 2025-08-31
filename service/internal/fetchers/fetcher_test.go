@@ -21,8 +21,20 @@ func TestNewDataFetcher(t *testing.T) {
 		t.Error("HTTP client not initialized")
 	}
 	
-	if fetcher.parser == nil {
-		t.Error("RSS parser not initialized")
+	if fetcher.noaaFetcher == nil {
+		t.Error("NOAA fetcher not initialized")
+	}
+	
+	if fetcher.n0nbhFetcher == nil {
+		t.Error("N0NBH fetcher not initialized")
+	}
+	
+	if fetcher.sidcFetcher == nil {
+		t.Error("SIDC fetcher not initialized")
+	}
+	
+	if fetcher.normalizer == nil {
+		t.Error("Data normalizer not initialized")
 	}
 }
 
@@ -40,7 +52,7 @@ func TestGenerateBasicForecast(t *testing.T) {
 		},
 	}
 	
-	forecast := fetcher.generateBasicForecast(data)
+	forecast := fetcher.normalizer.GenerateBasicForecast(data)
 	
 	if forecast.Today.Date.IsZero() {
 		t.Error("Today's forecast date not set")
@@ -63,7 +75,7 @@ func TestFetchNOAAKIndex(t *testing.T) {
 	// Use real NOAA API endpoint
 	url := "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
 	
-	data, err := fetcher.fetchNOAAKIndex(ctx, url)
+	data, err := fetcher.noaaFetcher.FetchKIndex(ctx, url)
 	if err != nil {
 		t.Fatalf("fetchNOAAKIndex failed: %v", err)
 	}
@@ -134,7 +146,7 @@ func TestFetchNOAASolar(t *testing.T) {
 	// Use real NOAA Solar API endpoint
 	url := "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json"
 	
-	data, err := fetcher.fetchNOAASolar(ctx, url)
+	data, err := fetcher.noaaFetcher.FetchSolar(ctx, url)
 	if err != nil {
 		t.Fatalf("fetchNOAASolar failed: %v", err)
 	}
@@ -224,7 +236,7 @@ func TestFetchN0NBH(t *testing.T) {
 	ctx := context.Background()
 	
 	// The fetcher now uses the working XML endpoint internally
-	data, err := fetcher.fetchN0NBH(ctx, "https://www.hamqsl.com/solarapi.php?format=json")
+	data, err := fetcher.n0nbhFetcher.Fetch(ctx, "https://www.hamqsl.com/solarapi.php?format=json")
 	if err != nil {
 		t.Skipf("N0NBH fetch failed (API may be temporarily unavailable): %v", err)
 	}
@@ -267,7 +279,7 @@ func TestFetchSIDC(t *testing.T) {
 	ctx := context.Background()
 	
 	// The fetcher now uses the working CSV endpoint internally
-	data, err := fetcher.fetchSIDC(ctx, "https://www.sidc.be/products/meu")
+	data, err := fetcher.sidcFetcher.Fetch(ctx, "https://www.sidc.be/products/meu")
 	if err != nil {
 		t.Fatalf("SIDC fetch failed: %v", err)
 	}
@@ -442,18 +454,18 @@ func TestNormalizeDataWithRealData(t *testing.T) {
 	ctx := context.Background()
 	
 	// Fetch real NOAA data
-	kIndexData, err := fetcher.fetchNOAAKIndex(ctx, "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json")
+	kIndexData, err := fetcher.noaaFetcher.FetchKIndex(ctx, "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json")
 	if err != nil {
 		t.Fatalf("Failed to fetch K-index data: %v", err)
 	}
 	
-	solarData, err := fetcher.fetchNOAASolar(ctx, "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json")
+	solarData, err := fetcher.noaaFetcher.FetchSolar(ctx, "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json")
 	if err != nil {
 		t.Fatalf("Failed to fetch solar data: %v", err)
 	}
 	
 	// Normalize with real data (N0NBH and SIDC will be nil due to broken APIs)
-	result := fetcher.normalizeData(kIndexData, solarData, nil, nil)
+	result := fetcher.normalizer.NormalizeData(kIndexData, solarData, nil, nil)
 	
 	if result == nil {
 		t.Fatal("Expected normalized data, got nil")
@@ -486,7 +498,7 @@ func TestFetchNOAAKIndexInvalidURL(t *testing.T) {
 	fetcher := NewDataFetcher()
 	ctx := context.Background()
 	
-	_, err := fetcher.fetchNOAAKIndex(ctx, "https://invalid-url-that-does-not-exist.com/api")
+	_, err := fetcher.noaaFetcher.FetchKIndex(ctx, "https://invalid-url-that-does-not-exist.com/api")
 	if err == nil {
 		t.Error("Expected error for invalid URL, got nil")
 	}
@@ -504,7 +516,7 @@ func TestFetchNOAAKIndexMalformedJSON(t *testing.T) {
 	ctx := context.Background()
 	
 	// Use a URL that returns HTML instead of JSON
-	_, err := fetcher.fetchNOAAKIndex(ctx, "https://www.google.com")
+	_, err := fetcher.noaaFetcher.FetchKIndex(ctx, "https://www.google.com")
 	if err == nil {
 		t.Error("Expected error for malformed JSON, got nil")
 	}
@@ -519,7 +531,7 @@ func TestFetchNOAASolarInvalidURL(t *testing.T) {
 	fetcher := NewDataFetcher()
 	ctx := context.Background()
 	
-	_, err := fetcher.fetchNOAASolar(ctx, "https://invalid-url-that-does-not-exist.com/api")
+	_, err := fetcher.noaaFetcher.FetchSolar(ctx, "https://invalid-url-that-does-not-exist.com/api")
 	if err == nil {
 		t.Error("Expected error for invalid URL, got nil")
 	}
@@ -536,7 +548,7 @@ func TestNormalizeDataEdgeCases(t *testing.T) {
 	fetcher := NewDataFetcher()
 	
 	// Test with all nil/empty data
-	result := fetcher.normalizeData(nil, nil, nil, nil)
+	result := fetcher.normalizer.NormalizeData(nil, nil, nil, nil)
 	if result == nil {
 		t.Fatal("Expected result even with nil inputs, got nil")
 	}
@@ -560,7 +572,7 @@ func TestNormalizeDataEdgeCases(t *testing.T) {
 	emptySolar := []models.NOAASolarResponse{}
 	emptySIDC := []*gofeed.Item{}
 	
-	result2 := fetcher.normalizeData(emptyKIndex, emptySolar, nil, emptySIDC)
+	result2 := fetcher.normalizer.NormalizeData(emptyKIndex, emptySolar, nil, emptySIDC)
 	if result2 == nil {
 		t.Fatal("Expected result with empty arrays, got nil")
 	}
@@ -572,7 +584,7 @@ func TestNormalizeDataEdgeCases(t *testing.T) {
 		EstimatedKp: -1, // Invalid
 	}}
 	
-	result3 := fetcher.normalizeData(invalidKIndex, nil, nil, nil)
+	result3 := fetcher.normalizer.NormalizeData(invalidKIndex, nil, nil, nil)
 	if result3 == nil {
 		t.Fatal("Expected result with invalid data, got nil")
 	}
@@ -594,7 +606,7 @@ func TestContextCancellation(t *testing.T) {
 	cancel() // Cancel immediately
 	
 	url := "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
-	_, err := fetcher.fetchNOAAKIndex(ctx, url)
+	_, err := fetcher.noaaFetcher.FetchKIndex(ctx, url)
 	if err == nil {
 		t.Error("Expected error due to cancelled context, got nil")
 	}
@@ -615,7 +627,7 @@ func TestDataValidationRanges(t *testing.T) {
 		EstimatedKp: 15.0,
 	}}
 	
-	result := fetcher.normalizeData(extremeKIndex, nil, nil, nil)
+	result := fetcher.normalizer.NormalizeData(extremeKIndex, nil, nil, nil)
 	// The current implementation doesn't cap K-index values in normalizeData
 	// It passes through the EstimatedKp value directly
 	// This test documents the current behavior rather than enforcing caps
@@ -634,7 +646,7 @@ func TestDataValidationRanges(t *testing.T) {
 		SunspotNumber: 1000.0, // Extremely high
 	}}
 	
-	result2 := fetcher.normalizeData(nil, extremeSolar, nil, nil)
+	result2 := fetcher.normalizer.NormalizeData(nil, extremeSolar, nil, nil)
 	if result2.SolarData.SolarFluxIndex > 500 {
 		t.Logf("Warning: Very high solar flux detected: %f", result2.SolarData.SolarFluxIndex)
 	}
