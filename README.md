@@ -23,13 +23,14 @@ Data Sources → Data Fetcher → LLM Analysis → Report Generator → GCS Stor
 
 ## Versioning
 
-The project uses semantic versioning (SemVer) for Docker images:
-- **Production Format**: `v{MAJOR}.{MINOR}.{PATCH}` (e.g., `v0.1.0`)
-- **Staging Format**: `v{MAJOR}.{MINOR}.{PATCH}-rc.{N}` (e.g., `v0.1.0-rc.1`)
-- **Automatic**: 
-  - Staging deployments auto-increment RC version (`v0.1.0-rc.1` → `v0.1.0-rc.2`)
-  - Production deployments auto-increment patch version (`v0.1.0` → `v0.1.1`)
-- **Manual**: Use `./scripts/bump-version.sh [major|minor|patch|stage]` for manual bumps
+The project uses automatic semantic versioning (SemVer) for Docker images:
+- **Production Format**: `v{BASE_VERSION}.{COMMIT_COUNT}` (e.g., `v0.1.0.47`)
+- **Staging Format**: `v{BASE_VERSION}.{COMMIT_COUNT}-rc.{TIMESTAMP}` (e.g., `v0.1.0.47-rc.1234`)
+- **Automatic Generation**: 
+  - Base version read from `VERSION` file
+  - Commit count calculated from git history
+  - Each deployment gets unique version automatically
+- **Manual Version Changes**: Edit the `VERSION` file to change base version (e.g., for major/minor releases)
 
 ## Quick Start
 

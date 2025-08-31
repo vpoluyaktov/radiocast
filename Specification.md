@@ -250,7 +250,7 @@ cd service
 
 **Chart Testing**:
 ```bash
-go run cmd/test_charts.go  # Generate test charts only
+./radiocast -test-charts  # Generate test charts only
 ```
 
 ### 8.2 GCP Cloud Run Mode

@@ -15,7 +15,6 @@ import (
 	"radiocast/internal/testing"
 )
 
-
 func main() {
 	ctx := context.Background()
 	
