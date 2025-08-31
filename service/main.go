@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -21,44 +22,62 @@ import (
 	"radiocast/internal/storage"
 )
 
+// DeploymentMode represents the deployment mode
+type DeploymentMode string
+
+const (
+	DeploymentLocal DeploymentMode = "local"
+	DeploymentGCS   DeploymentMode = "gcs"
+)
+
 // Server represents the main application server
 type Server struct {
-	config    *config.Config
-	fetcher   *fetchers.DataFetcher
-	llmClient *llm.OpenAIClient
-	generator *reports.Generator
-	storage   *storage.GCSClient
+	config         *config.Config
+	fetcher        *fetchers.DataFetcher
+	llmClient      *llm.OpenAIClient
+	generator      *reports.Generator
+	storage        *storage.GCSClient
+	deploymentMode DeploymentMode
+	reportsDir     string
 }
 
 // NewServer creates a new server instance
-func NewServer(cfg *config.Config) (*Server, error) {
+func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, error) {
 	ctx := context.Background()
 	
-	// For local testing, skip GCS entirely
-	if cfg.Environment == "local" {
-		log.Printf("Local mode - skipping GCS storage")
-		return &Server{
-			config:    cfg,
-			fetcher:   fetchers.NewDataFetcher(),
-			llmClient: llm.NewOpenAIClient(cfg.OpenAIAPIKey, cfg.OpenAIModel),
-			generator: reports.NewGenerator(cfg.LocalReportsDir),
-			storage:   nil, // Skip storage for local testing
-		}, nil
+	// Determine reports directory
+	reportsDir := "reports" // Default to service/reports
+	if deploymentMode == DeploymentLocal {
+		reportsDir = cfg.LocalReportsDir
+		if reportsDir == "" {
+			reportsDir = "reports" // Fallback to service/reports
+		}
 	}
 	
-	// Initialize GCS client for production
-	gcsClient, err := storage.NewGCSClient(ctx, cfg.GCSBucket)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize GCS client: %w", err)
+	server := &Server{
+		config:         cfg,
+		fetcher:        fetchers.NewDataFetcher(),
+		llmClient:      llm.NewOpenAIClient(cfg.OpenAIAPIKey, cfg.OpenAIModel),
+		deploymentMode: deploymentMode,
+		reportsDir:     reportsDir,
 	}
 	
-	return &Server{
-		config:    cfg,
-		fetcher:   fetchers.NewDataFetcher(),
-		llmClient: llm.NewOpenAIClient(cfg.OpenAIAPIKey, cfg.OpenAIModel),
-		generator: reports.NewGenerator(""), // Empty for GCS mode
-		storage:   gcsClient,
-	}, nil
+	// Initialize components based on deployment mode
+	if deploymentMode == DeploymentLocal {
+		log.Printf("Local deployment mode - reports will be saved to: %s", reportsDir)
+		server.generator = reports.NewGenerator(reportsDir)
+		server.storage = nil
+	} else {
+		log.Printf("GCS deployment mode - reports will be saved to GCS bucket: %s", cfg.GCSBucket)
+		gcsClient, err := storage.NewGCSClient(ctx, cfg.GCSBucket)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize GCS client: %w", err)
+		}
+		server.generator = reports.NewGenerator("") // Empty for GCS mode
+		server.storage = gcsClient
+	}
+	
+	return server, nil
 }
 
 // Close cleans up server resources
@@ -72,22 +91,39 @@ func (s *Server) Close() error {
 func main() {
 	ctx := context.Background()
 	
+	// Parse command line flags
+	deploymentFlag := flag.String("deployment", "local", "Deployment mode: local or gcs")
+	testChartsFlag := flag.Bool("test-charts", false, "Generate test charts and exit")
+	flag.Parse()
+	
+	// Validate deployment mode
+	var deploymentMode DeploymentMode
+	switch *deploymentFlag {
+	case "local":
+		deploymentMode = DeploymentLocal
+	case "gcs":
+		deploymentMode = DeploymentGCS
+	default:
+		log.Fatalf("Invalid deployment mode: %s. Use 'local' or 'gcs'", *deploymentFlag)
+	}
+	
 	// Load configuration
 	cfg, err := config.Load(ctx)
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 	
-	log.Printf("Starting Radio Propagation Service on port %s", cfg.Port)
-	log.Printf("Environment: %s", cfg.Environment)
-	if cfg.Environment == "local" {
-		log.Printf("Local Reports Dir: %s", cfg.LocalReportsDir)
-	} else {
-		log.Printf("GCS Bucket: %s", cfg.GCSBucket)
+	// Handle test charts mode
+	if *testChartsFlag {
+		runTestCharts()
+		return
 	}
 	
+	log.Printf("Starting Radio Propagation Service on port %s", cfg.Port)
+	log.Printf("Deployment mode: %s", deploymentMode)
+	
 	// Create server
-	server, err := NewServer(cfg)
+	server, err := NewServer(cfg, deploymentMode)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}
@@ -173,7 +209,7 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	
 	// Create timestamped directory for this report
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	reportDir := filepath.Join("reports", timestamp)
+	reportDir := filepath.Join(s.reportsDir, timestamp)
 	if err := os.MkdirAll(reportDir, 0755); err != nil {
 		log.Printf("Failed to create report directory: %v", err)
 		s.serveMainPage(w)
@@ -599,12 +635,12 @@ func (s *Server) handleFileProxy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	
 	// For local mode, serve from local filesystem
-	if s.config.Environment == "local" {
+	if s.deploymentMode == DeploymentLocal {
 		// Serve from local reports directory
-		localPath := filepath.Join(s.config.LocalReportsDir, path)
+		localPath := filepath.Join(s.reportsDir, path)
 		
 		// Security check - ensure path doesn't escape reports directory
-		absReportsDir, _ := filepath.Abs(s.config.LocalReportsDir)
+		absReportsDir, _ := filepath.Abs(s.reportsDir)
 		absPath, _ := filepath.Abs(localPath)
 		if !strings.HasPrefix(absPath, absReportsDir) {
 			http.Error(w, "Invalid path", http.StatusBadRequest)
@@ -688,5 +724,124 @@ func (s *Server) getContentType(ext string) string {
 		return "application/pdf"
 	default:
 		return "application/octet-stream"
+	}
+}
+
+// runTestCharts generates test charts and exits (embedded from cmd/test_charts.go)
+func runTestCharts() {
+	// Create test data
+	testData := &models.PropagationData{
+		Timestamp: time.Now(),
+		SolarData: models.SolarData{
+			SolarFluxIndex: 150.5,
+			SunspotNumber:  85,
+			SolarActivity:  "Moderate",
+		},
+		GeomagData: models.GeomagData{
+			KIndex:         2.3,
+			AIndex:         15.0,
+			GeomagActivity: "Quiet",
+		},
+		BandData: models.BandData{
+			Band80m: models.BandCondition{Day: "Fair", Night: "Good"},
+			Band40m: models.BandCondition{Day: "Good", Night: "Excellent"},
+			Band20m: models.BandCondition{Day: "Excellent", Night: "Good"},
+			Band17m: models.BandCondition{Day: "Good", Night: "Fair"},
+			Band15m: models.BandCondition{Day: "Excellent", Night: "Poor"},
+			Band12m: models.BandCondition{Day: "Good", Night: "Poor"},
+			Band10m: models.BandCondition{Day: "Fair", Night: "Closed"},
+			Band6m:  models.BandCondition{Day: "Poor", Night: "Closed"},
+			VHFPlus: models.BandCondition{Day: "Fair", Night: "Poor"},
+		},
+		Forecast: models.ForecastData{
+			Today: models.DayForecast{
+				Date:           time.Now(),
+				KIndexForecast: "2-3",
+				SolarActivity:  "Moderate",
+				HFConditions:   "Good",
+			},
+			Tomorrow: models.DayForecast{
+				Date:           time.Now().Add(24 * time.Hour),
+				KIndexForecast: "1-2",
+				SolarActivity:  "Low",
+				HFConditions:   "Excellent",
+			},
+			DayAfter: models.DayForecast{
+				Date:           time.Now().Add(48 * time.Hour),
+				KIndexForecast: "2-4",
+				SolarActivity:  "Moderate",
+				HFConditions:   "Fair",
+			},
+		},
+	}
+
+	// Create test output directory
+	testDir := "test_charts_output"
+	if err := os.MkdirAll(testDir, 0755); err != nil {
+		log.Fatalf("Failed to create test directory: %v", err)
+	}
+
+	log.Printf("🧪 Testing chart generation...")
+	log.Printf("📁 Output directory: %s", testDir)
+
+	// Create chart generator
+	chartGen := reports.NewChartGenerator(testDir)
+
+	// Generate charts
+	chartFiles, err := chartGen.GenerateCharts(testData)
+	if err != nil {
+		log.Fatalf("❌ Chart generation failed: %v", err)
+	}
+
+	log.Printf("✅ Successfully generated %d charts:", len(chartFiles))
+	for _, file := range chartFiles {
+		fullPath := filepath.Join(testDir, file)
+		if stat, err := os.Stat(fullPath); err == nil {
+			log.Printf("   📊 %s (%d bytes)", file, stat.Size())
+		} else {
+			log.Printf("   ❌ %s (file not found)", file)
+		}
+	}
+
+	// Test HTML generation
+	generator := reports.NewGenerator(testDir)
+	testMarkdown := `# Test Radio Propagation Report
+
+## Current Conditions
+- Solar Flux: 150.5
+- K-index: 2.3
+- Sunspot Number: 85
+
+## Band Conditions
+Good conditions on 20m and 40m bands.
+
+## Forecast
+Stable conditions expected for the next 3 days.
+`
+
+	log.Printf("🎨 Testing HTML generation with charts...")
+	html, err := generator.GenerateHTML(testMarkdown, testData)
+	if err != nil {
+		log.Fatalf("❌ HTML generation failed: %v", err)
+	}
+
+	// Save test HTML
+	htmlPath := filepath.Join(testDir, "test_report.html")
+	if err := os.WriteFile(htmlPath, []byte(html), 0644); err != nil {
+		log.Printf("Failed to save test HTML: %v", err)
+	} else {
+		log.Printf("✅ Test HTML report saved: %s", htmlPath)
+	}
+
+	log.Printf("🎉 Chart generation test completed successfully!")
+	log.Printf("📂 Check the '%s' directory for generated files", testDir)
+
+	// Print file listing
+	files, _ := os.ReadDir(testDir)
+	fmt.Println("\n📋 Generated files:")
+	for _, file := range files {
+		if info, err := file.Info(); err == nil {
+			fmt.Printf("  - %s (%d bytes)\n", file.Name(), info.Size())
+		}
 	}
 }

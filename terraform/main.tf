@@ -134,6 +134,8 @@ resource "google_cloud_run_v2_service" "radiocast" {
 
     containers {
       image = "gcr.io/${var.project_id}/radiocast:${var.image_tag}"
+      
+      args = ["-deployment", "gcs"]
 
       ports {
         container_port = 8080
