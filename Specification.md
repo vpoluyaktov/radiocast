@@ -374,11 +374,29 @@ curl -X POST https://stage.radio-propagation.net/generate
 curl https://stage.radio-propagation.net/reports
 ```
 
+**Verify GCS bucket contents**:
+```bash
+# List recent reports in GCS bucket
+gsutil ls -r gs://dfh-stage-reports/$(date +%Y)/ | tail -20
+
+# Check latest report directory has all expected files
+# Expected files for each report:
+# - index.html (main report)
+# - band_conditions.png (band conditions chart)
+# - forecast.png (forecast chart)
+# - k_index_trend.png (K-index trend chart)
+# - solar_activity.png (solar activity chart)
+
+# Example: Check specific report directory
+gsutil ls gs://dfh-stage-reports/2025/08/31/PropagationReport-2025-08-31-03-32-38/
+```
+
 **Manual verification**:
 - Visit https://stage.radio-propagation.net in browser
 - Generate a test report via web interface
 - Verify charts render correctly
 - Check report content and formatting
+- Confirm all PNG charts load properly in the HTML report
 
 ### 11.2 Checking Cloud Run Logs
 **View application logs**:
