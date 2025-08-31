@@ -337,8 +337,9 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 				log.Printf("Successfully generated %d chart files: %v", len(chartFiles), chartFiles)
 			}
 			
-			// Upload chart images to GCS
-			timestamp := time.Now()
+			// Upload chart images to GCS using data.Timestamp for consistency
+			timestamp := data.Timestamp
+			log.Printf("Using consistent timestamp for all uploads: %s", timestamp.Format(time.RFC3339))
 			folderPath := fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%04d-%02d-%02d-%02d-%02d-%02d",
 				timestamp.Year(), timestamp.Month(), timestamp.Day(),
 				timestamp.Year(), timestamp.Month(), timestamp.Day(),
