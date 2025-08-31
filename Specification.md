@@ -362,17 +362,24 @@ gcloud logging read "resource.type=cloud_run_revision AND resource.labels.servic
 
 ### 11.3 Stage Deployment Verification
 
-**After successful stage deployment**:
+**CRITICAL**: Health check alone is NOT sufficient. You MUST test all API endpoints after every successful stage deployment.
+
+**Required API endpoint testing**:
 ```bash
-# Check deployment health
+# 1. Check deployment health (basic connectivity)
 curl https://stage.radio-propagation.net/health
 
-# Verify report generation
+# 2. Test root endpoint (service info and available endpoints)
+curl https://stage.radio-propagation.net/
+
+# 3. MANDATORY: Test report generation (core functionality)
 curl -X POST https://stage.radio-propagation.net/generate
 
-# List available reports
+# 4. MANDATORY: List available reports (verify storage integration)
 curl https://stage.radio-propagation.net/reports
 ```
+
+**All four endpoints must respond correctly before considering deployment successful.**
 
 **Verify GCS bucket contents**:
 ```bash
