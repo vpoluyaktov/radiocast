@@ -123,6 +123,11 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	log.Printf("DEBUG: Storage client status: %v", s.Storage != nil)
 	if s.Storage != nil {
 		log.Printf("DEBUG: Entering GCS deployment mode with PNG chart generation")
+		
+		// Use data.Timestamp for consistent folder naming across all uploads
+		timestamp := data.Timestamp
+		log.Printf("Using consistent timestamp for all uploads: %s", timestamp.Format(time.RFC3339))
+		
 		// Generate charts first
 		chartGen := reports.NewChartGenerator(reportDir)
 		log.Printf("Generating PNG charts in directory: %s", reportDir)
@@ -133,9 +138,6 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 		} else {
 			log.Printf("Successfully generated %d chart files: %v", len(chartFiles), chartFiles)
 		}
-		
-		// Upload chart images to GCS
-		timestamp := time.Now()
 		
 		// Generate folder path using the same logic as StoreChartImage
 		folderPath := fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%04d-%02d-%02d-%02d-%02d-%02d",
@@ -177,7 +179,7 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		
-		// Store HTML report in GCS
+		// Store HTML report in GCS using the SAME timestamp
 		reportPath, err = s.Storage.StoreReport(ctx, html, timestamp)
 		if err != nil {
 			log.Printf("Failed to store report: %v", err)
