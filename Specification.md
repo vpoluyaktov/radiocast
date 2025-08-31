@@ -322,6 +322,7 @@ pkill radiocast
 ### 11.2 Monitoring GitHub Actions
 
 **IMPORTANT**: Never run `gh run watch` without a job ID - it will prompt for user input and hang.
+GitHub CLI authentication is required and assumed to be already configured.
 
 **Step-by-step monitoring process**:
 
@@ -338,6 +339,18 @@ gh run watch <job-id>                    # Watch specific build in real-time
 3. **View build summary**:
 ```bash
 gh run view <job-id>                     # View build summary and status
+```
+
+**Example workflow**:
+```bash
+# 1. List recent builds
+gh run list --branch stage --limit 3
+
+# 2. Watch the latest build (replace with actual ID)
+gh run watch 17352269025
+
+# 3. Check final status
+gh run view 17352269025
 ```
 
 4. **If build fails, check logs**:
