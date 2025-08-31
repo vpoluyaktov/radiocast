@@ -364,16 +364,16 @@ gcloud logging read "resource.type=cloud_run_revision AND resource.labels.servic
 
 **CRITICAL**: Health check alone is NOT sufficient. You MUST test all API endpoints after every successful stage deployment.
 
-**Required API endpoint testing**:
+**Required API endpoint testing** (in this specific order):
 ```bash
 # 1. Check deployment health (basic connectivity)
 curl https://stage.radio-propagation.net/health
 
-# 2. Test root endpoint (service info and available endpoints)
-curl https://stage.radio-propagation.net/
-
-# 3. MANDATORY: Test report generation (core functionality)
+# 2. MANDATORY: Test report generation FIRST (core functionality)
 curl -X POST https://stage.radio-propagation.net/generate
+
+# 3. Test root endpoint (service info and available endpoints)
+curl https://stage.radio-propagation.net/
 
 # 4. MANDATORY: List available reports (verify storage integration)
 curl https://stage.radio-propagation.net/reports
