@@ -113,7 +113,7 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 	
-	// Handle test charts mode
+	// Handle test charts mode (skip config validation for chart testing)
 	if *testChartsFlag {
 		runTestCharts()
 		return
