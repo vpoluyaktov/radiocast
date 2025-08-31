@@ -321,20 +321,44 @@ pkill radiocast
 
 ### 11.2 Monitoring GitHub Actions
 
-**Check build status**:
+**IMPORTANT**: Never run `gh run watch` without a job ID - it will prompt for user input and hang.
+
+**Step-by-step monitoring process**:
+
+1. **Find latest build**:
 ```bash
-gh run list --branch stage --limit 5
-gh run watch <run-id>                    # Watch specific build in real-time
-gh run view <run-id> --log               # View complete build logs
-gh run view <run-id>                     # View build summary
+gh run list --branch stage --limit 3
+```
+
+2. **Watch specific build** (use job ID from step 1):
+```bash
+gh run watch <job-id>                    # Watch specific build in real-time
+```
+
+3. **View build summary**:
+```bash
+gh run view <job-id>                     # View build summary and status
+```
+
+4. **If build fails, check logs**:
+```bash
+gh run view <job-id> --log-failed        # View only failed job logs
+gh run view <job-id> --log               # View complete build logs
+```
+
+5. **Check Cloud Run container logs** (if deployment fails):
+```bash
+# Replace revision name with actual failing revision from Terraform error
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=radiocast-stage AND resource.labels.revision_name=radiocast-stage-00038-7nx" --limit=10 --project=dfh-stage-id --format="value(timestamp,textPayload)"
 ```
 
 **If build fails**:
-1. Check logs: `gh run view <run-id> --log`
-2. Fix issues locally
-3. Test fixes thoroughly (see 11.1)
-4. Commit and push fixes
-5. Monitor new build
+1. Check logs: `gh run view <job-id> --log-failed`
+2. Check Cloud Run logs if deployment step failed
+3. Fix issues locally
+4. Test fixes thoroughly (see 11.1)
+5. Commit and push fixes
+6. Monitor new build using steps above
 
 ### 11.3 Stage Deployment Verification
 
