@@ -164,7 +164,7 @@ flowchart TB
 | **Logging & Monitoring** | Structured logging with `log.Printf()`, GCP Cloud Monitoring alerts, health probe endpoints, error tracking |
 | **Security**             | Service account authentication, Secret Manager integration, IAM least privilege, path traversal protection in file proxy |
 | **Reliability**          | HTTP client timeouts, retry logic in fetchers, fallback data handling, graceful degradation for missing APIs |
-| **Code Structure**       | Standard Go `/internal` layout, dependency injection, modular Terraform with shared/environment-specific configs |
+| **Code Structure**       | Standard Go `/internal` layout, dependency injection, organized Terraform files by logical grouping with shared/environment-specific configs |
 | **Performance**          | HTTP cache headers (`max-age=3600/86400`), efficient PNG chart generation, minimal memory footprint |
 | **Testing**              | Comprehensive unit tests with real API validation, local testing suite, automated smoke tests in CI/CD |
 | **Configuration**        | Environment-based config with `github.com/sethvargo/go-envconfig`, default values, validation |
@@ -192,9 +192,21 @@ flowchart TB
       /storage                // GCS storage client
     /test_charts_output       // Local chart testing output
   /terraform    // Infrastructure as Code
-    main.tf, variables.tf, backend.tf, outputs.tf
-    stage.tfvars, prod.tfvars     // Environment configurations
-    /stage, /prod                 // Environment-specific backends
+    main.tf                       // Provider configuration only
+    apis.tf                       // Google Cloud service enablement
+    storage.tf                    // GCS bucket and IAM policies
+    secrets.tf                    // Secret Manager resources
+    iam.tf                        // Service account and permissions
+    cloud-run.tf                  // Cloud Run service configuration
+    scheduler.tf                  // Cloud Scheduler job
+    monitoring.tf                 // Alert policies and monitoring
+    variables.tf, backend.tf, outputs.tf, versions.tf
+    /stage                        // Stage environment configs
+      backend.tf                  // Stage backend configuration
+      stage.tfvars               // Stage environment variables
+    /prod                         // Production environment configs
+      backend.tf                  // Production backend configuration
+      prod.tfvars                // Production environment variables
   /.github
     /workflows
       stage.yml   // Staging deployment pipeline
@@ -538,7 +550,9 @@ terraform {
 
 - All configuration (API keys, project IDs, bucket names) must be environment-variable driven.
 - Use IAM/service accounts for Cloud Storage and Secret Manager access.
-- Terraform manages all infrastructure with modular configuration files.
+- Terraform manages all infrastructure with organized configuration files split by logical grouping.
+- **CRITICAL**: Always use `terraform/terraform.sh` script for Terraform operations - never use raw `terraform` commands directly.
+- The `terraform.sh` script automatically substitutes the correct `backend.tf` file for the specified environment before executing Terraform commands.
 - CI/CD workflows use Terraform for deployment instead of direct gcloud commands.
 - Environment variables passed to Terraform via `TF_VAR_` prefix for secure secret handling.
 

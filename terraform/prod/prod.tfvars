@@ -5,10 +5,10 @@ reports_bucket_name = "dfh-prod-reports"
 tfstate_bucket_name = "dfh-prod-tfstate"
 
 # Resource limits for production
-min_instances = 1
-max_instances = 20
-cpu_limit     = "4"
-memory_limit  = "4Gi"
+min_instances = 0
+max_instances = 3
+cpu_limit     = "2"
+memory_limit  = "2Gi"
 timeout       = "600s"
 
 # Retention - keep production reports longer

@@ -111,8 +111,8 @@ jobs:
         cd terraform
         cp stage/backend.tf backend.tf
         terraform init
-        terraform plan -var-file="stage.tfvars"
-        terraform apply -var-file="stage.tfvars" -auto-approve
+        terraform plan -var-file="stage/stage.tfvars"
+        terraform apply -var-file="stage/stage.tfvars" -auto-approve
           
     - name: Get service URL
       id: get-url
