@@ -183,17 +183,21 @@ run_server() {
             print_warning "⚠️  No charts found in HTML"
         fi
         
-        if echo "$REPORT_CONTENT" | grep -q "| Band |"; then
-            print_success "✅ Band-by-Band Analysis table found"
+        if echo "$REPORT_CONTENT" | grep -q "Band-by-Band Analysis"; then
+            if echo "$REPORT_CONTENT" | grep -q "band-analysis-table"; then
+                print_success "✅ Band-by-Band Analysis table found"
+            else
+                print_warning "⚠️  Band-by-Band Analysis table found but missing CSS class"
+            fi
         else
             print_warning "⚠️  Band-by-Band Analysis table missing"
         fi
         
         # Find the actual report file in the reports directory
-        LATEST_REPORT=$(find ./reports -name "final_report.html" | head -1)
-        if [ -n "$LATEST_REPORT" ]; then
-            FULL_PATH=$(realpath "$LATEST_REPORT")
-            print_success "📄 Report saved: $LATEST_REPORT"
+        LATEST_REPORT_DIR=$(find ./reports -type d -name "????-??-??_??-??-??" | sort -r | head -1)
+        if [ -n "$LATEST_REPORT_DIR" ] && [ -f "$LATEST_REPORT_DIR/index.html" ]; then
+            FULL_PATH=$(realpath "$LATEST_REPORT_DIR/index.html")
+            print_success "📄 Report saved: $LATEST_REPORT_DIR/index.html"
             print_success "🌐 Open in browser: file://$FULL_PATH"
         else
             print_warning "⚠️  Could not locate saved report file"

@@ -9,8 +9,8 @@ import (
 
 	"github.com/russross/blackfriday/v2"
 
-	"radiocast/internal/config"
 	"radiocast/internal/models"
+	"radiocast/internal/config"
 )
 
 // HTMLBuilder handles HTML generation and template processing
@@ -25,10 +25,64 @@ func NewHTMLBuilder() *HTMLBuilder {
 	}
 }
 
+
 // MarkdownToHTML converts markdown to HTML using blackfriday
 func (h *HTMLBuilder) MarkdownToHTML(markdownText string) string {
 	htmlBytes := blackfriday.Run([]byte(markdownText))
-	return string(htmlBytes)
+	htmlContent := string(htmlBytes)
+	
+	// Find the band analysis section
+	if idx := strings.Index(htmlContent, "<h2>📻 Band-by-Band Analysis</h2>"); idx != -1 {
+		// Look for the first table after the band analysis heading
+		afterHeading := htmlContent[idx:]
+		
+		// The blackfriday library sometimes wraps tables in <p> tags
+		// First, check if we have a <p><table pattern
+		tableStartIdx := strings.Index(afterHeading, "<p><table")
+		if tableStartIdx != -1 {
+			// Found a table wrapped in <p> tags
+			tableStartIdx += idx + 3 // Add 3 to skip the <p> tag
+			
+			// Get the part before and after the table tag
+			partBeforeTable := htmlContent[:tableStartIdx]
+			partAfterTable := htmlContent[tableStartIdx:]
+			
+			// Replace the first occurrence of <table, but check if it already has the class
+			if !strings.Contains(partAfterTable[:50], "band-analysis-table") {
+				// Replace just the first occurrence of <table
+				partAfterTable = strings.Replace(partAfterTable, "<table", "<table class=\"band-analysis-table\"", 1)
+				htmlContent = partBeforeTable + partAfterTable
+			} else {
+				// If it already has the class, make sure it doesn't have duplicates
+				partAfterTable = strings.Replace(partAfterTable, "class=\"band-analysis-table\" class=\"band-analysis-table\"", "class=\"band-analysis-table\"", 1)
+				htmlContent = partBeforeTable + partAfterTable
+			}
+		} else {
+			// Try to find a regular <table> tag
+			tableStartIdx = strings.Index(afterHeading, "<table")
+			if tableStartIdx != -1 {
+				// Calculate absolute position
+				tableStartIdx += idx
+				
+				// Get the part before and after the table tag
+				partBeforeTable := htmlContent[:tableStartIdx]
+				partAfterTable := htmlContent[tableStartIdx:]
+				
+				// Check if the table already has our class
+				if !strings.Contains(partAfterTable[:50], "band-analysis-table") {
+					// Replace just the first occurrence of <table
+					partAfterTable = strings.Replace(partAfterTable, "<table", "<table class=\"band-analysis-table\"", 1)
+					htmlContent = partBeforeTable + partAfterTable
+				} else {
+					// If it already has the class, make sure it doesn't have duplicates
+					partAfterTable = strings.Replace(partAfterTable, "class=\"band-analysis-table\" class=\"band-analysis-table\"", "class=\"band-analysis-table\"", 1)
+					htmlContent = partBeforeTable + partAfterTable
+				}
+			}
+		}
+	}
+	
+	return htmlContent
 }
 
 // ConvertMarkdownToHTML converts markdown content to a complete HTML document using configurable templates
@@ -89,10 +143,16 @@ func (h *HTMLBuilder) ConvertMarkdownToHTML(markdownContent string, date string)
 }
 
 // ConvertMarkdownToHTMLWithCharts converts markdown content to HTML with charts
-func (h *HTMLBuilder) ConvertMarkdownToHTMLWithCharts(markdownContent string, charts string, date string) (string, error) {
-	// Convert markdown to HTML using blackfriday
-	htmlBytes := blackfriday.Run([]byte(markdownContent))
-	htmlContent := string(htmlBytes)
+func (h *HTMLBuilder) ConvertMarkdownToHTMLWithCharts(content string, charts string, date string) (string, error) {
+	// Note: content may already be HTML if we're calling from BuildCompleteHTML
+	// We'll skip the markdown conversion in that case
+	htmlContent := content
+	
+	// If the content doesn't look like HTML, convert it from markdown
+	if !strings.Contains(content, "<p>") && !strings.Contains(content, "<div>") {
+		htmlBytes := blackfriday.Run([]byte(content))
+		htmlContent = string(htmlBytes)
+	}
 	
 	// Load HTML template
 	htmlTemplate, err := h.templateLoader.LoadHTMLTemplate()
@@ -119,6 +179,10 @@ func (h *HTMLBuilder) ConvertMarkdownToHTMLWithCharts(markdownContent string, ch
 		return "", fmt.Errorf("failed to parse HTML template: %w", err)
 	}
 	
+	// Clean up any potential literal HTML tags that might have been incorrectly parsed
+	htmlContent = strings.Replace(htmlContent, "&lt;/div&gt;", "", -1)
+	htmlContent = strings.Replace(htmlContent, "&lt;div&gt;", "", -1)
+	
 	// Prepare template data with charts
 	templateData := struct {
 		Date        string
@@ -132,7 +196,7 @@ func (h *HTMLBuilder) ConvertMarkdownToHTMLWithCharts(markdownContent string, ch
 		GeneratedAt: time.Now().Format("2006-01-02 15:04:05 UTC"),
 		Content:     template.HTML(htmlContent),
 		CSSStyles:   template.CSS(cssStyles),
-		Charts:      template.HTML(charts), // Now properly populated with charts
+		Charts:      template.HTML(charts),
 		Version:     config.GetVersion(),
 	}
 	
@@ -147,10 +211,13 @@ func (h *HTMLBuilder) ConvertMarkdownToHTMLWithCharts(markdownContent string, ch
 
 // BuildCompleteHTML creates a complete HTML document
 func (h *HTMLBuilder) BuildCompleteHTML(content, charts string, data *models.PropagationData) (string, error) {
-	// Integrate charts throughout the content instead of at the end
-	integratedContent := h.integrateChartsInContent(content, charts)
+	// First convert markdown to HTML to ensure proper HTML structure
+	htmlContent := h.MarkdownToHTML(content)
 	
-	// Use the new template-based conversion without separate charts section
+	// Then integrate charts throughout the content
+	integratedContent := h.integrateChartsInContent(htmlContent, charts)
+	
+	// Use the template-based conversion without separate charts section
 	result, err := h.ConvertMarkdownToHTMLWithCharts(integratedContent, "", time.Now().Format("2006-01-02"))
 	if err != nil {
 		return "", err
@@ -173,14 +240,27 @@ func (h *HTMLBuilder) integrateChartsInContent(content, charts string) string {
 	
 	// Replace chart placeholders with professional chart sections
 	for placeholder, chartHTML := range chartMap {
+		// Create a properly escaped chart section
 		chartSection := fmt.Sprintf(`
 <div class="chart-section">
 	<div class="chart-container-integrated">
 		%s
 	</div>
 </div>`, chartHTML)
-		integratedContent = strings.Replace(integratedContent, placeholder, chartSection, -1)
+		
+		// Make sure the placeholder is on its own line to avoid partial replacements
+		// This helps prevent issues with markdown parsing and HTML tags
+		if strings.Contains(integratedContent, "<p>"+placeholder+"</p>") {
+			// If the placeholder is wrapped in <p> tags, replace the whole thing
+			integratedContent = strings.Replace(integratedContent, "<p>"+placeholder+"</p>", chartSection, -1)
+		} else {
+			// Otherwise do a direct replacement
+			integratedContent = strings.Replace(integratedContent, placeholder, chartSection, -1)
+		}
 	}
+	
+	// Clean up any potential literal </div> tags that might have been incorrectly parsed
+	integratedContent = strings.Replace(integratedContent, "&lt;/div&gt;", "", -1)
 	
 	return integratedContent
 }
