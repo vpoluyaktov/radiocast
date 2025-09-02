@@ -16,16 +16,7 @@ import (
 func (cg *ChartGenerator) generateBandConditionsChart(data *models.PropagationData) (string, error) {
 	filename := filepath.Join(cg.outputDir, "band_conditions.png")
 
-	// Create 24-hour timeline (every 3 hours for better spacing)
-	now := time.Now().UTC()
-	startTime := now.Truncate(24 * time.Hour) // Start of today
-	var timePoints []time.Time
-	var timeLabels []string
-	for i := 0; i < 8; i++ { // 8 points = every 3 hours
-		t := startTime.Add(time.Duration(i*3) * time.Hour)
-		timePoints = append(timePoints, t)
-		timeLabels = append(timeLabels, t.Format("15:04"))
-	}
+	// Note: This chart uses current day/night conditions rather than time-series data
 
 	// Band data ordered from highest to lowest frequency
 	bands := []string{"6m", "10m", "12m", "15m", "17m", "20m", "40m", "80m"}
