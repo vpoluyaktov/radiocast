@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radio Propagation Report - 2025-09-01</title>
+    <title>Radio Propagation Report - 2025-09-02</title>
     <style>
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -366,6 +366,28 @@ em {
     box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
 }
 
+/* Band analysis table specific styles */
+.band-analysis-table {
+    width: 100%;
+    margin: 15px 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.band-analysis-table th {
+    text-align: center;
+    padding: 10px 8px;
+    font-size: 0.9em;
+}
+
+.band-analysis-table td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 10px 8px;
+}
+
 /* Chart containers */
 .chart-container {
     margin: 20px 0;
@@ -514,8 +536,22 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     .content { padding: 20px; }
     .charts-section { padding: 20px; }
     .footer { padding: 15px 20px; }
-    table { font-size: 0.9em; }
-    th, td { padding: 8px 10px; }
+    
+    /* Improved table responsiveness for mobile */
+    table { 
+        font-size: 0.85em; 
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    th, td { 
+        padding: 8px 10px; 
+        white-space: nowrap;
+    }
+    
+    /* Better button positioning */
     .print-button { 
         position: relative;
         top: auto;
@@ -524,10 +560,12 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
         display: block;
         width: fit-content;
     }
+    
     .quick-status {
         flex-direction: column;
         align-items: center;
     }
+    
     .band-grid {
         grid-template-columns: 1fr;
     }
@@ -539,6 +577,12 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     .chart-container {
         margin: 10px 0;
         padding: 10px;
+    }
+    
+    /* Better handling of images on mobile */
+    img {
+        max-width: 100%;
+        height: auto;
     }
 }
 
@@ -590,6 +634,157 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     .chart-container {
         display: none;
     }
+    
+    .chart-section {
+        display: none;
+    }
+    
+    .chart-container-integrated {
+        display: none;
+    }
+}
+
+/* Integrated chart styles for professional layout */
+.chart-section {
+    margin: 30px 0;
+    padding: 25px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border-left: 4px solid #007bff;
+}
+
+.chart-container-integrated {
+    text-align: center;
+}
+
+.chart-container-integrated h3 {
+    color: #2c3e50;
+    font-size: 1.3em;
+    margin-bottom: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.chart-container-integrated img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chart-container-integrated img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+/* Responsive chart layout */
+@media (max-width: 768px) {
+    .chart-section {
+        margin: 20px -10px;
+        padding: 15px;
+        border-radius: 8px;
+    }
+    
+    .chart-container-integrated h3 {
+        font-size: 1.1em;
+        margin-bottom: 15px;
+    }
+}
+
+/* iPhone and very small screens specific optimizations */
+@media (max-width: 480px) {
+    body { 
+        padding: 5px; 
+        font-size: 14px;
+    }
+    
+    .container { 
+        border-radius: 0; 
+        box-shadow: none;
+    }
+    
+    .header { 
+        padding: 15px 10px; 
+    }
+    
+    .header h1 { 
+        font-size: 1.5em; 
+    }
+    
+    .header h2 { 
+        font-size: 1.2em; 
+    }
+    
+    .content { 
+        padding: 15px 10px; 
+    }
+    
+    /* Optimize tables for very small screens */
+    table { 
+        font-size: 0.8em;
+        margin: 10px -5px;
+        width: calc(100% + 10px);
+    }
+    
+    th, td { 
+        padding: 6px 8px;
+    }
+    
+    /* Improve band analysis table specifically */
+    .band-analysis-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .band-analysis-table th {
+        font-size: 0.7em;
+        padding: 6px 3px;
+        white-space: nowrap;
+    }
+    
+    .band-analysis-table td {
+        padding: 6px 3px;
+        font-size: 0.9em;
+    }
+    
+    /* Make condition indicators more compact */
+    .band-analysis-table .condition-excellent,
+    .band-analysis-table .condition-good,
+    .band-analysis-table .condition-fair,
+    .band-analysis-table .condition-poor,
+    .band-analysis-table .condition-closed {
+        padding: 3px;
+        border-radius: 3px;
+        display: inline-block;
+        width: 90%;
+        max-width: 80px;
+    }
+    
+    /* Better image handling */
+    .chart-image {
+        margin: 0 -5px;
+        width: calc(100% + 10px);
+        max-width: none;
+        border-radius: 0;
+    }
+    
+    /* Adjust footer for very small screens */
+    .footer {
+        padding: 10px;
+    }
+    
+    .footer-content {
+        gap: 10px;
+    }
+    
+    .footer p {
+        margin: 3px 0;
+        font-size: 0.9em;
+    }
 }
 
     </style>
@@ -600,19 +795,42 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
         <div class="header">
             <div class="header-icon">📡</div>
             <h1>Amateur Radio Propagation Report</h1>
-            <h2>2025-09-01</h2>
-            <div class="generated-time">🕒 Generated: 2025-09-01 21:05:42 UTC</div>
+            <h2>2025-09-02</h2>
+            <div class="generated-time">🕒 Generated: 2025-09-02 16:33:17 UTC</div>
         </div>
         <div class="content">
             <h2>🎯 Quick Summary</h2>
 
-<p><strong>Today’s radio conditions are challenging due to a strong geomagnetic storm (K-index 5+).</strong> Expect increased noise, fading, and weaker signals on most HF bands, especially for north-south paths and polar routes. Higher solar flux (202) and sunspot numbers (165) mean the upper HF bands (15m, 12m, 10m) may still open briefly, but expect lots of variability and short-lived openings.</p>
+<p>High solar activity today with a solar flux of 187 and sunspot numbers at 175, but elevated geomagnetic activity (K-index 4–5) is causing poor to fair HF conditions. Expect noisy bands, especially below 20m, with best chances for contacts on 15m and 17m during daylight. Watch for possible aurora on VHF/UHF and check for brief high-band openings.</p>
+
+<hr />
+
+<h2>📊 Current Solar Activity</h2>
+
+<p>Solar activity remains strong:
+- <strong>Solar Flux (10.7 cm radio energy):</strong> 187 (very high, supports higher band openings)
+- <strong>Sunspot Number:</strong> 175 (active sun, good for propagation when geomagnetic conditions are quiet)
+- <strong>Recent Trend:</strong> Solar flux and sunspots have stayed high for months, but the last two months show a slight dip in flux even as sunspots remain robust.
+- <strong>Flares:</strong> No major flare alerts, but active regions are present.</p>
+
+<p>High solar flux means the ionosphere is well-charged, but geomagnetic disturbances are limiting the benefits.</p>
+
+
+<div class="chart-section">
+	<div class="chart-container-integrated">
+				<div class="chart-container">
+			<h3>Solar Activity</h3>
+			<img src="/files/solar_activity.png" alt="Solar Activity" class="chart-image">
+		</div>
+
+	</div>
+</div>
 
 <hr />
 
 <h2>📻 Band-by-Band Analysis</h2>
 
-<table>
+<p><table class="band-analysis-table">
 <thead>
 <tr>
 <th>Band</th>
@@ -621,77 +839,106 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 <th>Best Times</th>
 <th>Notes</th>
 </tr>
-</thead>
+</thead></p>
 
-<tbody>
+<p><tbody>
 <tr>
 <td>80m</td>
 <td>🔴 Poor</td>
-<td>🔴 Poor</td>
-<td>2300-0500 UTC</td>
-<td>High noise, geomagnetic storm impacts</td>
-</tr>
+<td>🔵 Good</td>
+<td>2200-0600 UTC</td>
+<td>High noise, better after sunset</td>
+</tr></p>
 
-<tr>
+<p><tr>
 <td>40m</td>
 <td>🔴 Poor</td>
-<td>🔴 Poor</td>
-<td>2200-0600 UTC</td>
-<td>Absorption, weak DX, local NVIS possible</td>
-</tr>
+<td>🟢 Excellent</td>
+<td>2100-0700 UTC</td>
+<td>Best for local/regional at night</td>
+</tr></p>
 
-<tr>
+<p><tr>
 <td>20m</td>
-<td>🔴 Poor</td>
-<td>🔴 Poor</td>
-<td>1500-2100 UTC</td>
-<td>Storm absorption, short skip only</td>
-</tr>
+<td>🟡 Fair</td>
+<td>🟡 Fair</td>
+<td>1000-2200 UTC</td>
+<td>Struggles with geomagnetic noise</td>
+</tr></p>
 
-<tr>
+<p><tr>
 <td>17m</td>
+<td>🔵 Good</td>
 <td>🟡 Fair</td>
-<td>🟡 Fair</td>
-<td>1600-2000 UTC</td>
-<td>Short, patchy openings possible</td>
-</tr>
+<td>1200-2000 UTC</td>
+<td>Daytime DX possible</td>
+</tr></p>
 
-<tr>
+<p><tr>
 <td>15m</td>
-<td>🟡 Fair</td>
-<td>🟡 Fair</td>
-<td>1700-2000 UTC</td>
-<td>Watch for brief EU/SA/AF openings</td>
-</tr>
+<td>🔵 Good</td>
+<td>🔴 Poor</td>
+<td>1400-1800 UTC</td>
+<td>Short openings, check often</td>
+</tr></p>
 
-<tr>
+<p><tr>
 <td>12m</td>
 <td>🟡 Fair</td>
-<td>🔴 Poor</td>
-<td>1700-1900 UTC</td>
-<td>Occasional short openings, mostly closed</td>
-</tr>
+<td>⚫ Closed</td>
+<td>1500-1700 UTC</td>
+<td>Sporadic, watch for brief DX</td>
+</tr></p>
 
-<tr>
+<p><tr>
 <td>10m</td>
 <td>🟡 Fair</td>
-<td>🔴 Poor</td>
-<td>1800-1900 UTC</td>
-<td>Solar flux helps, but storm limits DX</td>
+<td>⚫ Closed</td>
+<td>1600-1700 UTC</td>
+<td>Occasional openings, solar dependent</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Legend:</strong><br />
-🟢 Excellent | 🔵 Good | 🟡 Fair | 🔴 Poor | ⚫ Closed</p>
+
+<div class="chart-section">
+	<div class="chart-container-integrated">
+				<div class="chart-container">
+			<h3>Band Conditions</h3>
+			<img src="/files/band_conditions.png" alt="Band Conditions" class="chart-image">
+		</div>
+
+	</div>
+</div></p>
+
+<hr />
+
+<h2>📈 Geomagnetic Conditions</h2>
+
+<ul>
+<li><strong>Current K-index:</strong> 4–5 (elevated, minor geomagnetic storm levels)</li>
+<li><strong>Recent Trend:</strong> K-index has fluctuated between 2 and 5 in the last 24 hours, with several spikes above 4.</li>
+<li><strong>Impact:</strong> Increased absorption and fading, especially on lower HF bands. Expect auroral activity at higher latitudes and possible blackout periods on 80m/40m.</li>
+</ul>
+
+
+<div class="chart-section">
+	<div class="chart-container-integrated">
+				<div class="chart-container">
+			<h3>K Index Trend</h3>
+			<img src="/files/k_index_trend.png" alt="K Index Trend" class="chart-image">
+		</div>
+
+	</div>
+</div>
 
 <hr />
 
 <h2>⏰ Best Operating Times</h2>
 
 <ul>
-<li><strong>Late afternoon to early evening (1600-2000 UTC):</strong> Watch 17m, 15m, and 12m for short, sporadic openings—especially to the south.</li>
-<li><strong>Nighttime (2300-0500 UTC):</strong> 40m and 80m may support local contacts, but expect high noise and poor DX.</li>
-<li><strong>Avoid polar and trans-auroral paths</strong> during geomagnetic storms—signals will be heavily absorbed or blocked.</li>
+<li><strong>Morning (1000–1400 UTC):</strong> 20m and 17m open for east-west paths, some 15m activity possible.</li>
+<li><strong>Afternoon (1400–1800 UTC):</strong> 15m and 17m best for DX; 12m/10m may briefly open.</li>
+<li><strong>Evening/Night (2100–0700 UTC):</strong> 40m and 80m improve for local/regional; 20m closes early due to geomagnetic absorption.</li>
 </ul>
 
 <hr />
@@ -699,54 +946,54 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 <h2>🌍 DX Opportunities</h2>
 
 <ul>
-<li><strong>15m and 17m:</strong> Brief, unpredictable DX windows possible to South America, Africa, and southern Europe during local afternoon.</li>
-<li><strong>10m and 12m:</strong> Watch for short, spotty openings—especially if you notice sudden signal rises.</li>
-<li><strong>Best DX chances:</strong> Focus on east-west paths (e.g., North America to Europe or Asia) and lower-latitude routes.</li>
-<li><strong>Auroral DX:</strong> VHF operators in northern latitudes may hear auroral flutter or scatter on 6m/2m.</li>
+<li><strong>Best Bands:</strong> 17m and 15m during daylight, especially for transatlantic and transpacific paths.</li>
+<li><strong>Short-Path DX:</strong> Focus on 15m/17m to Europe, Africa, and South America from North America in the afternoon.</li>
+<li><strong>Long-Path DX:</strong> Limited due to geomagnetic activity; try 20m at sunrise/sunset for possible surprises.</li>
+<li><strong>Aurora Watch:</strong> VHF/UHF operators in northern latitudes—check 6m and 2m for auroral propagation.</li>
 </ul>
 
 <hr />
 
-<h2>📈 3-Day Forecast</h2>
-
-<table>
-<thead>
-<tr>
-<th>Day</th>
-<th>K-Index</th>
-<th>HF Conditions</th>
-<th>Notes</th>
-</tr>
-</thead>
-
-<tbody>
-<tr>
-<td>Today</td>
-<td>5.3</td>
-<td>Poor/Fair</td>
-<td>Stormy, high absorption, brief upper HF DX</td>
-</tr>
-
-<tr>
-<td>Tomorrow</td>
-<td>4.7</td>
-<td>Poor/Fair</td>
-<td>Storm wanes, gradual improvement</td>
-</tr>
-
-<tr>
-<td>Day 3</td>
-<td>3.0</td>
-<td>Fair/Good</td>
-<td>Recovery, better HF DX, especially on 20m+</td>
-</tr>
-</tbody>
-</table>
+<h2>🔮 3-Day Forecast</h2>
 
 <ul>
-<li><strong>Today:</strong> Expect tough conditions, especially on low bands and polar paths.</li>
-<li><strong>Tomorrow:</strong> Storm weakens, bands slowly recover—watch for improved 17m/15m.</li>
-<li><strong>Day 3:</strong> Bands open up, especially 20m and above; plan for better DX.</li>
+<li><strong>Solar Activity:</strong> Remains high, with solar flux staying above 180 and sunspot numbers strong.</li>
+<li><strong>Geomagnetic Activity:</strong> K-index likely to stay elevated (3–5), with possible minor storm periods.</li>
+<li><strong>HF Outlook:</strong> Expect continued absorption and fading, especially on lower bands. Higher bands (15m/17m) may offer brief DX windows during daylight.</li>
+<li><strong>VHF/UHF:</strong> Watch for auroral openings if K-index spikes above 5.</li>
+</ul>
+
+
+<div class="chart-section">
+	<div class="chart-container-integrated">
+				<div class="chart-container">
+			<h3>Forecast</h3>
+			<img src="/files/forecast.png" alt="Forecast" class="chart-image">
+		</div>
+
+	</div>
+</div>
+
+<hr />
+
+<h2>📡 Propagation Timeline</h2>
+
+
+<div class="chart-section">
+	<div class="chart-container-integrated">
+				<div class="chart-container">
+			<h3>Propagation Timeline</h3>
+			<img src="/files/propagation_timeline.png" alt="Propagation Timeline" class="chart-image">
+		</div>
+
+	</div>
+</div>
+
+<ul>
+<li><strong>00–06 UTC:</strong> 40m/80m best for local/regional, noisy but usable.</li>
+<li><strong>06–12 UTC:</strong> 20m/17m open for east-west, 15m possible.</li>
+<li><strong>12–18 UTC:</strong> 15m/17m peak for DX, 12m/10m may open briefly.</li>
+<li><strong>18–24 UTC:</strong> 20m closes early, 40m/80m improve after sunset.</li>
 </ul>
 
 <hr />
@@ -754,11 +1001,11 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 <h2>💡 Operator Tips</h2>
 
 <ul>
-<li><strong>Contesters:</strong> Focus on 17m and 15m for any possible openings; use spotting networks to chase fleeting DX.</li>
-<li><strong>Casual ops:</strong> Try digital modes (FT8, FT4) on 15m/17m—these can dig out weak signals in tough conditions.</li>
-<li><strong>DXers:</strong> Avoid polar paths; aim for east-west or equatorial routes.</li>
-<li><strong>VHF/UHF:</strong> Watch for auroral activity on 6m/2m if you’re in northern regions—listen for fluttery signals.</li>
-<li><strong>Noise:</strong> Use narrow filters and noise blankers to combat storm-induced static.</li>
+<li><strong>Contesters:</strong> Focus on 17m and 15m during daylight for maximum QSO rates; check 20m in the morning.</li>
+<li><strong>DXers:</strong> Watch for short, strong openings on 15m/17m—be ready to pounce!</li>
+<li><strong>Casual Operators:</strong> Try 40m after sunset for reliable contacts; expect noise on lower bands.</li>
+<li><strong>VHF/UHF:</strong> Monitor for auroral propagation if you’re in northern latitudes—K-index is high enough for possible events.</li>
+<li><strong>All Ops:</strong> Use narrow filters and strong noise reduction to combat band noise.</li>
 </ul>
 
 <hr />
@@ -766,77 +1013,18 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 <h2>🔬 Technical Details</h2>
 
 <ul>
-<li><strong>Solar Flux (F10.7):</strong> 202 (very high, supports upper HF propagation)</li>
-<li><strong>Sunspot Number:</strong> 165 (strong cycle activity)</li>
-<li><strong>K-index:</strong> 5.3 (geomagnetic storm—expect absorption, fading, noise)</li>
-<li><strong>A-index:</strong> 16 (disturbed)</li>
-<li><strong>Recent K-index trend:</strong> Stormy, but expected to decrease over next 48 hours</li>
-<li><strong>No major solar flares or SIDC alerts</strong> in past 30 days</li>
+<li><strong>Solar Flux:</strong> 187 (supports high-band propagation)</li>
+<li><strong>Sunspot Number:</strong> 175 (very active)</li>
+<li><strong>A-index:</strong> 44 (disturbed)</li>
+<li><strong>K-index:</strong> 4–5 (minor storm, absorption likely)</li>
+<li><strong>Proton Flux:</strong> 5270, <strong>Electron Flux:</strong> 6200 (elevated, can affect polar paths)</li>
+<li><strong>Recent Sunspot Trend:</strong> Monthly SSN has stayed above 120 for most of 2025, peaking near 175.</li>
+<li><strong>Solar Flux Trend:</strong> Peaked above 180 in early 2025, now around 100–187.</li>
 </ul>
 
-<p><strong>What this means:</strong><br />
-High solar flux and sunspots are great for HF, but the geomagnetic storm is currently overwhelming those benefits. Once the K-index drops below 4, expect rapid improvement on all HF bands.</p>
-
-<hr />
-
-<h2>Chart Data</h2>
-
-<pre><code class="language-json">{
-  &quot;bandConditions&quot;: [
-    {&quot;band&quot;: &quot;80m&quot;, &quot;day&quot;: 1, &quot;night&quot;: 1, &quot;dayLabel&quot;: &quot;Poor&quot;, &quot;nightLabel&quot;: &quot;Poor&quot;},
-    {&quot;band&quot;: &quot;40m&quot;, &quot;day&quot;: 1, &quot;night&quot;: 1, &quot;dayLabel&quot;: &quot;Poor&quot;, &quot;nightLabel&quot;: &quot;Poor&quot;},
-    {&quot;band&quot;: &quot;20m&quot;, &quot;day&quot;: 1, &quot;night&quot;: 1, &quot;dayLabel&quot;: &quot;Poor&quot;, &quot;nightLabel&quot;: &quot;Poor&quot;},
-    {&quot;band&quot;: &quot;17m&quot;, &quot;day&quot;: 2, &quot;night&quot;: 2, &quot;dayLabel&quot;: &quot;Fair&quot;, &quot;nightLabel&quot;: &quot;Fair&quot;},
-    {&quot;band&quot;: &quot;15m&quot;, &quot;day&quot;: 2, &quot;night&quot;: 2, &quot;dayLabel&quot;: &quot;Fair&quot;, &quot;nightLabel&quot;: &quot;Fair&quot;},
-    {&quot;band&quot;: &quot;12m&quot;, &quot;day&quot;: 2, &quot;night&quot;: 1, &quot;dayLabel&quot;: &quot;Fair&quot;, &quot;nightLabel&quot;: &quot;Poor&quot;},
-    {&quot;band&quot;: &quot;10m&quot;, &quot;day&quot;: 2, &quot;night&quot;: 1, &quot;dayLabel&quot;: &quot;Fair&quot;, &quot;nightLabel&quot;: &quot;Poor&quot;}
-  ],
-  &quot;solarActivity&quot;: {
-    &quot;solarFlux&quot;: 202,
-    &quot;sunspotNumber&quot;: 165,
-    &quot;kIndex&quot;: 5.3,
-    &quot;aIndex&quot;: 16,
-    &quot;trend&quot;: &quot;storm&quot;
-  },
-  &quot;forecast&quot;: [
-    {&quot;day&quot;: &quot;Today&quot;, &quot;kIndex&quot;: 5.3, &quot;condition&quot;: &quot;Stormy&quot;},
-    {&quot;day&quot;: &quot;Tomorrow&quot;, &quot;kIndex&quot;: 4.7, &quot;condition&quot;: &quot;Unsettled&quot;},
-    {&quot;day&quot;: &quot;Day 3&quot;, &quot;kIndex&quot;: 3.0, &quot;condition&quot;: &quot;Recovering&quot;}
-  ]
-}
-</code></pre>
+<p><strong>Summary:</strong> High solar activity is fueling the ionosphere, but geomagnetic storms are limiting HF performance. Watch for brief high-band openings and possible auroral VHF/UHF events. Lower bands will be noisy—plan accordingly!</p>
 
         </div>
-        
-        <div class="charts-section">
-            <div class="charts-section">
-<h2>Charts and Analysis</h2>
-<div class="charts-grid">
-
-		<div class="chart-container">
-			<h3>Solar Activity</h3>
-			<img src="/files/solar_activity.png" alt="Solar Activity" class="chart-image">
-		</div>
-		
-		<div class="chart-container">
-			<h3>K Index Trend</h3>
-			<img src="/files/k_index_trend.png" alt="K Index Trend" class="chart-image">
-		</div>
-		
-		<div class="chart-container">
-			<h3>Band Conditions</h3>
-			<img src="/files/band_conditions.png" alt="Band Conditions" class="chart-image">
-		</div>
-		
-		<div class="chart-container">
-			<h3>Forecast</h3>
-			<img src="/files/forecast.png" alt="Forecast" class="chart-image">
-		</div>
-		</div>
-</div>
-
-        </div>
-        
         <div class="footer">
             <div class="footer-content">
                 <div class="data-sources">
@@ -844,8 +1032,10 @@ High solar flux and sunspots are great for HF, but the geomagnetic storm is curr
                     <p>NOAA SWPC • N0NBH Solar Data • SIDC Sunspot Data</p>
                 </div>
                 <div class="service-info">
-                    <p>Report generated by <a href="https://github.com/vpoluyaktov/radiocast" target="_blank" rel="noopener noreferrer">Radio Propagation Service</a> v0.1.0.117</p>
+                    <p>Report generated by <a href="https://github.com/vpoluyaktov/radiocast" target="_blank" rel="noopener noreferrer">Radio Propagation Service</a> using AI</p>
+                    <p>v0.1.0.130</p>
                     <p class="disclaimer">⚠️ For amateur radio use only. Conditions may vary by location.</p>
+                    <p>Developed by KK7UNL</p>
                 </div>
             </div>
         </div>

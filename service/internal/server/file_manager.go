@@ -9,9 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"radiocast/internal/fetchers"
+	"radiocast/internal/charts"
 	"radiocast/internal/models"
-	"radiocast/internal/reports"
 )
 
 // FileManager handles unified file operations for both local and GCS modes
@@ -34,7 +33,7 @@ type ReportFiles struct {
 }
 
 // GenerateAllFiles creates all report files (HTML, charts, JSON) in a unified way
-func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.PropagationData, sourceData *fetchers.SourceData, markdown string) (*ReportFiles, error) {
+func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.PropagationData, sourceData *models.SourceData, markdown string) (*ReportFiles, error) {
 	timestamp := data.Timestamp
 	
 	// Create report directory (local or temp for GCS)
@@ -77,8 +76,8 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 		log.Printf("Warning: Failed to save LLM files: %v", err)
 	}
 	
-	// 4. Generate PNG charts
-	chartFiles, err := fm.generateCharts(reportDir, data)
+	// 4. Generate PNG charts with source data
+	chartFiles, err := fm.generateChartsWithSources(reportDir, data, sourceData)
 	if err != nil {
 		log.Printf("Warning: Failed to generate charts: %v", err)
 		chartFiles = []string{}
@@ -102,7 +101,7 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 }
 
 // saveSourceJSONFiles saves separate JSON files for each data source
-func (fm *FileManager) saveSourceJSONFiles(reportDir string, sourceData *fetchers.SourceData, files *ReportFiles) error {
+func (fm *FileManager) saveSourceJSONFiles(reportDir string, sourceData *models.SourceData, files *ReportFiles) error {
 	if sourceData.NOAAKIndex != nil {
 		data, _ := json.MarshalIndent(sourceData.NOAAKIndex, "", "  ")
 		path := filepath.Join(reportDir, "noaa_k_index.json")
@@ -158,7 +157,7 @@ func (fm *FileManager) saveNormalizedData(reportDir string, data *models.Propaga
 }
 
 // saveLLMFiles saves LLM-related files (prompts, responses)
-func (fm *FileManager) saveLLMFiles(reportDir string, data *models.PropagationData, sourceData *fetchers.SourceData, markdown string, files *ReportFiles) error {
+func (fm *FileManager) saveLLMFiles(reportDir string, data *models.PropagationData, sourceData *models.SourceData, markdown string, files *ReportFiles) error {
 	// Save system prompt
 	systemPrompt := fm.server.LLMClient.GetSystemPrompt()
 	systemPromptPath := filepath.Join(reportDir, "llm_system_prompt.txt")
@@ -168,7 +167,7 @@ func (fm *FileManager) saveLLMFiles(reportDir string, data *models.PropagationDa
 	files.JSONFiles["llm_system_prompt.txt"] = []byte(systemPrompt)
 	
 	// Save user prompt (using raw source data)
-	llmPrompt := fm.server.LLMClient.BuildPromptWithRawData(sourceData, data)
+	llmPrompt := fm.server.LLMClient.BuildPrompt(sourceData, data)
 	promptPath := filepath.Join(reportDir, "llm_prompt.txt")
 	if err := os.WriteFile(promptPath, []byte(llmPrompt), 0644); err != nil {
 		return err
@@ -185,11 +184,12 @@ func (fm *FileManager) saveLLMFiles(reportDir string, data *models.PropagationDa
 	return nil
 }
 
-// generateCharts creates PNG chart files
-func (fm *FileManager) generateCharts(reportDir string, data *models.PropagationData) ([]string, error) {
-	chartGen := reports.NewChartGenerator(reportDir)
+
+// generateChartsWithSources creates PNG chart files with access to source data
+func (fm *FileManager) generateChartsWithSources(reportDir string, data *models.PropagationData, sourceData *models.SourceData) ([]string, error) {
+	chartGen := charts.NewChartGenerator(reportDir)
 	log.Printf("Generating PNG charts in directory: %s", reportDir)
-	chartFiles, err := chartGen.GenerateCharts(data)
+	chartFiles, err := chartGen.GenerateChartsWithSources(data, sourceData)
 	if err != nil {
 		return nil, err
 	}

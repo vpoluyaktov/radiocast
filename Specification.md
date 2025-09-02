@@ -125,7 +125,7 @@ flowchart TB
   - Color scheme: Green (excellent), Yellow (good), Orange (fair), Red (poor), Gray (closed)
   - Font: Arial with size-specific styling (16px titles, 12px labels, 10px axes)
 - **Deployment Modes**:
-  - **Local**: Charts saved to `./test_charts_output/` or `./reports/timestamp/`
+  - **Local**: Charts saved to `./reports/timestamp/`
   - **GCS**: Charts uploaded to timestamped folder alongside HTML report
 - **File Names**: `solar_activity.png`, `k_index_trend.png`, `band_conditions.png`, `forecast.png`
 
@@ -180,7 +180,6 @@ flowchart TB
     run_local.sh              // Local testing script
     /cmd
       /local-runner           // Local testing mode
-      /test_charts.go         // Chart generation testing
     /internal                 // Standard Go layout
       /config                 // Configuration management
       /fetchers               // Data fetching with comprehensive tests
@@ -190,7 +189,6 @@ flowchart TB
         generator.go          // HTML report generation
         charts.go             // PNG chart generation (go-chart)
       /storage                // GCS storage client
-    /test_charts_output       // Local chart testing output
   /terraform    // Infrastructure as Code
     main.tf                       // Provider configuration only
     apis.tf                       // Google Cloud service enablement
@@ -259,13 +257,12 @@ cd service
 - Serves reports on `http://localhost:8981`
 - Essential for validating changes before deployment
 
-**Available Command Line Options**:
-```bash
-./radiocast -deployment local   # Local mode (default)
-./radiocast -deployment gcs     # GCS mode for cloud deployment
-```
-
-**Note**: The `-test-charts` mode has been removed. Use local server mode for testing.
+**CRITICAL: Local Testing Rules**
+- **ALWAYS restart the server after code changes**: Changes to Go code require server restart to take effect
+- **ALWAYS use `./run_local.sh server` for testing**: Never run `/radiocast` directly
+- **DO NOT use curl commands to test**: The `./run_local.sh server` command automatically generates a new report on startup
+- **Find generated reports in**: `./reports/YYYY-MM-DD_HH-MM-SS/` directory after server startup
+- **NEVER assume endpoint calls will use new code**: Without server restart, you're testing old compiled code
 
 ### 8.2 GCP Cloud Run Mode
 **Purpose**: Production deployment with full GCS integration

@@ -11,6 +11,13 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+// Configuration constants for N0NBH data (currently real-time only)
+const (
+	// N0NBH provides real-time data only, no historical filtering needed
+	// These constants are here for consistency and potential future use
+	N0NBHDataRetentionHours = 1 // Real-time data, no retention needed
+)
+
 // N0NBHFetcher handles fetching data from N0NBH XML API
 type N0NBHFetcher struct {
 	client *resty.Client
@@ -84,12 +91,7 @@ func (f *N0NBHFetcher) Fetch(ctx context.Context, url string) (*models.N0NBHResp
 	}
 	
 	// Convert band conditions - XML has separate entries for day/night
-	bandConditions := make(map[string]struct {
-		Name  string `json:"name"`
-		Time  string `json:"time"`
-		Day   string `json:"day"`
-		Night string `json:"night"`
-	})
+	bandConditions := make(map[string]models.N0NBHBandCondition)
 	
 	for _, band := range xmlData.SolarData.CalculatedConditions.Band {
 		key := band.Name
@@ -103,12 +105,7 @@ func (f *N0NBHFetcher) Fetch(ctx context.Context, url string) (*models.N0NBHResp
 			bandConditions[key] = existing
 		} else {
 			// Create new entry
-			newBand := struct {
-				Name  string `json:"name"`
-				Time  string `json:"time"`
-				Day   string `json:"day"`
-				Night string `json:"night"`
-			}{
+			newBand := models.N0NBHBandCondition{
 				Name: band.Name,
 				Time: band.Time,
 			}
@@ -123,13 +120,7 @@ func (f *N0NBHFetcher) Fetch(ctx context.Context, url string) (*models.N0NBHResp
 
 	// Convert map to slice
 	for _, bandCond := range bandConditions {
-		data.Calculatedconditions.Band = append(data.Calculatedconditions.Band, struct {
-			Name   string `json:"name"`
-			Time   string `json:"time"`
-			Day    string `json:"day"`
-			Night  string `json:"night"`
-			Source string `json:"source"`
-		}{
+		data.Calculatedconditions.Band = append(data.Calculatedconditions.Band, models.N0NBHBandCondition{
 			Name:   bandCond.Name,
 			Time:   bandCond.Time,
 			Day:    bandCond.Day,

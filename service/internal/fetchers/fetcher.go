@@ -38,7 +38,7 @@ func NewDataFetcher() *DataFetcher {
 }
 
 // FetchAllDataWithSources fetches raw data from all sources and returns both raw and normalized data
-func (f *DataFetcher) FetchAllDataWithSources(ctx context.Context, noaaKURL, noaaSolarURL, n0nbhURL, sidcURL string) (*models.PropagationData, *SourceData, error) {
+func (f *DataFetcher) FetchAllDataWithSources(ctx context.Context, noaaKURL, noaaSolarURL, n0nbhURL, sidcURL string) (*models.PropagationData, *models.SourceData, error) {
 	log.Println("Starting data fetch from all sources...")
 	
 	// Fetch data from all sources concurrently
@@ -132,7 +132,7 @@ func (f *DataFetcher) FetchAllDataWithSources(ctx context.Context, noaaKURL, noa
 	}
 	
 	// Create source data structure
-	sourceData := &SourceData{
+	sourceData := &models.SourceData{
 		NOAAKIndex: kIndexData,
 		NOAASolar:  solarData,
 		N0NBH:      n0nbhData,
