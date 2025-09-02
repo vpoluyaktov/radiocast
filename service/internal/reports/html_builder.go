@@ -163,6 +163,11 @@ func (h *HTMLBuilder) integrateChartsInContent(content, charts string) string {
 	// Parse chart HTML to extract individual chart elements
 	chartMap := h.parseChartsHTML(charts)
 	
+	// If no charts parsed, try direct filename-based mapping
+	if len(chartMap) == 0 && charts != "" {
+		chartMap = h.createDirectChartMapping(charts)
+	}
+	
 	// Replace placeholders with actual chart HTML
 	integratedContent := content
 	
@@ -178,6 +183,121 @@ func (h *HTMLBuilder) integrateChartsInContent(content, charts string) string {
 	}
 	
 	return integratedContent
+}
+
+// createDirectChartMapping creates chart mapping based on filenames when parsing fails
+func (h *HTMLBuilder) createDirectChartMapping(charts string) map[string]string {
+	chartMap := make(map[string]string)
+	
+	// Look for image tags and map them directly
+	if strings.Contains(charts, "solar_activity.png") {
+		start := strings.Index(charts, "<div class=\"chart-container\">")
+		if start != -1 {
+			end := strings.Index(charts[start:], "</div>")
+			if end != -1 {
+				chartHTML := charts[start : start+end+6]
+				if strings.Contains(chartHTML, "solar_activity.png") {
+					chartMap["{{SOLAR_ACTIVITY_CHART}}"] = chartHTML
+				}
+			}
+		}
+	}
+	
+	if strings.Contains(charts, "k_index_trend.png") {
+		// Find the chart container for K-index
+		lines := strings.Split(charts, "\n")
+		var currentChart strings.Builder
+		inKIndexChart := false
+		
+		for _, line := range lines {
+			if strings.Contains(line, "chart-container") && !inKIndexChart {
+				currentChart.Reset()
+				inKIndexChart = true
+			}
+			
+			if inKIndexChart {
+				currentChart.WriteString(line + "\n")
+				if strings.Contains(line, "k_index_trend.png") {
+					// Continue until we find the closing div
+					continue
+				}
+				if strings.Contains(line, "</div>") && strings.Contains(currentChart.String(), "k_index_trend.png") {
+					chartMap["{{K_INDEX_CHART}}"] = currentChart.String()
+					inKIndexChart = false
+					break
+				}
+			}
+		}
+	}
+	
+	if strings.Contains(charts, "band_conditions.png") {
+		// Similar logic for band conditions
+		lines := strings.Split(charts, "\n")
+		var currentChart strings.Builder
+		inBandChart := false
+		
+		for _, line := range lines {
+			if strings.Contains(line, "chart-container") && !inBandChart {
+				currentChart.Reset()
+				inBandChart = true
+			}
+			
+			if inBandChart {
+				currentChart.WriteString(line + "\n")
+				if strings.Contains(line, "</div>") && strings.Contains(currentChart.String(), "band_conditions.png") {
+					chartMap["{{BAND_CONDITIONS_CHART}}"] = currentChart.String()
+					inBandChart = false
+					break
+				}
+			}
+		}
+	}
+	
+	if strings.Contains(charts, "forecast.png") {
+		lines := strings.Split(charts, "\n")
+		var currentChart strings.Builder
+		inForecastChart := false
+		
+		for _, line := range lines {
+			if strings.Contains(line, "chart-container") && !inForecastChart {
+				currentChart.Reset()
+				inForecastChart = true
+			}
+			
+			if inForecastChart {
+				currentChart.WriteString(line + "\n")
+				if strings.Contains(line, "</div>") && strings.Contains(currentChart.String(), "forecast.png") {
+					chartMap["{{FORECAST_CHART}}"] = currentChart.String()
+					inForecastChart = false
+					break
+				}
+			}
+		}
+	}
+	
+	if strings.Contains(charts, "propagation_timeline.png") {
+		lines := strings.Split(charts, "\n")
+		var currentChart strings.Builder
+		inTimelineChart := false
+		
+		for _, line := range lines {
+			if strings.Contains(line, "chart-container") && !inTimelineChart {
+				currentChart.Reset()
+				inTimelineChart = true
+			}
+			
+			if inTimelineChart {
+				currentChart.WriteString(line + "\n")
+				if strings.Contains(line, "</div>") && strings.Contains(currentChart.String(), "propagation_timeline.png") {
+					chartMap["{{PROPAGATION_TIMELINE_CHART}}"] = currentChart.String()
+					inTimelineChart = false
+					break
+				}
+			}
+		}
+	}
+	
+	return chartMap
 }
 
 // parseChartsHTML extracts individual charts from the charts HTML string

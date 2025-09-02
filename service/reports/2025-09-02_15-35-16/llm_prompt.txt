@@ -1,0 +1,233 @@
+## Raw Solar and Space Weather Data (as of 2025-09-02 15:35 UTC)
+
+Please analyze the following comprehensive space weather data and generate a detailed radio propagation report. The data includes:
+- NOAA K-index data (geomagnetic activity - last 24 hours, 1-hour intervals)
+- NOAA Solar data (solar flux, sunspot numbers - last 7 months)
+- N0NBH real-time conditions (band conditions, solar metrics)
+- SIDC monthly sunspot data (last 12 months)
+
+### NOAA K-Index Data (Last 24 Hours, 1-Hour Intervals):
+```json
+[
+  {
+    "time_tag": "2025-09-02T16:33:00",
+    "kp_index": 3.33,
+    "estimated_kp": 3.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-02T17:33:00",
+    "kp_index": 4.33,
+    "estimated_kp": 4.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-02T18:33:00",
+    "kp_index": 2.33,
+    "estimated_kp": 2.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-02T19:33:00",
+    "kp_index": 4,
+    "estimated_kp": 4,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-02T20:33:00",
+    "kp_index": 4.33,
+    "estimated_kp": 4.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-02T21:33:00",
+    "kp_index": 3,
+    "estimated_kp": 3,
+    "source": "NOAA SWPC"
+  }
+]
+```
+
+### NOAA Solar Data (Last 7 Months):
+```json
+[
+  {
+    "time_tag": "2025-02",
+    "f10.7": 184.31,
+    "ssn": 155.7,
+    "f10.7_adj": 184.31,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-03",
+    "f10.7": 163.78,
+    "ssn": 134.2,
+    "f10.7_adj": 163.78,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-04",
+    "f10.7": 162.21,
+    "ssn": 140.6,
+    "f10.7_adj": 162.21,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-05",
+    "f10.7": 135.25,
+    "ssn": 79.2,
+    "f10.7_adj": 135.25,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-06",
+    "f10.7": 131.45,
+    "ssn": 116.3,
+    "f10.7_adj": 131.45,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-07",
+    "f10.7": 100,
+    "ssn": 125.6,
+    "f10.7_adj": 100,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-08",
+    "f10.7": 100,
+    "ssn": 133.5,
+    "f10.7_adj": 100,
+    "source": "NOAA SWPC"
+  }
+]
+```
+
+### N0NBH Real-time Data (Current Conditions):
+```json
+{
+  "solardata": {
+    "solarflux": "187",
+    "aindex": " 44",
+    "kindex": " 5",
+    "kindexnt": "No Report",
+    "sunspots": "175",
+    "heliumline": "145.9",
+    "protonflux": "6680",
+    "electonflux": "6560",
+    "aurora": " 1",
+    "normalization": "1.99",
+    "latestswpcreport": ""
+  },
+  "time": "",
+  "source": "N0NBH",
+  "calculatedconditions": {
+    "band": [
+      {
+        "name": "80m-40m",
+        "time": "day",
+        "day": "Poor",
+        "night": "Poor",
+        "source": "N0NBH"
+      },
+      {
+        "name": "30m-20m",
+        "time": "day",
+        "day": "Poor",
+        "night": "Poor",
+        "source": "N0NBH"
+      },
+      {
+        "name": "17m-15m",
+        "time": "day",
+        "day": "Fair",
+        "night": "Fair",
+        "source": "N0NBH"
+      },
+      {
+        "name": "12m-10m",
+        "time": "day",
+        "day": "Fair",
+        "night": "Poor",
+        "source": "N0NBH"
+      }
+    ]
+  },
+  "calculatedvhfconditions": {
+    "phenomenon": null
+  }
+}
+```
+
+### SIDC Monthly Sunspot Data (Last 12 Months):
+```json
+[
+  {
+    "title": "Monthly Sunspot Number: 165.8",
+    "description": "Date: 2024-10, SSN: 165.8",
+    "publishedParsed": "2024-10-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 154.1",
+    "description": "Date: 2024-11, SSN: 154.1",
+    "publishedParsed": "2024-11-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 154.6",
+    "description": "Date: 2024-12, SSN: 154.6",
+    "publishedParsed": "2024-12-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 137.0",
+    "description": "Date: 2025-01, SSN: 137.0",
+    "publishedParsed": "2025-01-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 155.7",
+    "description": "Date: 2025-02, SSN: 155.7",
+    "publishedParsed": "2025-02-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 134.2",
+    "description": "Date: 2025-03, SSN: 134.2",
+    "publishedParsed": "2025-03-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 140.6",
+    "description": "Date: 2025-04, SSN: 140.6",
+    "publishedParsed": "2025-04-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 79.2",
+    "description": "Date: 2025-05, SSN: 79.2",
+    "publishedParsed": "2025-05-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 116.3",
+    "description": "Date: 2025-06, SSN: 116.3",
+    "publishedParsed": "2025-06-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 125.6",
+    "description": "Date: 2025-07, SSN: 125.6",
+    "publishedParsed": "2025-07-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 133.5",
+    "description": "Date: 2025-08, SSN: 133.5",
+    "publishedParsed": "2025-08-01T00:00:00Z"
+  }
+]
+```
+
+### Instructions:
+Analyze all the above data and provide:
+1. Current solar activity summary (solar flux, sunspots, flares)
+2. Geomagnetic conditions (K-index trends, magnetic field)
+3. HF band conditions for each amateur band (80m-10m)
+4. VHF/UHF propagation outlook
+5. 3-day forecast with specific recommendations
+6. Best/worst bands for current conditions
+7. Any alerts or warnings for amateur radio operators
+
+Focus on practical advice for amateur radio operators based on the comprehensive data provided.
