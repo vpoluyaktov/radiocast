@@ -3,7 +3,7 @@
 # Radio Propagation Service - Unified Local Runner
 # Consolidates all testing and debugging functionality into one script
 
-set -e
+# set -e
 
 # Colors for output
 RED='\033[0;31m'

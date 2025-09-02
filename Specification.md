@@ -259,13 +259,7 @@ cd service
 - Serves reports on `http://localhost:8981`
 - Essential for validating changes before deployment
 
-**Available Command Line Options**:
-```bash
-./radiocast -deployment local   # Local mode (default)
-./radiocast -deployment gcs     # GCS mode for cloud deployment
-```
-
-**Note**: The `-test-charts` mode has been removed. Use local server mode for testing.
+**CRITICAL: Never run /radiocast directly. Always use run_local.sh server for testing
 
 ### 8.2 GCP Cloud Run Mode
 **Purpose**: Production deployment with full GCS integration
