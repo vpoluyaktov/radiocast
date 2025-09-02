@@ -359,6 +359,28 @@ em {
     box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
 }
 
+/* Band analysis table specific styles */
+.band-analysis-table {
+    width: 100%;
+    margin: 15px 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.band-analysis-table th {
+    text-align: center;
+    padding: 10px 8px;
+    font-size: 0.9em;
+}
+
+.band-analysis-table td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 10px 8px;
+}
+
 /* Chart containers */
 .chart-container {
     margin: 20px 0;
@@ -507,8 +529,22 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     .content { padding: 20px; }
     .charts-section { padding: 20px; }
     .footer { padding: 15px 20px; }
-    table { font-size: 0.9em; }
-    th, td { padding: 8px 10px; }
+    
+    /* Improved table responsiveness for mobile */
+    table { 
+        font-size: 0.85em; 
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    th, td { 
+        padding: 8px 10px; 
+        white-space: nowrap;
+    }
+    
+    /* Better button positioning */
     .print-button { 
         position: relative;
         top: auto;
@@ -517,10 +553,12 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
         display: block;
         width: fit-content;
     }
+    
     .quick-status {
         flex-direction: column;
         align-items: center;
     }
+    
     .band-grid {
         grid-template-columns: 1fr;
     }
@@ -532,6 +570,12 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     .chart-container {
         margin: 10px 0;
         padding: 10px;
+    }
+    
+    /* Better handling of images on mobile */
+    img {
+        max-width: 100%;
+        height: auto;
     }
 }
 
@@ -640,5 +684,98 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     .chart-container-integrated h3 {
         font-size: 1.1em;
         margin-bottom: 15px;
+    }
+}
+
+/* iPhone and very small screens specific optimizations */
+@media (max-width: 480px) {
+    body { 
+        padding: 5px; 
+        font-size: 14px;
+    }
+    
+    .container { 
+        border-radius: 0; 
+        box-shadow: none;
+    }
+    
+    .header { 
+        padding: 15px 10px; 
+    }
+    
+    .header h1 { 
+        font-size: 1.5em; 
+    }
+    
+    .header h2 { 
+        font-size: 1.2em; 
+    }
+    
+    .content { 
+        padding: 15px 10px; 
+    }
+    
+    /* Optimize tables for very small screens */
+    table { 
+        font-size: 0.8em;
+        margin: 10px -5px;
+        width: calc(100% + 10px);
+    }
+    
+    th, td { 
+        padding: 6px 8px;
+    }
+    
+    /* Improve band analysis table specifically */
+    .band-analysis-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .band-analysis-table th {
+        font-size: 0.7em;
+        padding: 6px 3px;
+        white-space: nowrap;
+    }
+    
+    .band-analysis-table td {
+        padding: 6px 3px;
+        font-size: 0.9em;
+    }
+    
+    /* Make condition indicators more compact */
+    .band-analysis-table .condition-excellent,
+    .band-analysis-table .condition-good,
+    .band-analysis-table .condition-fair,
+    .band-analysis-table .condition-poor,
+    .band-analysis-table .condition-closed {
+        padding: 3px;
+        border-radius: 3px;
+        display: inline-block;
+        width: 90%;
+        max-width: 80px;
+    }
+    
+    /* Better image handling */
+    .chart-image {
+        margin: 0 -5px;
+        width: calc(100% + 10px);
+        max-width: none;
+        border-radius: 0;
+    }
+    
+    /* Adjust footer for very small screens */
+    .footer {
+        padding: 10px;
+    }
+    
+    .footer-content {
+        gap: 10px;
+    }
+    
+    .footer p {
+        margin: 3px 0;
+        font-size: 0.9em;
     }
 }

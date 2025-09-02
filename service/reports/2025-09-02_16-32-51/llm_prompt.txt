@@ -1,4 +1,4 @@
-## Raw Solar and Space Weather Data (as of 2025-09-02 15:34 UTC)
+## Raw Solar and Space Weather Data (as of 2025-09-02 16:32 UTC)
 
 Please analyze the following comprehensive space weather data and generate a detailed radio propagation report. The data includes:
 - NOAA K-index data (geomagnetic activity - last 24 hours, 1-hour intervals)
@@ -10,39 +10,39 @@ Please analyze the following comprehensive space weather data and generate a det
 ```json
 [
   {
-    "time_tag": "2025-09-02T16:33:00",
-    "kp_index": 3.33,
-    "estimated_kp": 3.33,
-    "source": "NOAA SWPC"
-  },
-  {
-    "time_tag": "2025-09-02T17:33:00",
+    "time_tag": "2025-09-02T17:32:00",
     "kp_index": 4.33,
     "estimated_kp": 4.33,
     "source": "NOAA SWPC"
   },
   {
-    "time_tag": "2025-09-02T18:33:00",
+    "time_tag": "2025-09-02T18:32:00",
     "kp_index": 2.33,
     "estimated_kp": 2.33,
     "source": "NOAA SWPC"
   },
   {
-    "time_tag": "2025-09-02T19:33:00",
+    "time_tag": "2025-09-02T19:32:00",
     "kp_index": 4,
     "estimated_kp": 4,
     "source": "NOAA SWPC"
   },
   {
-    "time_tag": "2025-09-02T20:33:00",
+    "time_tag": "2025-09-02T20:32:00",
     "kp_index": 4.33,
     "estimated_kp": 4.33,
     "source": "NOAA SWPC"
   },
   {
-    "time_tag": "2025-09-02T21:33:00",
+    "time_tag": "2025-09-02T21:32:00",
     "kp_index": 3,
     "estimated_kp": 3,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-02T22:32:00",
+    "kp_index": 4,
+    "estimated_kp": 4,
     "source": "NOAA SWPC"
   }
 ]
@@ -112,10 +112,10 @@ Please analyze the following comprehensive space weather data and generate a det
     "kindex": " 5",
     "kindexnt": "No Report",
     "sunspots": "175",
-    "heliumline": "145.9",
-    "protonflux": "6680",
-    "electonflux": "6560",
-    "aurora": " 1",
+    "heliumline": "146.4",
+    "protonflux": "5270",
+    "electonflux": "6200",
+    "aurora": " 9",
     "normalization": "1.99",
     "latestswpcreport": ""
   },

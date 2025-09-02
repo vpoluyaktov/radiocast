@@ -257,7 +257,12 @@ cd service
 - Serves reports on `http://localhost:8981`
 - Essential for validating changes before deployment
 
-**CRITICAL: Never run /radiocast directly. Always use run_local.sh server for testing
+**CRITICAL: Local Testing Rules**
+- **ALWAYS restart the server after code changes**: Changes to Go code require server restart to take effect
+- **ALWAYS use `./run_local.sh server` for testing**: Never run `/radiocast` directly
+- **DO NOT use curl commands to test**: The `./run_local.sh server` command automatically generates a new report on startup
+- **Find generated reports in**: `./reports/YYYY-MM-DD_HH-MM-SS/` directory after server startup
+- **NEVER assume endpoint calls will use new code**: Without server restart, you're testing old compiled code
 
 ### 8.2 GCP Cloud Run Mode
 **Purpose**: Production deployment with full GCS integration
