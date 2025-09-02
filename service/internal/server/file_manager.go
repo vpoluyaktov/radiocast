@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"radiocast/internal/charts"
 	"radiocast/internal/models"
-	"radiocast/internal/reports"
 )
 
 // FileManager handles unified file operations for both local and GCS modes
@@ -187,7 +187,7 @@ func (fm *FileManager) saveLLMFiles(reportDir string, data *models.PropagationDa
 
 // generateChartsWithSources creates PNG chart files with access to source data
 func (fm *FileManager) generateChartsWithSources(reportDir string, data *models.PropagationData, sourceData *models.SourceData) ([]string, error) {
-	chartGen := reports.NewChartGenerator(reportDir)
+	chartGen := charts.NewChartGenerator(reportDir)
 	log.Printf("Generating PNG charts in directory: %s", reportDir)
 	chartFiles, err := chartGen.GenerateChartsWithSources(data, sourceData)
 	if err != nil {

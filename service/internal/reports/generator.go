@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"radiocast/internal/charts"
 	"radiocast/internal/models"
 )
 
@@ -34,7 +35,7 @@ func (g *Generator) GenerateHTMLWithSources(markdownReport string, data *models.
 	log.Println("Converting markdown to HTML and generating charts...")
 	
 	// Generate chart images using the new chart generator with source data
-	chartGen := NewChartGenerator(g.outputDir)
+	chartGen := charts.NewChartGenerator(g.outputDir)
 	chartFiles, err := chartGen.GenerateChartsWithSources(data, sourceData)
 	if err != nil {
 		log.Printf("Warning: Failed to generate charts: %v", err)
