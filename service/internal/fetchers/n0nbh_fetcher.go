@@ -79,7 +79,8 @@ func (f *N0NBHFetcher) Fetch(ctx context.Context, url string) (*models.N0NBHResp
 			NormalizationTime: xmlData.SolarData.Normalization,
 			LatestSWPCReport:  "", // Not in XML
 		},
-		Time: xmlData.Time,
+		Time:   xmlData.Time,
+		Source: "N0NBH",
 	}
 	
 	// Convert band conditions - XML has separate entries for day/night
@@ -123,15 +124,17 @@ func (f *N0NBHFetcher) Fetch(ctx context.Context, url string) (*models.N0NBHResp
 	// Convert map to slice
 	for _, bandCond := range bandConditions {
 		data.Calculatedconditions.Band = append(data.Calculatedconditions.Band, struct {
-			Name  string `json:"name"`
-			Time  string `json:"time"`
-			Day   string `json:"day"`
-			Night string `json:"night"`
+			Name   string `json:"name"`
+			Time   string `json:"time"`
+			Day    string `json:"day"`
+			Night  string `json:"night"`
+			Source string `json:"source"`
 		}{
-			Name:  bandCond.Name,
-			Time:  bandCond.Time,
-			Day:   bandCond.Day,
-			Night: bandCond.Night,
+			Name:   bandCond.Name,
+			Time:   bandCond.Time,
+			Day:    bandCond.Day,
+			Night:  bandCond.Night,
+			Source: "N0NBH",
 		})
 	}
 	

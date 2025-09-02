@@ -1,9 +1,6 @@
 package models
 
-import (
-	"encoding/xml"
-	"time"
-)
+import "time"
 
 // PropagationData represents normalized radio propagation data from all sources
 type PropagationData struct {
@@ -17,36 +14,44 @@ type PropagationData struct {
 
 // SolarData contains solar activity information
 type SolarData struct {
-	SolarFluxIndex    float64 `json:"solar_flux_index"`    // 10.7cm flux
-	SunspotNumber     int     `json:"sunspot_number"`      // Daily sunspot number
-	SolarActivity     string  `json:"solar_activity"`      // Low/Moderate/High
-	FlareActivity     string  `json:"flare_activity"`      // Current flare status
-	SolarCyclePhase   string  `json:"solar_cycle_phase"`   // Current solar cycle info
-	LastMajorFlare    string  `json:"last_major_flare"`    // Most recent significant flare
-	SolarWindSpeed    float64 `json:"solar_wind_speed"`    // km/s
-	ProtonFlux        float64 `json:"proton_flux"`         // particles/cm²/s
+	SolarFluxIndex      float64 `json:"solar_flux_index"`        // 10.7cm flux
+	SolarFluxDataSource string  `json:"solar_flux_data_source"`  // Source API for flux data
+	SunspotNumber       int     `json:"sunspot_number"`          // Daily sunspot number
+	SunspotDataSource   string  `json:"sunspot_data_source"`     // Source API for sunspot data
+	SolarActivity       string  `json:"solar_activity"`          // Low/Moderate/High
+	FlareActivity       string  `json:"flare_activity"`          // Current flare status
+	SolarCyclePhase     string  `json:"solar_cycle_phase"`       // Current solar cycle info
+	LastMajorFlare      string  `json:"last_major_flare"`        // Most recent significant flare
+	SolarWindSpeed      float64 `json:"solar_wind_speed"`        // km/s
+	SolarWindDataSource string  `json:"solar_wind_data_source"`  // Source API for solar wind data
+	ProtonFlux          float64 `json:"proton_flux"`             // particles/cm²/s
+	ProtonFluxDataSource string `json:"proton_flux_data_source"` // Source API for proton flux data
 }
 
 // GeomagData contains geomagnetic activity information
 type GeomagData struct {
-	KIndex           float64 `json:"k_index"`            // Current planetary K-index
-	AIndex           float64 `json:"a_index"`            // Current A-index
-	GeomagActivity   string  `json:"geomag_activity"`    // Quiet/Unsettled/Active/Storm
-	GeomagConditions string  `json:"geomag_conditions"`  // Current conditions description
-	MagneticField    float64 `json:"magnetic_field"`     // nT
+	KIndex              float64 `json:"k_index"`                // Current planetary K-index
+	KIndexDataSource    string  `json:"k_index_data_source"`    // Source API for K-index data
+	AIndex              float64 `json:"a_index"`                // Current A-index
+	AIndexDataSource    string  `json:"a_index_data_source"`    // Source API for A-index data
+	GeomagActivity      string  `json:"geomag_activity"`        // Quiet/Unsettled/Active/Storm
+	GeomagConditions    string  `json:"geomag_conditions"`      // Current conditions description
+	MagneticField       float64 `json:"magnetic_field"`         // nT
+	MagneticFieldDataSource string `json:"magnetic_field_data_source"` // Source API for magnetic field data
 }
 
 // BandData contains HF band condition information
 type BandData struct {
-	Band80m  BandCondition `json:"band_80m"`
-	Band40m  BandCondition `json:"band_40m"`
-	Band20m  BandCondition `json:"band_20m"`
-	Band17m  BandCondition `json:"band_17m"`
-	Band15m  BandCondition `json:"band_15m"`
-	Band12m  BandCondition `json:"band_12m"`
-	Band10m  BandCondition `json:"band_10m"`
-	Band6m   BandCondition `json:"band_6m"`
-	VHFPlus  BandCondition `json:"vhf_plus"`
+	Band80m         BandCondition `json:"band_80m"`
+	Band40m         BandCondition `json:"band_40m"`
+	Band20m         BandCondition `json:"band_20m"`
+	Band17m         BandCondition `json:"band_17m"`
+	Band15m         BandCondition `json:"band_15m"`
+	Band12m         BandCondition `json:"band_12m"`
+	Band10m         BandCondition `json:"band_10m"`
+	Band6m          BandCondition `json:"band_6m"`
+	VHFPlus         BandCondition `json:"vhf_plus"`
+	BandDataSource  string        `json:"band_data_source"` // Source API for band data
 }
 
 // BandCondition represents propagation conditions for a specific band
@@ -85,84 +90,3 @@ type SourceEvent struct {
 	Impact      string    `json:"impact"`       // Expected propagation impact
 }
 
-// NOAAKIndexResponse represents NOAA K-index JSON response
-type NOAAKIndexResponse struct {
-	TimeTag     string  `json:"time_tag"`
-	KpIndex     float64 `json:"kp_index"`
-	EstimatedKp float64 `json:"estimated_kp"`
-}
-
-// NOAASolarResponse represents NOAA solar cycle data
-type NOAASolarResponse struct {
-	TimeTag           string  `json:"time_tag"`
-	SolarFlux         float64 `json:"f10.7"`
-	SunspotNumber     float64 `json:"ssn"`
-	SolarFluxAdjusted float64 `json:"f10.7_adj"`
-}
-
-// N0NBHResponse represents N0NBH solar API response
-type N0NBHResponse struct {
-	SolarData struct {
-		SolarFlux     string `json:"solarflux"`
-		AIndex        string `json:"aindex"`
-		KIndex        string `json:"kindex"`
-		KIndexNT      string `json:"kindexnt"`
-		SunSpots      string `json:"sunspots"`
-		HeliumLine    string `json:"heliumline"`
-		ProtonFlux    string `json:"protonflux"`
-		ElectronFlux  string `json:"electonflux"`
-		Aurora        string `json:"aurora"`
-		NormalizationTime string `json:"normalization"`
-		LatestSWPCReport  string `json:"latestswpcreport"`
-	} `json:"solardata"`
-	Time string `json:"time"`
-	
-	// Band conditions
-	Calculatedconditions struct {
-		Band []struct {
-			Name string `json:"name"`
-			Time string `json:"time"`
-			Day  string `json:"day"`
-			Night string `json:"night"`
-		} `json:"band"`
-	} `json:"calculatedconditions"`
-	
-	CalculatedVHFConditions struct {
-		Phenomenon []struct {
-			Name     string `json:"name"`
-			Location string `json:"location"`
-		} `json:"phenomenon"`
-	} `json:"calculatedvhfconditions"`
-}
-
-// N0NBHXMLResponse represents N0NBH XML API response structure
-type N0NBHXMLResponse struct {
-	XMLName    xml.Name `xml:"solar"`
-	SolarData  struct {
-		Source        string `xml:"source"`
-		Updated       string `xml:"updated"`
-		SolarFlux     string `xml:"solarflux"`
-		AIndex        string `xml:"aindex"`
-		KIndex        string `xml:"kindex"`
-		KIndexNT      string `xml:"kindexnt"`
-		XRay          string `xml:"xray"`
-		SunSpots      string `xml:"sunspots"`
-		HeliumLine    string `xml:"heliumline"`
-		ProtonFlux    string `xml:"protonflux"`
-		ElectronFlux  string `xml:"electonflux"`
-		Aurora        string `xml:"aurora"`
-		Normalization string `xml:"normalization"`
-		LatDegree     string `xml:"latdegree"`
-		SolarWind     string `xml:"solarwind"`
-		MagneticField string `xml:"magneticfield"`
-		
-		CalculatedConditions struct {
-			Band []struct {
-				Name      string `xml:"name,attr"`
-				Time      string `xml:"time,attr"`
-				Condition string `xml:",chardata"`
-			} `xml:"band"`
-		} `xml:"calculatedconditions"`
-	} `xml:"solardata"`
-	Time string `xml:"time"`
-}

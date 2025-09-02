@@ -52,6 +52,26 @@ func (g *Generator) GenerateHTML(markdownReport string, data *models.Propagation
 	return fullHTML, nil
 }
 
+// GenerateHTMLWithLocalCharts converts markdown report to HTML with pre-generated local chart files
+func (g *Generator) GenerateHTMLWithLocalCharts(markdownReport string, data *models.PropagationData, chartFiles []string) (string, error) {
+	log.Println("Converting markdown to HTML with pre-generated charts...")
+	
+	// Convert markdown to HTML
+	htmlContent := g.htmlBuilder.MarkdownToHTML(markdownReport)
+	
+	// Build chart HTML references (empty folderPath for local mode)
+	chartsHTML := g.chartHTMLBuilder.BuildChartsHTML(chartFiles, "")
+	
+	// Combine everything into a complete HTML document
+	fullHTML, err := g.htmlBuilder.BuildCompleteHTML(htmlContent, chartsHTML, data)
+	if err != nil {
+		return "", fmt.Errorf("failed to build complete HTML: %w", err)
+	}
+	
+	log.Printf("Generated complete HTML report with %d characters and %d charts", len(fullHTML), len(chartFiles))
+	return fullHTML, nil
+}
+
 // GenerateHTMLWithChartURLs converts markdown report to HTML using provided chart URLs
 func (g *Generator) GenerateHTMLWithChartURLs(markdownReport string, data *models.PropagationData, chartURLs []string) (string, error) {
 	log.Printf("Converting markdown to HTML with %d provided chart URLs...", len(chartURLs))

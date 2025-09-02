@@ -61,7 +61,7 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	
 	// Fetch data from all sources
 	log.Println("Starting data fetch from all sources...")
-	data, err := s.Fetcher.FetchAllData(
+	data, sourceData, err := s.Fetcher.FetchAllDataWithSources(
 		ctx,
 		s.Config.NOAAKIndexURL,
 		s.Config.NOAASolarURL,
@@ -75,11 +75,52 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Data fetch and normalization completed successfully")
 	
-	// Save API data as JSON
+	// Save separate JSON files for each data source
+	if sourceData.NOAAKIndex != nil {
+		noaaKIndexJSON, _ := json.MarshalIndent(sourceData.NOAAKIndex, "", "  ")
+		noaaKIndexPath := filepath.Join(reportDir, "noaa_k_index.json")
+		if err := os.WriteFile(noaaKIndexPath, noaaKIndexJSON, 0644); err != nil {
+			log.Printf("Failed to save NOAA K-Index data: %v", err)
+		} else {
+			log.Printf("Saved NOAA K-Index data to: %s", noaaKIndexPath)
+		}
+	}
+	
+	if sourceData.NOAASolar != nil {
+		noaaSolarJSON, _ := json.MarshalIndent(sourceData.NOAASolar, "", "  ")
+		noaaSolarPath := filepath.Join(reportDir, "noaa_solar.json")
+		if err := os.WriteFile(noaaSolarPath, noaaSolarJSON, 0644); err != nil {
+			log.Printf("Failed to save NOAA Solar data: %v", err)
+		} else {
+			log.Printf("Saved NOAA Solar data to: %s", noaaSolarPath)
+		}
+	}
+	
+	if sourceData.N0NBH != nil {
+		n0nbhJSON, _ := json.MarshalIndent(sourceData.N0NBH, "", "  ")
+		n0nbhPath := filepath.Join(reportDir, "n0nbh_data.json")
+		if err := os.WriteFile(n0nbhPath, n0nbhJSON, 0644); err != nil {
+			log.Printf("Failed to save N0NBH data: %v", err)
+		} else {
+			log.Printf("Saved N0NBH data to: %s", n0nbhPath)
+		}
+	}
+	
+	if sourceData.SIDC != nil {
+		sidcJSON, _ := json.MarshalIndent(sourceData.SIDC, "", "  ")
+		sidcPath := filepath.Join(reportDir, "sidc_data.json")
+		if err := os.WriteFile(sidcPath, sidcJSON, 0644); err != nil {
+			log.Printf("Failed to save SIDC data: %v", err)
+		} else {
+			log.Printf("Saved SIDC data to: %s", sidcPath)
+		}
+	}
+	
+	// Also save the normalized/combined data
 	apiDataJSON, _ := json.MarshalIndent(data, "", "  ")
-	apiDataPath := filepath.Join(reportDir, "01_api_data.json")
+	apiDataPath := filepath.Join(reportDir, "normalized_data.json")
 	if err := os.WriteFile(apiDataPath, apiDataJSON, 0644); err != nil {
-		log.Printf("Failed to save API data: %v", err)
+		log.Printf("Failed to save normalized data: %v", err)
 	}
 	
 	// Save system prompt
@@ -95,7 +136,7 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	
 	// Generate LLM prompt and save it
 	llmPrompt := s.LLMClient.BuildPrompt(data)
-	promptPath := filepath.Join(reportDir, "02_llm_prompt.txt")
+	promptPath := filepath.Join(reportDir, "llm_prompt.txt")
 	if err := os.WriteFile(promptPath, []byte(llmPrompt), 0644); err != nil {
 		log.Printf("Failed to save LLM prompt: %v", err)
 	}
@@ -109,7 +150,7 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Generated report with %d characters", len(markdown))
 
-	markdownPath := filepath.Join(reportDir, "03_llm_response.md")
+	markdownPath := filepath.Join(reportDir, "llm_response.md")
 	if err := os.WriteFile(markdownPath, []byte(markdown), 0644); err != nil {
 		log.Printf("Failed to save markdown report: %v", err)
 	}
@@ -189,8 +230,19 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 		
 		log.Printf("Report stored in GCS at: %s", reportPath)
 	} else {
-		// For local mode, use existing logic
-		html, err = s.Generator.GenerateHTML(markdown, data)
+		// For local mode, generate charts in the correct timestamped directory
+		chartGen := reports.NewChartGenerator(reportDir)
+		log.Printf("Generating PNG charts in directory: %s", reportDir)
+		chartFiles, err := chartGen.GenerateCharts(data)
+		if err != nil {
+			log.Printf("Warning: Failed to generate charts: %v", err)
+			chartFiles = []string{}
+		} else {
+			log.Printf("Successfully generated %d chart files: %v", len(chartFiles), chartFiles)
+		}
+		
+		// Generate HTML with charts in the correct directory
+		html, err = s.Generator.GenerateHTMLWithLocalCharts(markdown, data, chartFiles)
 		if err != nil {
 			log.Printf("Failed to generate HTML: %v", err)
 			http.Error(w, "Failed to generate HTML", http.StatusInternalServerError)
@@ -200,7 +252,7 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	
 	log.Printf("Generated complete HTML report with %d characters", len(html))
 
-	htmlPath := filepath.Join(reportDir, "04_final_report.html")
+	htmlPath := filepath.Join(reportDir, "final_report.html")
 	if err := os.WriteFile(htmlPath, []byte(html), 0644); err != nil {
 		log.Printf("Failed to save HTML report: %v", err)
 	}
@@ -291,7 +343,7 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	
 	// Fetch data from all sources
 	log.Println("Fetching data from external sources...")
-	data, err := s.Fetcher.FetchAllData(
+	data, sourceData, err := s.Fetcher.FetchAllDataWithSources(
 		ctx,
 		s.Config.NOAAKIndexURL,
 		s.Config.NOAASolarURL,
@@ -388,24 +440,92 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Store in GCS
-	log.Println("Storing report in GCS...")
-	reportURL, err := s.Storage.StoreReport(ctx, htmlReport, data.Timestamp)
-	if err != nil {
-		log.Printf("Storage failed: %v", err)
-		http.Error(w, fmt.Sprintf("Storage failed: %v", err), http.StatusInternalServerError)
-		return
-	}
-	
-	// Clean up old reports (keep last 30 days)
-	go func() {
-		cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-		
-		if err := s.Storage.DeleteOldReports(cleanupCtx, 30*24*time.Hour); err != nil {
-			log.Printf("Cleanup warning: %v", err)
+	// Store report based on deployment mode
+	var reportURL string
+	if s.DeploymentMode == DeploymentGCS && s.Storage != nil {
+		// Store in GCS for production/staging
+		log.Println("Storing report in GCS...")
+		var err error
+		reportURL, err = s.Storage.StoreReport(ctx, htmlReport, data.Timestamp)
+		if err != nil {
+			log.Printf("Storage failed: %v", err)
+			http.Error(w, fmt.Sprintf("Storage failed: %v", err), http.StatusInternalServerError)
+			return
 		}
-	}()
+		
+		// Clean up old reports (keep last 30 days)
+		go func() {
+			cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+			
+			if err := s.Storage.DeleteOldReports(cleanupCtx, 30*24*time.Hour); err != nil {
+				log.Printf("Cleanup warning: %v", err)
+			}
+		}()
+	} else {
+		// Store locally for local deployment mode
+		log.Println("Storing report locally...")
+		timestamp := data.Timestamp.Format("2006-01-02_15-04-05")
+		reportDir := filepath.Join(s.ReportsDir, timestamp)
+		
+		// Create report directory
+		if err := os.MkdirAll(reportDir, 0755); err != nil {
+			log.Printf("Failed to create report directory: %v", err)
+			http.Error(w, fmt.Sprintf("Failed to create report directory: %v", err), http.StatusInternalServerError)
+			return
+		}
+		
+		// Save separate JSON files for each data source
+		if sourceData.NOAAKIndex != nil {
+			noaaKIndexJSON, _ := json.MarshalIndent(sourceData.NOAAKIndex, "", "  ")
+			noaaKIndexPath := filepath.Join(reportDir, "noaa_k_index.json")
+			if err := os.WriteFile(noaaKIndexPath, noaaKIndexJSON, 0644); err != nil {
+				log.Printf("Failed to save NOAA K-Index data: %v", err)
+			}
+		}
+		
+		if sourceData.NOAASolar != nil {
+			noaaSolarJSON, _ := json.MarshalIndent(sourceData.NOAASolar, "", "  ")
+			noaaSolarPath := filepath.Join(reportDir, "noaa_solar.json")
+			if err := os.WriteFile(noaaSolarPath, noaaSolarJSON, 0644); err != nil {
+				log.Printf("Failed to save NOAA Solar data: %v", err)
+			}
+		}
+		
+		if sourceData.N0NBH != nil {
+			n0nbhJSON, _ := json.MarshalIndent(sourceData.N0NBH, "", "  ")
+			n0nbhPath := filepath.Join(reportDir, "n0nbh_data.json")
+			if err := os.WriteFile(n0nbhPath, n0nbhJSON, 0644); err != nil {
+				log.Printf("Failed to save N0NBH data: %v", err)
+			}
+		}
+		
+		if sourceData.SIDC != nil {
+			sidcJSON, _ := json.MarshalIndent(sourceData.SIDC, "", "  ")
+			sidcPath := filepath.Join(reportDir, "sidc_data.json")
+			if err := os.WriteFile(sidcPath, sidcJSON, 0644); err != nil {
+				log.Printf("Failed to save SIDC data: %v", err)
+			}
+		}
+		
+		// Also save the normalized/combined data
+		apiDataJSON, _ := json.MarshalIndent(data, "", "  ")
+		apiDataPath := filepath.Join(reportDir, "normalized_data.json")
+		if err := os.WriteFile(apiDataPath, apiDataJSON, 0644); err != nil {
+			log.Printf("Failed to save normalized data: %v", err)
+		}
+		
+		// Save HTML report
+		htmlPath := filepath.Join(reportDir, "index.html")
+		if err := os.WriteFile(htmlPath, []byte(htmlReport), 0644); err != nil {
+			log.Printf("Failed to save HTML report: %v", err)
+			http.Error(w, fmt.Sprintf("Failed to save HTML report: %v", err), http.StatusInternalServerError)
+			return
+		}
+		
+		reportURL = fmt.Sprintf("/files/%s/index.html", timestamp)
+		log.Printf("Report saved locally to: %s", htmlPath)
+	}
 	
 	duration := time.Since(startTime)
 	log.Printf("Report generation completed in %v", duration)

@@ -163,7 +163,7 @@ All configuration is via environment variables:
 |----------|-------------|---------|
 | `PORT` | HTTP server port | `8080` |
 | `OPENAI_API_KEY` | OpenAI API key | Required |
-| `OPENAI_MODEL` | OpenAI model to use | `gpt-4` |
+| `OPENAI_MODEL` | OpenAI model to use | `gpt-4.1` |
 | `GCP_PROJECT_ID` | GCP project ID | Required |
 | `GCS_BUCKET` | GCS bucket for reports | Required |
 | `ENVIRONMENT` | Environment name | `development` |

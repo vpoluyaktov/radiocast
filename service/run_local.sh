@@ -39,21 +39,18 @@ show_usage() {
     echo "Usage: $0 [COMMAND]"
     echo ""
     echo "Commands:"
-    echo "  test        Run complete local test (LLM + HTML generation)"
-    echo "  server      Start local server with health checks"
+    echo "  server      Run complete local test (LLM + HTML generation)"
     echo "  debug-apis  Check all external API endpoints"
-    echo "  debug-llm   Test LLM report generation only"
     echo "  unit-tests  Run Go unit tests"
     echo "  help        Show this help message"
     echo ""
     echo "Environment Variables:"
     echo "  OPENAI_API_KEY    Required - Your OpenAI API key"
-    echo "  OPENAI_MODEL      Optional - Model to use (default: gpt-4o-mini)"
-    echo "  PORT              Optional - Server port (default: 8080)"
+    echo "  OPENAI_MODEL      Optional - Model to use (default: gpt-4.1)"
+    echo "  PORT              Optional - Server port (default: 8981)"
     echo ""
     echo "Examples:"
     echo "  export OPENAI_API_KEY='sk-your-key-here'"
-    echo "  $0 test"
     echo "  $0 server"
 }
 
@@ -115,72 +112,13 @@ debug_apis() {
     fi
 }
 
-debug_llm() {
-    print_header "LLM Report Generation Test"
-    
-    export ENVIRONMENT="local"
-    export OPENAI_MODEL="${OPENAI_MODEL:-gpt-4o-mini}"
-    export PORT="${PORT:-8080}"
-    
-    print_status "Configuration:"
-    print_status "  OpenAI Model: $OPENAI_MODEL"
-    print_status "  API Key: ${OPENAI_API_KEY:0:10}..."
-    
-    print_status "Running LLM test via local server..."
-    
-    # Start server briefly to generate a report
-    go run main.go &
-    SERVER_PID=$!
-    sleep 3
-    
-    # Generate report via HTTP
-    REPORT_CONTENT=$(curl -s http://localhost:$PORT/)
-    if [ $? -eq 0 ] && [ -n "$REPORT_CONTENT" ]; then
-        kill $SERVER_PID 2>/dev/null || true
-        
-        # Check report content
-        if echo "$REPORT_CONTENT" | grep -q "Radio Propagation Report"; then
-            print_success "✅ LLM report generated successfully!"
-            
-            if echo "$REPORT_CONTENT" | grep -q "chart-container"; then
-                print_success "✅ Charts found in HTML"
-            else
-                print_warning "⚠️  No charts found in HTML"
-            fi
-            
-            if echo "$REPORT_CONTENT" | grep -q "| Band |"; then
-                print_success "✅ Band-by-Band Analysis table found"
-            else
-                print_warning "⚠️  Band-by-Band Analysis table missing"
-            fi
-            
-            # Find the actual report file in the reports directory
-            LATEST_REPORT=$(find ./reports -name "04_final_report.html" | head -1)
-            if [ -n "$LATEST_REPORT" ]; then
-                FULL_PATH=$(realpath "$LATEST_REPORT")
-                print_success "📄 Report saved: $LATEST_REPORT"
-                print_success "🌐 Open in browser: file://$FULL_PATH"
-            else
-                print_warning "⚠️  Could not locate saved report file"
-            fi
-        else
-            print_error "❌ Report generation failed"
-            kill $SERVER_PID 2>/dev/null || true
-            return 1
-        fi
-    else
-        print_error "❌ Failed to fetch report from server"
-        kill $SERVER_PID 2>/dev/null || true
-        return 1
-    fi
-}
 
-run_test() {
+run_server() {
     print_header "Complete Local Test"
     
     export ENVIRONMENT="local"
-    export OPENAI_MODEL="${OPENAI_MODEL:-gpt-4o-mini}"
-    export PORT="${PORT:-8080}"
+    export OPENAI_MODEL="${OPENAI_MODEL:-gpt-4.1}"
+    export PORT="${PORT:-8981}"
     export LOCAL_REPORTS_DIR="./reports"
     
     print_status "Configuration:"
@@ -188,6 +126,19 @@ run_test() {
     print_status "  OpenAI Model: $OPENAI_MODEL"
     print_status "  Port: $PORT"
     print_status "  API Key: ${OPENAI_API_KEY:0:10}..."
+    
+    # Kill any existing process on the target port
+    EXISTING_PID=$(lsof -ti:$PORT 2>/dev/null)
+    if [ ! -z "$EXISTING_PID" ]; then
+        print_status "🔄 Killing existing process on port $PORT (PID: $EXISTING_PID)"
+        kill -TERM $EXISTING_PID 2>/dev/null || true
+        sleep 2
+        # Force kill if still running
+        if kill -0 $EXISTING_PID 2>/dev/null; then
+            kill -KILL $EXISTING_PID 2>/dev/null || true
+            sleep 1
+        fi
+    fi
     
     # Clean up any existing reports
     rm -rf ./reports
@@ -213,7 +164,7 @@ run_test() {
         return 1
     fi
     
-    # Generate and validate report
+    # Generate report via HTTP
     REPORT_CONTENT=$(curl -s http://localhost:$PORT/)
     if [ $? -eq 0 ] && [ -n "$REPORT_CONTENT" ]; then
         kill $SERVER_PID 2>/dev/null || true
@@ -239,7 +190,7 @@ run_test() {
         fi
         
         # Find the actual report file in the reports directory
-        LATEST_REPORT=$(find ./reports -name "04_final_report.html" | head -1)
+        LATEST_REPORT=$(find ./reports -name "final_report.html" | head -1)
         if [ -n "$LATEST_REPORT" ]; then
             FULL_PATH=$(realpath "$LATEST_REPORT")
             print_success "📄 Report saved: $LATEST_REPORT"
@@ -257,81 +208,6 @@ run_test() {
     fi
 }
 
-run_server() {
-    print_header "Local Server Test"
-    
-    export ENVIRONMENT="local"
-    export PORT="${PORT:-8080}"
-    export OPENAI_MODEL="${OPENAI_MODEL:-gpt-4o-mini}"
-    export LOCAL_REPORTS_DIR="./reports"
-    
-    print_status "Configuration:"
-    print_status "  Environment: $ENVIRONMENT"
-    print_status "  Port: $PORT"
-    print_status "  OpenAI Model: $OPENAI_MODEL"
-    print_status "  API Key: ${OPENAI_API_KEY:0:10}..."
-    
-    # Clean up any existing reports
-    rm -rf ./reports
-    mkdir -p ./reports
-    
-    print_status "🚀 Starting server in background..."
-    go run main.go &
-    SERVER_PID=$!
-    
-    # Give server time to start
-    sleep 3
-    
-    print_status "🔍 Testing server health..."
-    if curl -s http://localhost:$PORT/health | grep -q "healthy"; then
-        print_success "✅ Server is healthy"
-    else
-        print_error "❌ Server health check failed"
-        kill $SERVER_PID 2>/dev/null || true
-        return 1
-    fi
-    
-    print_status "📊 Testing report generation..."
-    if curl -s http://localhost:$PORT/ | grep -q "Radio Propagation Report"; then
-        print_success "✅ Report generated successfully"
-    else
-        print_error "❌ Report generation failed"
-        kill $SERVER_PID 2>/dev/null || true
-        return 1
-    fi
-    
-    print_status "🔍 Checking for charts and tables..."
-    REPORT_CONTENT=$(curl -s http://localhost:$PORT/)
-    
-    if echo "$REPORT_CONTENT" | grep -q "chart-container"; then
-        print_success "✅ Charts found in HTML"
-    else
-        print_warning "⚠️  No charts found in HTML"
-    fi
-    
-    if echo "$REPORT_CONTENT" | grep -q "| Band |"; then
-        print_success "✅ Band-by-Band Analysis table found"
-    else
-        print_warning "⚠️  Band-by-Band Analysis table missing"
-    fi
-    
-    # Find the actual report file in the reports directory
-    LATEST_REPORT=$(find ./reports -name "04_final_report.html" | head -1)
-    if [ -n "$LATEST_REPORT" ]; then
-        FULL_PATH=$(realpath "$LATEST_REPORT")
-        print_status "📄 Report saved: $LATEST_REPORT"
-        print_status "🌐 Open in browser: file://$FULL_PATH"
-    else
-        print_warning "⚠️  Could not locate saved report file"
-    fi
-    
-    print_success "🎉 Server test completed!"
-    print_status "🌐 Server running at: http://localhost:$PORT"
-    print_status "Press Ctrl+C to stop the server"
-    
-    # Wait for user to stop
-    wait $SERVER_PID
-}
 
 run_unit_tests() {
     print_header "Go Unit Tests"
@@ -347,10 +223,6 @@ run_unit_tests() {
 
 # Main script logic
 case "${1:-help}" in
-    "test")
-        check_requirements "$1"
-        run_test
-        ;;
     "server")
         check_requirements "$1"
         run_server
@@ -358,10 +230,6 @@ case "${1:-help}" in
     "debug-apis")
         check_requirements "$1"
         debug_apis
-        ;;
-    "debug-llm")
-        check_requirements "$1"
-        debug_llm
         ;;
     "unit-tests")
         check_requirements "$1"

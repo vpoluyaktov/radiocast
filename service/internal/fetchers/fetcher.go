@@ -37,8 +37,8 @@ func NewDataFetcher() *DataFetcher {
 	}
 }
 
-// FetchAllData fetches and normalizes data from all sources
-func (f *DataFetcher) FetchAllData(ctx context.Context, noaaKURL, noaaSolarURL, n0nbhURL, sidcURL string) (*models.PropagationData, error) {
+// FetchAllDataWithSources fetches raw data from all sources and returns both raw and normalized data
+func (f *DataFetcher) FetchAllDataWithSources(ctx context.Context, noaaKURL, noaaSolarURL, n0nbhURL, sidcURL string) (*models.PropagationData, *SourceData, error) {
 	log.Println("Starting data fetch from all sources...")
 	
 	// Fetch data from all sources concurrently
@@ -127,8 +127,16 @@ func (f *DataFetcher) FetchAllData(ctx context.Context, noaaKURL, noaaSolarURL, 
 			log.Printf("Data fetch error: %v", err)
 			completed++
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, nil, ctx.Err()
 		}
+	}
+	
+	// Create source data structure
+	sourceData := &SourceData{
+		NOAAKIndex: kIndexData,
+		NOAASolar:  solarData,
+		N0NBH:      n0nbhData,
+		SIDC:       sidcData,
 	}
 	
 	// Normalize and combine all data
@@ -136,6 +144,11 @@ func (f *DataFetcher) FetchAllData(ctx context.Context, noaaKURL, noaaSolarURL, 
 	
 	log.Printf("Data fetch and normalization completed successfully - NOAA K-index: %d points, NOAA Solar: %d points, N0NBH: %v, SIDC: %d points", 
 		len(kIndexData), len(solarData), n0nbhData != nil, len(sidcData))
-	return propagationData, nil
+	return propagationData, sourceData, nil
 }
 
+// FetchAllData provides backward compatibility - fetches and normalizes data from all sources
+func (f *DataFetcher) FetchAllData(ctx context.Context, noaaKURL, noaaSolarURL, n0nbhURL, sidcURL string) (*models.PropagationData, error) {
+	data, _, err := f.FetchAllDataWithSources(ctx, noaaKURL, noaaSolarURL, n0nbhURL, sidcURL)
+	return data, err
+}

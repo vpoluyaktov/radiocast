@@ -219,15 +219,20 @@ flowchart TB
 ## 8. Development & Testing Modes
 
 ### 8.1 Local Testing Workflow (Pre-GitHub Validation)
-**Purpose**: Comprehensive local validation before pushing to GitHub branches
+**Purpose**: Comprehensive local validation before pushing to GitHub
 
-**Prerequisites**:
+**Environment Setup**
+
+For local development and testing, you'll need to set up the following environment variables:
+
 ```bash
-# Required environment setup
-export OPENAI_API_KEY="sk-your-key-here"
-export OPENAI_MODEL="gpt-4o-mini"  # Optional, defaults to gpt-4
-export PORT="8080"                  # Optional, defaults to 8080
+export OPENAI_API_KEY="your-openai-api-key"
+export OPENAI_MODEL="gpt-4.1"  # Default model
+export PORT="8981"  # Default local port
+export LOCAL_REPORTS_DIR="./reports"
 ```
+
+**CRITICAL SECURITY NOTE**: Never use dummy or placeholder OpenAI API keys for testing. Always ensure a valid OPENAI_API_KEY is properly set before running any tests that require LLM functionality. The service will fail gracefully if the key is missing or invalid.
 
 **Testing Commands**:
 ```bash
@@ -239,13 +244,7 @@ cd service
 # 2. API connectivity check (no API key required)
 ./run_local.sh debug-apis
 
-# 3. LLM integration test
-./run_local.sh debug-llm
-
-# 4. Complete end-to-end test
-./run_local.sh test
-
-# 5. Local server with manual testing
+# 3. Complete end-to-end test
 ./run_local.sh server
 ```
 
@@ -257,7 +256,7 @@ cd service
 - **Real API Data**: Tests against live NOAA, N0NBH, and SIDC endpoints
 - Creates both interactive HTML charts and PNG images
 - No GCS upload - purely local file system
-- Serves reports on `http://localhost:8080`
+- Serves reports on `http://localhost:8981`
 - Essential for validating changes before deployment
 
 **Chart Testing**:
@@ -322,7 +321,7 @@ go build -o radiocast
 # 4. Test server startup and health
 timeout 10s ./radiocast -deployment local &
 sleep 2
-curl -f http://localhost:8080/health
+curl -f http://localhost:8981/health
 pkill radiocast
 
 # 5. Run comprehensive test suite

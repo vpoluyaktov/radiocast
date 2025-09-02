@@ -2,6 +2,7 @@ package fetchers
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -27,13 +28,15 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 		Timestamp: now,
 	}
 	
-	// Process NOAA K-index data (get latest)
+	// Process K-index data from NOAA
 	if len(kIndex) > 0 {
 		latest := kIndex[len(kIndex)-1]
 		data.GeomagData.KIndex = latest.KpIndex
+		data.GeomagData.KIndexDataSource = latest.Source
 		if latest.EstimatedKp > 0 {
 			data.GeomagData.KIndex = latest.EstimatedKp
 		}
+		log.Printf("DEBUG: Set K-Index source to: %s", data.GeomagData.KIndexDataSource)
 		
 		// Determine geomagnetic activity level
 		if data.GeomagData.KIndex <= 2 {
@@ -47,13 +50,19 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 		}
 	}
 	
-	// Process NOAA Solar data (get latest)
+	// Process solar data from NOAA
 	if len(solar) > 0 {
 		latest := solar[len(solar)-1]
 		data.SolarData.SolarFluxIndex = latest.SolarFlux
+		data.SolarData.SolarFluxDataSource = latest.Source
 		data.SolarData.SunspotNumber = int(latest.SunspotNumber)
-		
-		// Determine solar activity level
+		data.SolarData.SunspotDataSource = latest.Source
+		log.Printf("DEBUG: Set Solar Flux source to: %s", data.SolarData.SolarFluxDataSource)
+		log.Printf("DEBUG: Set Sunspot source to: %s", data.SolarData.SunspotDataSource)
+	}
+	
+	// Classify solar activity based on solar flux index
+	if data.SolarData.SolarFluxIndex > 0 {
 		if data.SolarData.SolarFluxIndex < 100 {
 			data.SolarData.SolarActivity = "Low"
 		} else if data.SolarData.SolarFluxIndex < 150 {
@@ -70,17 +79,36 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 			if data.SolarData.SolarFluxIndex == 0 {
 				data.SolarData.SolarFluxIndex = flux
 			}
+			// Always set N0NBH as source for solar flux when available
+			data.SolarData.SolarFluxDataSource = n0nbh.Source
+			log.Printf("DEBUG: Set Solar Flux source to N0NBH: %s", data.SolarData.SolarFluxDataSource)
+			
+			// Re-classify solar activity after N0NBH data update
+			if data.SolarData.SolarFluxIndex < 100 {
+				data.SolarData.SolarActivity = "Low"
+			} else if data.SolarData.SolarFluxIndex < 150 {
+				data.SolarData.SolarActivity = "Moderate"
+			} else {
+				data.SolarData.SolarActivity = "High"
+			}
 		}
 		
+		// Parse A-index
 		if aIndex, err := strconv.ParseFloat(n0nbh.SolarData.AIndex, 64); err == nil {
 			data.GeomagData.AIndex = aIndex
+			data.GeomagData.AIndexDataSource = n0nbh.Source
+			log.Printf("DEBUG: Set A-Index source to: %s", data.GeomagData.AIndexDataSource)
 		}
 		
+		// Parse proton flux
 		if protonFlux, err := strconv.ParseFloat(n0nbh.SolarData.ProtonFlux, 64); err == nil {
 			data.SolarData.ProtonFlux = protonFlux
+			data.SolarData.ProtonFluxDataSource = n0nbh.Source
+			log.Printf("DEBUG: Set Proton Flux source to: %s", data.SolarData.ProtonFluxDataSource)
 		}
 		
 		// Process band conditions
+		data.BandData.BandDataSource = n0nbh.Source
 		for _, band := range n0nbh.Calculatedconditions.Band {
 			condition := models.BandCondition{
 				Day:   band.Day,
@@ -134,6 +162,14 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 	
 	// Generate basic forecast
 	data.Forecast = n.GenerateBasicForecast(data)
+	
+	// Debug: Log all source attributions before returning
+	log.Printf("DEBUG: Final source attribution - Solar Flux: '%s', Sunspot: '%s', K-Index: '%s', A-Index: '%s', Band Data: '%s'", 
+		data.SolarData.SolarFluxDataSource, 
+		data.SolarData.SunspotDataSource,
+		data.GeomagData.KIndexDataSource,
+		data.GeomagData.AIndexDataSource,
+		data.BandData.BandDataSource)
 	
 	return data
 }

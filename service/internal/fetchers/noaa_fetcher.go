@@ -61,6 +61,7 @@ func (f *NOAAFetcher) FetchKIndex(ctx context.Context, url string) ([]models.NOA
 			TimeTag:     item.TimeTag,
 			KpIndex:     item.EstimatedKp, // Use estimated_kp instead of kp_index
 			EstimatedKp: item.EstimatedKp,
+			Source:      "NOAA SWPC",
 		})
 	}
 	
@@ -131,6 +132,7 @@ func (f *NOAAFetcher) FetchSolar(ctx context.Context, url string) ([]models.NOAA
 			SolarFlux:         solarFlux,
 			SunspotNumber:     sunspotNumber,
 			SolarFluxAdjusted: solarFlux, // Use same value
+			Source:            "NOAA SWPC",
 		})
 	}
 	
