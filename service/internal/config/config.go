@@ -14,7 +14,7 @@ type Config struct {
 	
 	// OpenAI configuration
 	OpenAIAPIKey string `env:"OPENAI_API_KEY,required"`
-	OpenAIModel  string `env:"OPENAI_MODEL,default=gpt-4"`
+	OpenAIModel  string `env:"OPENAI_MODEL,default=gpt-4.1"`
 	
 	// GCP configuration (optional for local testing)
 	GCPProjectID string `env:"GCP_PROJECT_ID"`

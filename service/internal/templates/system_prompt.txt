@@ -51,36 +51,4 @@ CRITICAL: You MUST include the Band-by-Band Analysis table using the exact forma
 
 CRITICAL: You MUST include the Chart Data JSON section at the end. This is REQUIRED for charts to display.
 
-Generate a report with all sections above, then add this Chart Data section:
-
-## Chart Data
-```json
-{
-  "bandConditions": [
-    {"band": "80m", "day": 1, "night": 3, "dayLabel": "Poor", "nightLabel": "Good"},
-    {"band": "40m", "day": 1, "night": 4, "dayLabel": "Poor", "nightLabel": "Excellent"},
-    {"band": "20m", "day": 4, "night": 3, "dayLabel": "Excellent", "nightLabel": "Good"},
-    {"band": "17m", "day": 3, "night": 2, "dayLabel": "Good", "nightLabel": "Fair"},
-    {"band": "15m", "day": 3, "night": 1, "dayLabel": "Good", "nightLabel": "Poor"},
-    {"band": "12m", "day": 2, "night": 0, "dayLabel": "Fair", "nightLabel": "Closed"},
-    {"band": "10m", "day": 2, "night": 0, "dayLabel": "Fair", "nightLabel": "Closed"}
-  ],
-  "solarActivity": {
-    "solarFlux": 100.0,
-    "sunspotNumber": 125,
-    "kIndex": 0.7,
-    "aIndex": 0.0,
-    "trend": "stable"
-  },
-  "forecast": [
-    {"day": "Today", "kIndex": 0.7, "condition": "Quiet"},
-    {"day": "Tomorrow", "kIndex": 1.2, "condition": "Quiet"},
-    {"day": "Day 3", "kIndex": 1.5, "condition": "Unsettled"}
-  ]
-}
-```
-
-IMPORTANT RULES:
-- Use numeric scales: 0=Closed, 1=Poor, 2=Fair, 3=Good, 4=Excellent
-- K-index values must be 0.0 or positive (never negative)
-- Always include both the table AND the Chart Data JSON section
+Generate a report with all sections above.

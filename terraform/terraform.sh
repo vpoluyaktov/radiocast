@@ -148,7 +148,7 @@ fi
 cd terraform
 
 # Check if tfvars file exists
-TFVARS_FILE="${ENVIRONMENT}.tfvars"
+TFVARS_FILE="${ENVIRONMENT}/${ENVIRONMENT}.tfvars"
 if [ ! -f "$TFVARS_FILE" ]; then
     print_error "Configuration file not found: $TFVARS_FILE"
     exit 1
