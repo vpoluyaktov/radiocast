@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"time"
+	"github.com/mmcdole/gofeed"
+)
 
 // PropagationData represents normalized radio propagation data from all sources
 type PropagationData struct {
@@ -10,6 +13,14 @@ type PropagationData struct {
 	BandData     BandData      `json:"band_data"`
 	Forecast     ForecastData  `json:"forecast"`
 	SourceEvents []SourceEvent `json:"source_events"`
+}
+
+// SourceData contains raw data from all sources before normalization
+type SourceData struct {
+	NOAAKIndex []NOAAKIndexResponse `json:"noaa_k_index"`
+	NOAASolar  []NOAASolarResponse  `json:"noaa_solar"`
+	N0NBH      *N0NBHResponse       `json:"n0nbh"`
+	SIDC       []*gofeed.Item       `json:"sidc"`
 }
 
 // SolarData contains solar activity information

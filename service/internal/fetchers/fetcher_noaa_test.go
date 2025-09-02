@@ -24,9 +24,13 @@ func TestFetchNOAAKIndex(t *testing.T) {
 		t.Fatal("Expected at least one data point, got none")
 	}
 	
-	// Validate we have recent data (at least 10 entries for last ~3 hours)
-	if len(data) < 10 {
-		t.Errorf("Expected at least 10 recent K-index entries, got %d", len(data))
+	// Validate we have recent data (filtered to last 24 hours with 3-hour intervals)
+	// Should have at most 8 entries (24 hours / 3 hour intervals)
+	if len(data) == 0 {
+		t.Errorf("Expected at least 1 recent K-index entry, got %d", len(data))
+	}
+	if len(data) > 8 {
+		t.Errorf("Expected at most 8 filtered K-index entries, got %d", len(data))
 	}
 	
 	// Validate structure and content of multiple items
@@ -95,17 +99,14 @@ func TestFetchNOAASolar(t *testing.T) {
 		t.Fatal("Expected at least one data point, got none")
 	}
 	
-	// Should have substantial historical data (at least 1000 entries)
-	if len(data) < 1000 {
-		t.Errorf("Expected substantial solar data history, got only %d entries", len(data))
+	// Should have filtered solar data (at most 7 entries as per SolarDataHistoryDays)
+	if len(data) > 7 {
+		t.Errorf("Expected at most 7 filtered solar data entries, got %d entries", len(data))
 	}
 	
-	// Validate recent entries (last 10)
+	// Validate recent entries (all available since we now have filtered data)
 	validRecentEntries := 0
-	startIdx := len(data) - 10
-	if startIdx < 0 {
-		startIdx = 0
-	}
+	startIdx := 0
 	
 	for i := startIdx; i < len(data); i++ {
 		entry := data[i]
@@ -158,7 +159,8 @@ func TestFetchNOAASolar(t *testing.T) {
 	
 	// Check data processing logic - entries with F10.7 = -1 should be handled
 	processedEntries := 0
-	for _, entry := range data[len(data)-50:] { // Check last 50 entries
+	// Check all available entries since we now have filtered data (max 7)
+	for _, entry := range data {
 		if entry.SolarFlux == 100.0 { // Default value used for invalid F10.7
 			processedEntries++
 		}

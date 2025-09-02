@@ -11,6 +11,12 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
+// Configuration constants for SIDC data filtering
+const (
+	// SIDCHistoryMonths defines how many months of SIDC data to keep (monthly data)
+	SIDCHistoryMonths = 12
+)
+
 // SIDCFetcher handles fetching data from SIDC CSV API
 type SIDCFetcher struct {
 	client *resty.Client
@@ -43,7 +49,13 @@ func (f *SIDCFetcher) Fetch(ctx context.Context, url string) ([]*gofeed.Item, er
 	bodyStr := string(resp.Body())
 	
 	// Parse as CSV data (SIDC format: Year;Month;Date_fraction;SSN_value;SSN_error;Nb_observations;Definitive)
-	return f.parseCSV(bodyStr)
+	items, err := f.parseCSV(bodyStr)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Filter to recent data only
+	return f.filterByDate(items), nil
 }
 
 // parseCSV parses SIDC CSV data and converts to RSS-like items
@@ -96,4 +108,18 @@ func (f *SIDCFetcher) parseCSV(csvData string) ([]*gofeed.Item, error) {
 	}
 	
 	return items, nil
+}
+
+// filterByDate filters SIDC data to only include entries within the specified time range
+func (f *SIDCFetcher) filterByDate(sidcData []*gofeed.Item) []*gofeed.Item {
+	var filtered []*gofeed.Item
+	cutoffDate := time.Now().AddDate(0, -SIDCHistoryMonths, 0)
+	
+	for _, entry := range sidcData {
+		if entry.PublishedParsed != nil && entry.PublishedParsed.After(cutoffDate) {
+			filtered = append(filtered, entry)
+		}
+	}
+	
+	return filtered
 }
