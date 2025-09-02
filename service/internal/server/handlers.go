@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"radiocast/internal/models"
 )
 
 // HandleRoot serves the main page with a generated report
@@ -334,50 +332,4 @@ func (s *Server) HandleListReports(w http.ResponseWriter, r *http.Request) {
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
-}
-
-
-// generateHTMLWithCharts generates HTML with charts using the specified folder path
-func (s *Server) generateHTMLWithCharts(markdown string, data *models.PropagationData, chartFiles []string, folderPath string) (string, error) {
-	// Convert markdown to HTML
-	htmlContent := s.Generator.MarkdownToHTML(markdown)
-	
-	// Build chart HTML references with folder path
-	chartsHTML := s.Generator.BuildChartsHTML(chartFiles, folderPath)
-	
-	// Combine everything into a complete HTML document
-	fullHTML, err := s.Generator.BuildCompleteHTML(htmlContent, chartsHTML, data)
-	if err != nil {
-		return "", fmt.Errorf("failed to build complete HTML: %w", err)
-	}
-	
-	return fullHTML, nil
-}
-
-// getContentType returns the appropriate content type for a file extension
-func (s *Server) getContentType(ext string) string {
-	switch strings.ToLower(ext) {
-	case ".png":
-		return "image/png"
-	case ".jpg", ".jpeg":
-		return "image/jpeg"
-	case ".gif":
-		return "image/gif"
-	case ".svg":
-		return "image/svg+xml"
-	case ".html", ".htm":
-		return "text/html"
-	case ".css":
-		return "text/css"
-	case ".js":
-		return "application/javascript"
-	case ".json":
-		return "application/json"
-	case ".txt", ".md":
-		return "text/plain"
-	case ".pdf":
-		return "application/pdf"
-	default:
-		return "application/octet-stream"
-	}
 }
