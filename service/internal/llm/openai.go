@@ -295,21 +295,6 @@ Focus on practical advice for amateur radio operators based on the comprehensive
 	return prompt
 }
 
-// filterKIndexByDate filters K-index data to only include entries within the specified time range
-func (c *OpenAIClient) filterKIndexByDate(kIndexData []models.NOAAKIndexResponse, cutoffDate time.Time) []models.NOAAKIndexResponse {
-	var filtered []models.NOAAKIndexResponse
-	
-	for _, entry := range kIndexData {
-		if entryTime, err := time.Parse("2006-01-02T15:04:05", entry.TimeTag); err == nil {
-			if entryTime.After(cutoffDate) {
-				filtered = append(filtered, entry)
-			}
-		}
-	}
-	
-	return filtered
-}
-
 // filterKIndexRecent filters K-index data to last 24 hours with 3-hour intervals
 func (c *OpenAIClient) filterKIndexRecent(kIndexData []models.NOAAKIndexResponse) []models.NOAAKIndexResponse {
 	if len(kIndexData) == 0 {
