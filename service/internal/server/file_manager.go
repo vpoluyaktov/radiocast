@@ -184,10 +184,6 @@ func (fm *FileManager) saveLLMFiles(reportDir string, data *models.PropagationDa
 	return nil
 }
 
-// generateCharts creates PNG chart files (backward compatibility)
-func (fm *FileManager) generateCharts(reportDir string, data *models.PropagationData) ([]string, error) {
-	return fm.generateChartsWithSources(reportDir, data, nil)
-}
 
 // generateChartsWithSources creates PNG chart files with access to source data
 func (fm *FileManager) generateChartsWithSources(reportDir string, data *models.PropagationData, sourceData *models.SourceData) ([]string, error) {

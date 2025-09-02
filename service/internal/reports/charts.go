@@ -117,10 +117,6 @@ func (cg *ChartGenerator) generateSolarActivityChart(data *models.PropagationDat
 	return filename, nil
 }
 
-// generateKIndexChart creates a time series chart for K-index (backward compatibility)
-func (cg *ChartGenerator) generateKIndexChart(data *models.PropagationData) (string, error) {
-	return cg.generateKIndexChartWithSources(data, nil)
-}
 
 // generateKIndexChartWithSources creates a time series chart for K-index using real historical data
 func (cg *ChartGenerator) generateKIndexChartWithSources(data *models.PropagationData, sourceData *models.SourceData) (string, error) {
