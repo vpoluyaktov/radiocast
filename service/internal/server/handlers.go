@@ -162,7 +162,7 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	data, sourceData, err := s.Fetcher.FetchAllDataWithSources(ctx, s.Config.NOAAKIndexURL, s.Config.NOAASolarURL, s.Config.N0NBHSolarURL, s.Config.SIDCRSSURL)
 	if err != nil {
 		log.Printf("Data fetching failed: %v", err)
-		http.Error(w, fmt.Sprintf("Data fetching failed: %v", err), http.StatusInternalServerError)
+		http.Error(w, "Data fetching failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -173,7 +173,7 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	markdownReport, err := s.LLMClient.GenerateReport(data)
 	if err != nil {
 		log.Printf("LLM report generation failed: %v", err)
-		http.Error(w, fmt.Sprintf("LLM report generation failed: %v", err), http.StatusInternalServerError)
+		http.Error(w, "LLM report generation failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -184,7 +184,7 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	files, err := fileManager.GenerateAllFiles(ctx, data, sourceData, markdownReport)
 	if err != nil {
 		log.Printf("File generation failed: %v", err)
-		http.Error(w, fmt.Sprintf("File generation failed: %v", err), http.StatusInternalServerError)
+		http.Error(w, "File generation failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -196,7 +196,7 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 		reportURL, err = fileManager.UploadToGCS(ctx, files, data.Timestamp)
 		if err != nil {
 			log.Printf("Storage failed: %v", err)
-			http.Error(w, fmt.Sprintf("Storage failed: %v", err), http.StatusInternalServerError)
+			http.Error(w, "Failed to upload files to GCS: "+err.Error(), http.StatusInternalServerError)
 			fileManager.Cleanup(files)
 			return
 		}
@@ -205,7 +205,7 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 		fileManager.Cleanup(files)
 	} else {
 		// Local mode - files are already saved
-		reportURL = fmt.Sprintf("/files/index.html")
+		reportURL = "/files/index.html"
 		log.Printf("Report stored locally in: %s", files.ReportDir)
 	}
 	
@@ -320,7 +320,7 @@ func (s *Server) HandleListReports(w http.ResponseWriter, r *http.Request) {
 	reports, err := s.Storage.ListReports(ctx, limit)
 	if err != nil {
 		log.Printf("Failed to list reports: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to list reports: %v", err), http.StatusInternalServerError)
+		http.Error(w, "Failed to list reports: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	
