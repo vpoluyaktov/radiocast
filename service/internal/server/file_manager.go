@@ -76,8 +76,8 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 		log.Printf("Warning: Failed to save LLM files: %v", err)
 	}
 	
-	// 4. Generate PNG charts
-	chartFiles, err := fm.generateCharts(reportDir, data)
+	// 4. Generate PNG charts with source data
+	chartFiles, err := fm.generateChartsWithSources(reportDir, data, sourceData)
 	if err != nil {
 		log.Printf("Warning: Failed to generate charts: %v", err)
 		chartFiles = []string{}
@@ -184,11 +184,16 @@ func (fm *FileManager) saveLLMFiles(reportDir string, data *models.PropagationDa
 	return nil
 }
 
-// generateCharts creates PNG chart files
+// generateCharts creates PNG chart files (backward compatibility)
 func (fm *FileManager) generateCharts(reportDir string, data *models.PropagationData) ([]string, error) {
+	return fm.generateChartsWithSources(reportDir, data, nil)
+}
+
+// generateChartsWithSources creates PNG chart files with access to source data
+func (fm *FileManager) generateChartsWithSources(reportDir string, data *models.PropagationData, sourceData *models.SourceData) ([]string, error) {
 	chartGen := reports.NewChartGenerator(reportDir)
 	log.Printf("Generating PNG charts in directory: %s", reportDir)
-	chartFiles, err := chartGen.GenerateCharts(data)
+	chartFiles, err := chartGen.GenerateChartsWithSources(data, sourceData)
 	if err != nil {
 		return nil, err
 	}

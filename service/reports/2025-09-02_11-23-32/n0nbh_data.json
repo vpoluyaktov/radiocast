@@ -2,13 +2,13 @@
   "solardata": {
     "solarflux": "202",
     "aindex": " 16",
-    "kindex": " 5",
+    "kindex": " 3",
     "kindexnt": "No Report",
-    "sunspots": "165",
-    "heliumline": "149.3",
-    "protonflux": "49100",
-    "electonflux": "15200",
-    "aurora": " 2",
+    "sunspots": "153",
+    "heliumline": "147.0",
+    "protonflux": "4530",
+    "electonflux": "7770",
+    "aurora": " 1",
     "normalization": "1.99",
     "latestswpcreport": ""
   },
@@ -17,30 +17,30 @@
   "calculatedconditions": {
     "band": [
       {
-        "name": "17m-15m",
-        "time": "day",
-        "day": "Fair",
-        "night": "Fair",
-        "source": "N0NBH"
-      },
-      {
-        "name": "12m-10m",
-        "time": "day",
-        "day": "Fair",
-        "night": "Poor",
-        "source": "N0NBH"
-      },
-      {
         "name": "80m-40m",
         "time": "day",
         "day": "Poor",
-        "night": "Poor",
+        "night": "Fair",
         "source": "N0NBH"
       },
       {
         "name": "30m-20m",
         "time": "day",
-        "day": "Poor",
+        "day": "Good",
+        "night": "Good",
+        "source": "N0NBH"
+      },
+      {
+        "name": "17m-15m",
+        "time": "day",
+        "day": "Good",
+        "night": "Good",
+        "source": "N0NBH"
+      },
+      {
+        "name": "12m-10m",
+        "time": "day",
+        "day": "Good",
         "night": "Poor",
         "source": "N0NBH"
       }

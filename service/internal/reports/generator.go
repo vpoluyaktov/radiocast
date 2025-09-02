@@ -24,13 +24,18 @@ func NewGenerator(outputDir string) *Generator {
 }
 
 
-// GenerateHTML converts markdown report to HTML with embedded charts
+// GenerateHTML converts markdown report to HTML with embedded charts (backward compatibility)
 func (g *Generator) GenerateHTML(markdownReport string, data *models.PropagationData) (string, error) {
+	return g.GenerateHTMLWithSources(markdownReport, data, nil)
+}
+
+// GenerateHTMLWithSources converts markdown report to HTML with embedded charts using source data
+func (g *Generator) GenerateHTMLWithSources(markdownReport string, data *models.PropagationData, sourceData *models.SourceData) (string, error) {
 	log.Println("Converting markdown to HTML and generating charts...")
 	
-	// Generate chart images using the new chart generator
+	// Generate chart images using the new chart generator with source data
 	chartGen := NewChartGenerator(g.outputDir)
-	chartFiles, err := chartGen.GenerateCharts(data)
+	chartFiles, err := chartGen.GenerateChartsWithSources(data, sourceData)
 	if err != nil {
 		log.Printf("Warning: Failed to generate charts: %v", err)
 		chartFiles = []string{}

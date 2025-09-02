@@ -26,6 +26,11 @@ func NewChartGenerator(outputDir string) *ChartGenerator {
 
 // GenerateCharts creates all chart images for the report
 func (cg *ChartGenerator) GenerateCharts(data *models.PropagationData) ([]string, error) {
+	return cg.GenerateChartsWithSources(data, nil)
+}
+
+// GenerateChartsWithSources creates all chart images for the report with access to source data
+func (cg *ChartGenerator) GenerateChartsWithSources(data *models.PropagationData, sourceData *models.SourceData) ([]string, error) {
 	var chartFiles []string
 
 	// Generate solar activity chart
@@ -33,8 +38,8 @@ func (cg *ChartGenerator) GenerateCharts(data *models.PropagationData) ([]string
 		chartFiles = append(chartFiles, solarChart)
 	}
 
-	// Generate K-index trend chart
-	if kIndexChart, err := cg.generateKIndexChart(data); err == nil {
+	// Generate K-index trend chart with real data
+	if kIndexChart, err := cg.generateKIndexChartWithSources(data, sourceData); err == nil {
 		chartFiles = append(chartFiles, kIndexChart)
 	}
 
@@ -107,22 +112,39 @@ func (cg *ChartGenerator) generateSolarActivityChart(data *models.PropagationDat
 	return filename, nil
 }
 
-// generateKIndexChart creates a time series chart for K-index
+// generateKIndexChart creates a time series chart for K-index (backward compatibility)
 func (cg *ChartGenerator) generateKIndexChart(data *models.PropagationData) (string, error) {
+	return cg.generateKIndexChartWithSources(data, nil)
+}
+
+// generateKIndexChartWithSources creates a time series chart for K-index using real historical data
+func (cg *ChartGenerator) generateKIndexChartWithSources(data *models.PropagationData, sourceData *models.SourceData) (string, error) {
 	filename := filepath.Join(cg.outputDir, "k_index_trend.png")
 
-	// Create sample time series data (in real implementation, you'd have historical data)
-	now := time.Now()
-	xValues := []time.Time{
-		now.Add(-24 * time.Hour),
-		now.Add(-18 * time.Hour),
-		now.Add(-12 * time.Hour),
-		now.Add(-6 * time.Hour),
-		now,
+	// Use real K-index historical data from source data
+	var xValues []time.Time
+	var yValues []float64
+	
+	// Extract real K-index data from source data
+	if sourceData != nil && len(sourceData.NOAAKIndex) > 0 {
+		for _, kData := range sourceData.NOAAKIndex {
+			if parsedTime, err := time.Parse("2006-01-02T15:04:05", kData.TimeTag); err == nil {
+				xValues = append(xValues, parsedTime)
+				yValues = append(yValues, kData.EstimatedKp)
+			}
+		}
 	}
 	
-	// Sample K-index values (in real implementation, use historical data)
-	yValues := []float64{2.1, 1.8, 2.3, data.GeomagData.KIndex, data.GeomagData.KIndex}
+	// Fallback to sample data if no real data available
+	if len(xValues) == 0 {
+		now := time.Now()
+		xValues = []time.Time{
+			now.Add(-6 * time.Hour),
+			now.Add(-3 * time.Hour),
+			now,
+		}
+		yValues = []float64{2.0, 3.0, data.GeomagData.KIndex}
+	}
 
 	graph := chart.Chart{
 		Title: "K-index Trend (24 Hours)",
@@ -133,20 +155,26 @@ func (cg *ChartGenerator) generateKIndexChart(data *models.PropagationData) (str
 		Background: chart.Style{
 			Padding: chart.Box{
 				Top:    40,
-				Left:   60,
+				Left:   70,
 				Right:  20,
-				Bottom: 40,
+				Bottom: 60,
 			},
 		},
-		Height: 300,
-		Width:  600,
+		Height: 350,
+		Width:  700,
 		XAxis: chart.XAxis{
-			Name: "Time",
+			Name: "Time (UTC)",
 			NameStyle: chart.Style{
 				FontSize: 12,
 			},
 			Style: chart.Style{
-				FontSize: 10,
+				FontSize: 9,
+			},
+			ValueFormatter: func(v interface{}) string {
+				if t, ok := v.(time.Time); ok {
+					return t.Format("15:04")
+				}
+				return ""
 			},
 		},
 		YAxis: chart.YAxis{
@@ -159,15 +187,25 @@ func (cg *ChartGenerator) generateKIndexChart(data *models.PropagationData) (str
 			},
 			Range: &chart.ContinuousRange{
 				Min: 0.0,
-				Max: 9.0,
+				Max: 6.0,
+			},
+			Ticks: []chart.Tick{
+				{Value: 0, Label: "0"},
+				{Value: 1, Label: "1"},
+				{Value: 2, Label: "2 (Quiet)"},
+				{Value: 3, Label: "3"},
+				{Value: 4, Label: "4 (Active)"},
+				{Value: 5, Label: "5 (Storm)"},
 			},
 		},
 		Series: []chart.Series{
 			chart.TimeSeries{
 				Name: "K-index",
 				Style: chart.Style{
-					StrokeColor: drawing.ColorBlue,
-					StrokeWidth: 2,
+					StrokeColor: drawing.Color{R: 51, G: 102, B: 204, A: 255}, // Blue
+					StrokeWidth: 3,
+					DotColor:    drawing.Color{R: 51, G: 102, B: 204, A: 255},
+					DotWidth:    4,
 				},
 				XValues: xValues,
 				YValues: yValues,
@@ -175,28 +213,33 @@ func (cg *ChartGenerator) generateKIndexChart(data *models.PropagationData) (str
 		},
 	}
 
-	// Add reference lines for K-index levels
-	graph.Series = append(graph.Series, chart.ContinuousSeries{
-		Name: "Quiet (K≤2)",
-		Style: chart.Style{
-			StrokeColor:     drawing.ColorGreen,
-			StrokeWidth:     1,
-			StrokeDashArray: []float64{5, 5},
-		},
-		XValues: []float64{0, 1},
-		YValues: []float64{2, 2},
-	})
+	// Add reference lines for K-index levels (only if we have data points)
+	if len(xValues) > 0 {
+		minTime := xValues[0].Unix()
+		maxTime := xValues[len(xValues)-1].Unix()
+		
+		graph.Series = append(graph.Series, chart.ContinuousSeries{
+			Name: "Quiet (K≤2)",
+			Style: chart.Style{
+				StrokeColor:     drawing.ColorGreen,
+				StrokeWidth:     1,
+				StrokeDashArray: []float64{5, 5},
+			},
+			XValues: []float64{float64(minTime), float64(maxTime)},
+			YValues: []float64{2, 2},
+		})
 
-	graph.Series = append(graph.Series, chart.ContinuousSeries{
-		Name: "Active (K≥4)",
-		Style: chart.Style{
-			StrokeColor:     drawing.ColorRed,
-			StrokeWidth:     1,
-			StrokeDashArray: []float64{5, 5},
-		},
-		XValues: []float64{0, 1},
-		YValues: []float64{4, 4},
-	})
+		graph.Series = append(graph.Series, chart.ContinuousSeries{
+			Name: "Active (K≥4)",
+			Style: chart.Style{
+				StrokeColor:     drawing.ColorRed,
+				StrokeWidth:     1,
+				StrokeDashArray: []float64{5, 5},
+			},
+			XValues: []float64{float64(minTime), float64(maxTime)},
+			YValues: []float64{4, 4},
+		})
+	}
 
 	f, err := os.Create(filename)
 	if err != nil {
