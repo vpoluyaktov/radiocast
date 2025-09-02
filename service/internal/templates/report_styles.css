@@ -376,7 +376,7 @@ em {
 }
 
 .band-analysis-table td {
-    text-align: center;
+    text-align: left;
     vertical-align: middle;
     padding: 10px 8px;
 }
