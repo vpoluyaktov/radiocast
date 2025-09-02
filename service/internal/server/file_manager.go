@@ -86,7 +86,7 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 	files.ChartFiles = chartFiles
 	
 	// 5. Generate HTML report
-	html, err := fm.generateHTML(markdown, data, chartFiles)
+	html, err := fm.generateHTML(markdown, data, chartFiles, files.FolderPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate HTML: %w", err)
 	}
@@ -198,10 +198,10 @@ func (fm *FileManager) generateCharts(reportDir string, data *models.Propagation
 }
 
 // generateHTML creates the HTML report
-func (fm *FileManager) generateHTML(markdown string, data *models.PropagationData, chartFiles []string) (string, error) {
+func (fm *FileManager) generateHTML(markdown string, data *models.PropagationData, chartFiles []string, folderPath string) (string, error) {
 	if fm.server.Storage != nil {
-		// GCS mode - charts will be uploaded separately, use URLs
-		return fm.server.Generator.GenerateHTMLWithLocalCharts(markdown, data, chartFiles)
+		// GCS mode - charts will be uploaded separately, use folder path for URLs
+		return fm.server.Generator.GenerateHTMLWithFolderPath(markdown, data, chartFiles, folderPath)
 	} else {
 		// Local mode - charts are in same directory
 		return fm.server.Generator.GenerateHTMLWithLocalCharts(markdown, data, chartFiles)
