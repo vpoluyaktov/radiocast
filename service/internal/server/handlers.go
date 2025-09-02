@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -12,7 +11,6 @@ import (
 	"time"
 
 	"radiocast/internal/models"
-	"radiocast/internal/reports"
 )
 
 // HandleRoot serves the main page with a generated report
@@ -50,15 +48,6 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	// Local mode - generate report on demand
 	log.Println("Local mode: generating report on demand...")
 	
-	// Create timestamped directory for this report
-	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	reportDir := filepath.Join(s.ReportsDir, timestamp)
-	if err := os.MkdirAll(reportDir, 0755); err != nil {
-		log.Printf("Failed to create report directory: %v", err)
-		s.serveMainPage(w)
-		return
-	}
-	
 	// Fetch data from all sources
 	log.Println("Starting data fetch from all sources...")
 	data, sourceData, err := s.Fetcher.FetchAllDataWithSources(
@@ -75,193 +64,27 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Data fetch and normalization completed successfully")
 	
-	// Save separate JSON files for each data source
-	if sourceData.NOAAKIndex != nil {
-		noaaKIndexJSON, _ := json.MarshalIndent(sourceData.NOAAKIndex, "", "  ")
-		noaaKIndexPath := filepath.Join(reportDir, "noaa_k_index.json")
-		if err := os.WriteFile(noaaKIndexPath, noaaKIndexJSON, 0644); err != nil {
-			log.Printf("Failed to save NOAA K-Index data: %v", err)
-		} else {
-			log.Printf("Saved NOAA K-Index data to: %s", noaaKIndexPath)
-		}
-	}
-	
-	if sourceData.NOAASolar != nil {
-		noaaSolarJSON, _ := json.MarshalIndent(sourceData.NOAASolar, "", "  ")
-		noaaSolarPath := filepath.Join(reportDir, "noaa_solar.json")
-		if err := os.WriteFile(noaaSolarPath, noaaSolarJSON, 0644); err != nil {
-			log.Printf("Failed to save NOAA Solar data: %v", err)
-		} else {
-			log.Printf("Saved NOAA Solar data to: %s", noaaSolarPath)
-		}
-	}
-	
-	if sourceData.N0NBH != nil {
-		n0nbhJSON, _ := json.MarshalIndent(sourceData.N0NBH, "", "  ")
-		n0nbhPath := filepath.Join(reportDir, "n0nbh_data.json")
-		if err := os.WriteFile(n0nbhPath, n0nbhJSON, 0644); err != nil {
-			log.Printf("Failed to save N0NBH data: %v", err)
-		} else {
-			log.Printf("Saved N0NBH data to: %s", n0nbhPath)
-		}
-	}
-	
-	if sourceData.SIDC != nil {
-		sidcJSON, _ := json.MarshalIndent(sourceData.SIDC, "", "  ")
-		sidcPath := filepath.Join(reportDir, "sidc_data.json")
-		if err := os.WriteFile(sidcPath, sidcJSON, 0644); err != nil {
-			log.Printf("Failed to save SIDC data: %v", err)
-		} else {
-			log.Printf("Saved SIDC data to: %s", sidcPath)
-		}
-	}
-	
-	// Also save the normalized/combined data
-	apiDataJSON, _ := json.MarshalIndent(data, "", "  ")
-	apiDataPath := filepath.Join(reportDir, "normalized_data.json")
-	if err := os.WriteFile(apiDataPath, apiDataJSON, 0644); err != nil {
-		log.Printf("Failed to save normalized data: %v", err)
-	}
-	
-	// Save system prompt
-	systemPrompt := s.LLMClient.GetSystemPrompt()
-	log.Printf("DEBUG: System prompt length: %d", len(systemPrompt))
-	systemPromptPath := filepath.Join(reportDir, "llm_system_prompt.txt")
-	log.Printf("DEBUG: Writing system prompt to: %s", systemPromptPath)
-	if err := os.WriteFile(systemPromptPath, []byte(systemPrompt), 0644); err != nil {
-		log.Printf("Failed to save system prompt: %v", err)
-	} else {
-		log.Printf("System prompt saved successfully to: %s", systemPromptPath)
-	}
-	
-	// Generate LLM prompt and save it
-	llmPrompt := s.LLMClient.BuildPrompt(data)
-	promptPath := filepath.Join(reportDir, "llm_prompt.txt")
-	if err := os.WriteFile(promptPath, []byte(llmPrompt), 0644); err != nil {
-		log.Printf("Failed to save LLM prompt: %v", err)
-	}
-
-	log.Printf("Generating report for %s", time.Now().Format("2006-01-02"))
-	markdown, err := s.LLMClient.GenerateReport(data)
+	// Generate LLM report
+	log.Println("Generating LLM report...")
+	markdownReport, err := s.LLMClient.GenerateReport(data)
 	if err != nil {
-		log.Printf("Failed to generate report: %v", err)
-		http.Error(w, "Failed to generate report", http.StatusInternalServerError)
+		log.Printf("LLM report generation failed: %v", err)
+		s.serveMainPage(w)
 		return
 	}
-	log.Printf("Generated report with %d characters", len(markdown))
-
-	markdownPath := filepath.Join(reportDir, "llm_response.md")
-	if err := os.WriteFile(markdownPath, []byte(markdown), 0644); err != nil {
-		log.Printf("Failed to save markdown report: %v", err)
-	}
-
-	log.Printf("Converting markdown to HTML and generating charts...")
 	
-	var html string
-	var reportPath string
-	
-	// For production/staging, store in GCS and upload charts
-	log.Printf("DEBUG: Storage client status: %v", s.Storage != nil)
-	if s.Storage != nil {
-		log.Printf("DEBUG: Entering GCS deployment mode with PNG chart generation")
-		
-		// Use data.Timestamp for consistent folder naming across all uploads
-		timestamp := data.Timestamp
-		log.Printf("Using consistent timestamp for all uploads: %s", timestamp.Format(time.RFC3339))
-		
-		// Generate charts first
-		chartGen := reports.NewChartGenerator(reportDir)
-		log.Printf("Generating PNG charts in directory: %s", reportDir)
-		chartFiles, err := chartGen.GenerateCharts(data)
-		if err != nil {
-			log.Printf("Warning: Failed to generate charts: %v", err)
-			chartFiles = []string{}
-		} else {
-			log.Printf("Successfully generated %d chart files: %v", len(chartFiles), chartFiles)
-		}
-		
-		// Generate folder path using the same logic as StoreChartImage
-		folderPath := fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%04d-%02d-%02d-%02d-%02d-%02d",
-			timestamp.Year(), timestamp.Month(), timestamp.Day(),
-			timestamp.Year(), timestamp.Month(), timestamp.Day(),
-			timestamp.Hour(), timestamp.Minute(), timestamp.Second())
-		
-		log.Printf("Using folder path for charts: %s", folderPath)
-		
-		uploadedCharts := []string{}
-		log.Printf("Starting chart upload process for %d files", len(chartFiles))
-		for _, chartFile := range chartFiles {
-			log.Printf("Attempting to read chart file: %s", chartFile)
-			imageData, err := os.ReadFile(chartFile)
-			if err != nil {
-				log.Printf("Failed to read chart file %s: %v", chartFile, err)
-				continue
-			}
-			
-			filename := filepath.Base(chartFile)
-			log.Printf("Uploading chart image %s (%d bytes) to GCS", filename, len(imageData))
-			publicURL, err := s.Storage.StoreChartImage(ctx, imageData, filename, timestamp)
-			if err != nil {
-				log.Printf("Failed to store chart image %s: %v", filename, err)
-				continue
-			}
-			
-			// Keep track of successfully uploaded charts
-			uploadedCharts = append(uploadedCharts, filename)
-			log.Printf("Chart image uploaded successfully: %s", publicURL)
-		}
-		log.Printf("Chart upload completed. Successfully uploaded %d out of %d charts", len(uploadedCharts), len(chartFiles))
-		
-		// Generate HTML with proper folder path for chart proxy URLs
-		html, err = s.generateHTMLWithCharts(markdown, data, uploadedCharts, folderPath)
-		if err != nil {
-			log.Printf("Failed to generate HTML: %v", err)
-			http.Error(w, "Failed to generate HTML", http.StatusInternalServerError)
-			return
-		}
-		
-		// Store HTML report in GCS using the SAME timestamp
-		reportPath, err = s.Storage.StoreReport(ctx, html, timestamp)
-		if err != nil {
-			log.Printf("Failed to store report: %v", err)
-			http.Error(w, "Failed to store report", http.StatusInternalServerError)
-			return
-		}
-		
-		log.Printf("Report stored in GCS at: %s", reportPath)
-	} else {
-		// For local mode, generate charts in the correct timestamped directory
-		chartGen := reports.NewChartGenerator(reportDir)
-		log.Printf("Generating PNG charts in directory: %s", reportDir)
-		chartFiles, err := chartGen.GenerateCharts(data)
-		if err != nil {
-			log.Printf("Warning: Failed to generate charts: %v", err)
-			chartFiles = []string{}
-		} else {
-			log.Printf("Successfully generated %d chart files: %v", len(chartFiles), chartFiles)
-		}
-		
-		// Generate HTML with charts in the correct directory
-		html, err = s.Generator.GenerateHTMLWithLocalCharts(markdown, data, chartFiles)
-		if err != nil {
-			log.Printf("Failed to generate HTML: %v", err)
-			http.Error(w, "Failed to generate HTML", http.StatusInternalServerError)
-			return
-		}
+	// Use unified file manager to generate all files
+	fileManager := NewFileManager(s)
+	files, err := fileManager.GenerateAllFiles(ctx, data, sourceData, markdownReport)
+	if err != nil {
+		log.Printf("File generation failed: %v", err)
+		s.serveMainPage(w)
+		return
 	}
 	
-	log.Printf("Generated complete HTML report with %d characters", len(html))
-
-	htmlPath := filepath.Join(reportDir, "final_report.html")
-	if err := os.WriteFile(htmlPath, []byte(html), 0644); err != nil {
-		log.Printf("Failed to save HTML report: %v", err)
-	}
-	
-	log.Printf("Report saved to directory: %s", reportDir)
-	
-	// Serve the generated report
+	// Serve the generated HTML report
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(html))
+	w.Write([]byte(files.HTMLContent))
 }
 
 // serveMainPage serves the main service information page
@@ -334,217 +157,146 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	ctx := r.Context()
-	startTime := time.Now()
-	
-	log.Println("Starting propagation report generation...")
-	
-	// Set response headers
-	w.Header().Set("Content-Type", "application/json")
-	
+	log.Println("Starting report generation...")
+
 	// Fetch data from all sources
-	log.Println("Fetching data from external sources...")
-	data, sourceData, err := s.Fetcher.FetchAllDataWithSources(
-		ctx,
-		s.Config.NOAAKIndexURL,
-		s.Config.NOAASolarURL,
-		s.Config.N0NBHSolarURL,
-		s.Config.SIDCRSSURL,
-	)
+	log.Println("Fetching data from all sources...")
+	data, sourceData, err := s.Fetcher.FetchAllDataWithSources(ctx, s.Config.NOAAKIndexURL, s.Config.NOAASolarURL, s.Config.N0NBHSolarURL, s.Config.SIDCRSSURL)
 	if err != nil {
-		log.Printf("Data fetch failed: %v", err)
-		http.Error(w, fmt.Sprintf("Data fetch failed: %v", err), http.StatusInternalServerError)
+		log.Printf("Data fetching failed: %v", err)
+		http.Error(w, fmt.Sprintf("Data fetching failed: %v", err), http.StatusInternalServerError)
 		return
 	}
-	
-	// Generate report using LLM
-	log.Println("Generating report with OpenAI...")
+
+	log.Printf("Data fetched successfully for timestamp: %s", data.Timestamp.Format(time.RFC3339))
+
+	// Generate LLM report
+	log.Println("Generating LLM report...")
 	markdownReport, err := s.LLMClient.GenerateReport(data)
 	if err != nil {
-		log.Printf("Report generation failed: %v", err)
-		http.Error(w, fmt.Sprintf("Report generation failed: %v", err), http.StatusInternalServerError)
+		log.Printf("LLM report generation failed: %v", err)
+		http.Error(w, fmt.Sprintf("LLM report generation failed: %v", err), http.StatusInternalServerError)
 		return
 	}
-	
-	// Generate PNG charts for GCS deployment
-	log.Printf("DEBUG: Storage client status: %v", s.Storage != nil)
-	var uploadedCharts []string
-	if s.Storage != nil {
-		log.Printf("DEBUG: Entering GCS deployment mode with PNG chart generation")
-		
-		// Create temporary directory for chart generation
-		reportDir := filepath.Join(os.TempDir(), fmt.Sprintf("report_%d", time.Now().Unix()))
-		if err := os.MkdirAll(reportDir, 0755); err != nil {
-			log.Printf("Failed to create report directory: %v", err)
-		} else {
-			defer os.RemoveAll(reportDir)
-			
-			// Generate PNG charts
-			chartGen := reports.NewChartGenerator(reportDir)
-			log.Printf("Generating PNG charts in directory: %s", reportDir)
-			chartFiles, err := chartGen.GenerateCharts(data)
-			if err != nil {
-				log.Printf("Warning: Failed to generate charts: %v", err)
-				chartFiles = []string{}
-			} else {
-				log.Printf("Successfully generated %d chart files: %v", len(chartFiles), chartFiles)
-			}
-			
-			// Upload chart images to GCS using data.Timestamp for consistency
-			timestamp := data.Timestamp
-			log.Printf("Using consistent timestamp for all uploads: %s", timestamp.Format(time.RFC3339))
-			folderPath := fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%04d-%02d-%02d-%02d-%02d-%02d",
-				timestamp.Year(), timestamp.Month(), timestamp.Day(),
-				timestamp.Year(), timestamp.Month(), timestamp.Day(),
-				timestamp.Hour(), timestamp.Minute(), timestamp.Second())
-			
-			log.Printf("Using folder path for charts: %s", folderPath)
-			
-			for _, chartFile := range chartFiles {
-				log.Printf("Reading chart file: %s", chartFile)
-				imageData, err := os.ReadFile(chartFile)
-				if err != nil {
-					log.Printf("Failed to read chart file %s: %v", chartFile, err)
-					continue
-				}
-				
-				filename := filepath.Base(chartFile)
-				log.Printf("Uploading chart image: %s (size: %d bytes)", filename, len(imageData))
-				publicURL, err := s.Storage.StoreChartImage(ctx, imageData, filename, timestamp)
-				if err != nil {
-					log.Printf("Failed to store chart image %s: %v", filename, err)
-					continue
-				}
-				
-				log.Printf("Chart image uploaded successfully: %s", publicURL)
-				uploadedCharts = append(uploadedCharts, publicURL)
-			}
-			
-			log.Printf("Total charts uploaded: %d", len(uploadedCharts))
-		}
-	}
-	
-	// Convert to HTML with charts
-	log.Println("Converting to HTML and generating charts...")
-	var htmlReport string
-	if s.Storage != nil && len(uploadedCharts) > 0 {
-		// Use GCS-uploaded chart URLs for HTML generation
-		log.Printf("Using %d uploaded chart URLs for HTML generation", len(uploadedCharts))
-		htmlReport, err = s.Generator.GenerateHTMLWithChartURLs(markdownReport, data, uploadedCharts)
-	} else {
-		// Fallback to local chart generation
-		htmlReport, err = s.Generator.GenerateHTML(markdownReport, data)
-	}
+
+	log.Printf("LLM report generated successfully (length: %d characters)", len(markdownReport))
+
+	// Use unified file manager to generate all files
+	fileManager := NewFileManager(s)
+	files, err := fileManager.GenerateAllFiles(ctx, data, sourceData, markdownReport)
 	if err != nil {
-		log.Printf("HTML generation failed: %v", err)
-		http.Error(w, fmt.Sprintf("HTML generation failed: %v", err), http.StatusInternalServerError)
+		log.Printf("File generation failed: %v", err)
+		http.Error(w, fmt.Sprintf("File generation failed: %v", err), http.StatusInternalServerError)
 		return
 	}
-	
-	// Store report based on deployment mode
+
+	// Handle storage based on deployment mode
 	var reportURL string
 	if s.DeploymentMode == DeploymentGCS && s.Storage != nil {
-		// Store in GCS for production/staging
-		log.Println("Storing report in GCS...")
-		var err error
-		reportURL, err = s.Storage.StoreReport(ctx, htmlReport, data.Timestamp)
+		// Upload all files to GCS
+		log.Println("Uploading all files to GCS...")
+		reportURL, err = fileManager.UploadToGCS(ctx, files, data.Timestamp)
 		if err != nil {
 			log.Printf("Storage failed: %v", err)
 			http.Error(w, fmt.Sprintf("Storage failed: %v", err), http.StatusInternalServerError)
+			fileManager.Cleanup(files)
 			return
 		}
-		
-		// Clean up old reports (keep last 30 days)
-		go func() {
-			cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-			defer cancel()
-			
-			if err := s.Storage.DeleteOldReports(cleanupCtx, 30*24*time.Hour); err != nil {
-				log.Printf("Cleanup warning: %v", err)
-			}
-		}()
+		log.Printf("All files uploaded to GCS successfully: %s", reportURL)
+		// Clean up temporary files
+		fileManager.Cleanup(files)
 	} else {
-		// Store locally for local deployment mode
-		log.Println("Storing report locally...")
-		timestamp := data.Timestamp.Format("2006-01-02_15-04-05")
-		reportDir := filepath.Join(s.ReportsDir, timestamp)
-		
-		// Create report directory
-		if err := os.MkdirAll(reportDir, 0755); err != nil {
-			log.Printf("Failed to create report directory: %v", err)
-			http.Error(w, fmt.Sprintf("Failed to create report directory: %v", err), http.StatusInternalServerError)
+		// Local mode - files are already saved
+		reportURL = fmt.Sprintf("/files/index.html")
+		log.Printf("Report stored locally in: %s", files.ReportDir)
+	}
+	
+	// Return success response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":     "success",
+		"message":    "Report generated successfully",
+		"reportURL":  reportURL,
+		"timestamp":  data.Timestamp.Format(time.RFC3339),
+		"dataPoints": len(data.SourceEvents),
+		"folderPath": files.FolderPath,
+	})
+}
+
+// HandleFileProxy serves files from local storage or GCS
+func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	// Extract file path from URL
+	filePath := strings.TrimPrefix(r.URL.Path, "/files/")
+	if filePath == "" {
+		http.Error(w, "File path required", http.StatusBadRequest)
+		return
+	}
+	
+	ctx := r.Context()
+	
+	// Try to serve from GCS first if available
+	if s.Storage != nil {
+		fileData, err := s.Storage.GetFile(ctx, filePath)
+		if err == nil {
+			// Set appropriate content type based on file extension
+			contentType := "application/octet-stream"
+			if strings.HasSuffix(filePath, ".html") {
+				contentType = "text/html"
+			} else if strings.HasSuffix(filePath, ".png") {
+				contentType = "image/png"
+			} else if strings.HasSuffix(filePath, ".json") {
+				contentType = "application/json"
+			} else if strings.HasSuffix(filePath, ".txt") {
+				contentType = "text/plain"
+			} else if strings.HasSuffix(filePath, ".md") {
+				contentType = "text/markdown"
+			}
+			
+			w.Header().Set("Content-Type", contentType)
+			w.Header().Set("Cache-Control", "public, max-age=3600")
+			w.Write(fileData)
+			return
+		}
+		log.Printf("Failed to get file from GCS: %v", err)
+	}
+	
+	// Fall back to local file serving
+	// Security check: prevent directory traversal
+	if strings.Contains(filePath, "..") {
+		http.Error(w, "Invalid file path", http.StatusBadRequest)
+		return
+	}
+	
+	// Try to find the file in the most recent report directory
+	localPath := filepath.Join(s.ReportsDir, filePath)
+	if _, err := os.Stat(localPath); os.IsNotExist(err) {
+		// If not found directly, try to find in the latest report directory
+		entries, err := os.ReadDir(s.ReportsDir)
+		if err != nil {
+			http.Error(w, "File not found", http.StatusNotFound)
 			return
 		}
 		
-		// Save separate JSON files for each data source
-		if sourceData.NOAAKIndex != nil {
-			noaaKIndexJSON, _ := json.MarshalIndent(sourceData.NOAAKIndex, "", "  ")
-			noaaKIndexPath := filepath.Join(reportDir, "noaa_k_index.json")
-			if err := os.WriteFile(noaaKIndexPath, noaaKIndexJSON, 0644); err != nil {
-				log.Printf("Failed to save NOAA K-Index data: %v", err)
+		// Find the most recent directory
+		var latestDir string
+		for _, entry := range entries {
+			if entry.IsDir() && entry.Name() > latestDir {
+				latestDir = entry.Name()
 			}
 		}
 		
-		if sourceData.NOAASolar != nil {
-			noaaSolarJSON, _ := json.MarshalIndent(sourceData.NOAASolar, "", "  ")
-			noaaSolarPath := filepath.Join(reportDir, "noaa_solar.json")
-			if err := os.WriteFile(noaaSolarPath, noaaSolarJSON, 0644); err != nil {
-				log.Printf("Failed to save NOAA Solar data: %v", err)
-			}
+		if latestDir != "" {
+			localPath = filepath.Join(s.ReportsDir, latestDir, filepath.Base(filePath))
 		}
-		
-		if sourceData.N0NBH != nil {
-			n0nbhJSON, _ := json.MarshalIndent(sourceData.N0NBH, "", "  ")
-			n0nbhPath := filepath.Join(reportDir, "n0nbh_data.json")
-			if err := os.WriteFile(n0nbhPath, n0nbhJSON, 0644); err != nil {
-				log.Printf("Failed to save N0NBH data: %v", err)
-			}
-		}
-		
-		if sourceData.SIDC != nil {
-			sidcJSON, _ := json.MarshalIndent(sourceData.SIDC, "", "  ")
-			sidcPath := filepath.Join(reportDir, "sidc_data.json")
-			if err := os.WriteFile(sidcPath, sidcJSON, 0644); err != nil {
-				log.Printf("Failed to save SIDC data: %v", err)
-			}
-		}
-		
-		// Also save the normalized/combined data
-		apiDataJSON, _ := json.MarshalIndent(data, "", "  ")
-		apiDataPath := filepath.Join(reportDir, "normalized_data.json")
-		if err := os.WriteFile(apiDataPath, apiDataJSON, 0644); err != nil {
-			log.Printf("Failed to save normalized data: %v", err)
-		}
-		
-		// Save HTML report
-		htmlPath := filepath.Join(reportDir, "index.html")
-		if err := os.WriteFile(htmlPath, []byte(htmlReport), 0644); err != nil {
-			log.Printf("Failed to save HTML report: %v", err)
-			http.Error(w, fmt.Sprintf("Failed to save HTML report: %v", err), http.StatusInternalServerError)
-			return
-		}
-		
-		reportURL = fmt.Sprintf("/files/%s/index.html", timestamp)
-		log.Printf("Report saved locally to: %s", htmlPath)
 	}
 	
-	duration := time.Since(startTime)
-	log.Printf("Report generation completed in %v", duration)
-	
-	// Return response
-	response := map[string]interface{}{
-		"status":      "success",
-		"report_url":  reportURL,
-		"timestamp":   data.Timestamp.Format(time.RFC3339),
-		"duration_ms": duration.Milliseconds(),
-		"data_summary": map[string]interface{}{
-			"solar_flux":     data.SolarData.SolarFluxIndex,
-			"k_index":        data.GeomagData.KIndex,
-			"sunspot_number": data.SolarData.SunspotNumber,
-			"activity_level": data.SolarData.SolarActivity,
-		},
-	}
-	
-	json.NewEncoder(w).Encode(response)
+	http.ServeFile(w, r, localPath)
 }
 
 // HandleListReports lists recent reports
@@ -584,69 +336,6 @@ func (s *Server) HandleListReports(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// HandleFileProxy serves any file from report folders through the service
-func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	
-	// Extract the file path from URL: /files/{folder}/{filename}
-	path := strings.TrimPrefix(r.URL.Path, "/files/")
-	if path == "" {
-		http.Error(w, "File path required", http.StatusBadRequest)
-		return
-	}
-	
-	ctx := r.Context()
-	
-	// For local mode, serve from local filesystem
-	if s.DeploymentMode == DeploymentLocal {
-		// Serve from local reports directory
-		localPath := filepath.Join(s.ReportsDir, path)
-		
-		// Security check - ensure path doesn't escape reports directory
-		absReportsDir, _ := filepath.Abs(s.ReportsDir)
-		absPath, _ := filepath.Abs(localPath)
-		if !strings.HasPrefix(absPath, absReportsDir) {
-			http.Error(w, "Invalid path", http.StatusBadRequest)
-			return
-		}
-		
-		// Check if file exists and serve it
-		if _, err := os.Stat(localPath); os.IsNotExist(err) {
-			http.Error(w, "File not found", http.StatusNotFound)
-			return
-		}
-		
-		// Set content type based on file extension
-		contentType := s.getContentType(filepath.Ext(localPath))
-		w.Header().Set("Content-Type", contentType)
-		w.Header().Set("Cache-Control", "public, max-age=3600")
-		http.ServeFile(w, r, localPath)
-		return
-	}
-	
-	// For GCS mode, proxy from GCS
-	if s.Storage == nil {
-		http.Error(w, "Storage not configured", http.StatusInternalServerError)
-		return
-	}
-	
-	// Get file from GCS
-	fileData, err := s.Storage.GetFile(ctx, path)
-	if err != nil {
-		log.Printf("Failed to get file %s: %v", path, err)
-		http.Error(w, "File not found", http.StatusNotFound)
-		return
-	}
-	
-	// Set content type based on file extension
-	contentType := s.getContentType(filepath.Ext(path))
-	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Cache-Control", "public, max-age=3600")
-	w.Write(fileData)
-}
 
 // generateHTMLWithCharts generates HTML with charts using the specified folder path
 func (s *Server) generateHTMLWithCharts(markdown string, data *models.PropagationData, chartFiles []string, folderPath string) (string, error) {

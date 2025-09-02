@@ -12,7 +12,6 @@ import (
 
 	"radiocast/internal/config"
 	"radiocast/internal/server"
-	"radiocast/internal/testing"
 )
 
 func main() {
@@ -20,7 +19,6 @@ func main() {
 	
 	// Parse command line flags
 	deploymentFlag := flag.String("deployment", "local", "Deployment mode: local or gcs")
-	testChartsFlag := flag.Bool("test-charts", false, "Generate test charts and exit")
 	flag.Parse()
 	
 	// Validate deployment mode
@@ -40,11 +38,6 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 	
-	// Handle test charts mode (skip config validation for chart testing)
-	if *testChartsFlag {
-		testing.RunTestCharts()
-		return
-	}
 	
 	log.Printf("Starting Radio Propagation Service on port %s", cfg.Port)
 	log.Printf("Deployment mode: %s", deploymentMode)

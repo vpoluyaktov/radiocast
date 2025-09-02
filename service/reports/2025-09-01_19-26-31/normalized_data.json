@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-01T19:03:20.637700499-07:00",
+  "timestamp": "2025-09-01T19:26:31.658405075-07:00",
   "solar_data": {
     "solar_flux_index": 100,
     "solar_flux_data_source": "N0NBH",
@@ -15,11 +15,11 @@
     "proton_flux_data_source": "N0NBH"
   },
   "geomag_data": {
-    "k_index": 4,
+    "k_index": 4.67,
     "k_index_data_source": "NOAA SWPC",
     "a_index": 0,
     "a_index_data_source": "",
-    "geomag_activity": "Active",
+    "geomag_activity": "Storm",
     "geomag_conditions": "",
     "magnetic_field": 0,
     "magnetic_field_data_source": ""
@@ -65,8 +65,8 @@
   },
   "forecast": {
     "today": {
-      "date": "2025-09-01T19:03:20.637731164-07:00",
-      "k_index_forecast": "4.0",
+      "date": "2025-09-01T19:26:31.658415803-07:00",
+      "k_index_forecast": "4.7",
       "solar_activity": "",
       "hf_conditions": "Poor to Fair",
       "vhf_conditions": "",
@@ -81,8 +81,8 @@
       ]
     },
     "tomorrow": {
-      "date": "2025-09-02T19:03:20.637731279-07:00",
-      "k_index_forecast": "3.5-4.5",
+      "date": "2025-09-02T19:26:31.658415839-07:00",
+      "k_index_forecast": "4.2-5.2",
       "solar_activity": "",
       "hf_conditions": "Poor to Fair",
       "vhf_conditions": "",
@@ -90,16 +90,18 @@
       "worst_bands": null
     },
     "day_after": {
-      "date": "2025-09-03T19:03:20.637731461-07:00",
-      "k_index_forecast": "3.0-5.0",
+      "date": "2025-09-03T19:26:31.658415894-07:00",
+      "k_index_forecast": "3.7-5.7",
       "solar_activity": "",
       "hf_conditions": "Poor to Fair",
       "vhf_conditions": "",
       "best_bands": null,
       "worst_bands": null
     },
-    "outlook": "Unsettled to active conditions. Variable propagation expected.",
-    "warnings": null
+    "outlook": "Geomagnetic storm conditions. Poor HF propagation likely.",
+    "warnings": [
+      "Geomagnetic storm in progress - expect poor HF conditions"
+    ]
   },
   "source_events": null
 }

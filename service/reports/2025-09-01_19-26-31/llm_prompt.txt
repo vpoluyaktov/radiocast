@@ -1,4 +1,4 @@
-## Current Solar and Geomagnetic Data (as of 2025-09-01 19:03 UTC)
+## Current Solar and Geomagnetic Data (as of 2025-09-01 19:26 UTC)
 
 ### Solar Activity:
 - Solar Flux Index (10.7cm): 100.0 sfu
@@ -7,9 +7,9 @@
 - Proton Flux: 1.26e+05 particles/cm²/s
 
 ### Geomagnetic Activity:
-- Planetary K-index: 4.0
+- Planetary K-index: 4.7
 - A-index: 0.0
-- Geomagnetic Activity Level: Active
+- Geomagnetic Activity Level: Storm
 - Current Conditions: 
 
 ### HF Band Conditions:
@@ -23,7 +23,10 @@
 - 6m: Day=, Night=
 
 ### 3-Day Forecast:
-- Today: Poor to Fair (K-index: 4.0)
-- Tomorrow: Poor to Fair (K-index: 3.5-4.5)
-- Day After: Poor to Fair (K-index: 3.0-5.0)
-- General Outlook: Unsettled to active conditions. Variable propagation expected.
+- Today: Poor to Fair (K-index: 4.7)
+- Tomorrow: Poor to Fair (K-index: 4.2-5.2)
+- Day After: Poor to Fair (K-index: 3.7-5.7)
+- General Outlook: Geomagnetic storm conditions. Poor HF propagation likely.
+
+### Current Warnings:
+- Geomagnetic storm in progress - expect poor HF conditions

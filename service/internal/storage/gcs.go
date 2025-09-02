@@ -81,6 +81,57 @@ func (g *GCSClient) StoreReport(ctx context.Context, htmlContent string, timesta
 	return objectPath, nil
 }
 
+// StoreFile stores any file (JSON, text, etc.) in GCS in the same folder as the report
+func (g *GCSClient) StoreFile(ctx context.Context, fileData []byte, filename string, timestamp time.Time) error {
+	// Generate the folder path for this report
+	folderPath := g.generateFolderPath(timestamp)
+	objectPath := folderPath + filename
+	
+	log.Printf("Storing file to GCS: gs://%s/%s", g.bucket, objectPath)
+	
+	// Get bucket handle
+	bucket := g.client.Bucket(g.bucket)
+	
+	// Create object handle
+	obj := bucket.Object(objectPath)
+	
+	// Create writer
+	writer := obj.NewWriter(ctx)
+	
+	// Set content type based on file extension
+	if strings.HasSuffix(filename, ".json") {
+		writer.ContentType = "application/json"
+	} else if strings.HasSuffix(filename, ".txt") {
+		writer.ContentType = "text/plain"
+	} else if strings.HasSuffix(filename, ".md") {
+		writer.ContentType = "text/markdown"
+	} else {
+		writer.ContentType = "application/octet-stream"
+	}
+	
+	writer.CacheControl = "public, max-age=3600" // Cache for 1 hour
+	
+	// Set metadata
+	writer.Metadata = map[string]string{
+		"generated-at": timestamp.Format(time.RFC3339),
+		"filename":     filename,
+	}
+	
+	// Write file data
+	if _, err := writer.Write(fileData); err != nil {
+		writer.Close()
+		return fmt.Errorf("failed to write file to GCS: %w", err)
+	}
+	
+	// Close writer to finalize upload
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("failed to finalize GCS file upload: %w", err)
+	}
+	
+	log.Printf("File successfully stored: %s", filename)
+	return nil
+}
+
 // StoreChartImage stores a chart image in GCS in the same folder as the report
 func (g *GCSClient) StoreChartImage(ctx context.Context, imageData []byte, filename string, timestamp time.Time) (string, error) {
 	// Generate the folder path for this report
