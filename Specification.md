@@ -259,10 +259,13 @@ cd service
 - Serves reports on `http://localhost:8981`
 - Essential for validating changes before deployment
 
-**Chart Testing**:
+**Available Command Line Options**:
 ```bash
-./radiocast -test-charts  # Generate test charts only
+./radiocast -deployment local   # Local mode (default)
+./radiocast -deployment gcs     # GCS mode for cloud deployment
 ```
+
+**Note**: The `-test-charts` mode has been removed. Use local server mode for testing.
 
 ### 8.2 GCP Cloud Run Mode
 **Purpose**: Production deployment with full GCS integration
@@ -315,8 +318,11 @@ go test -v ./...
 # 2. Verify build
 go build -o radiocast
 
-# 3. Test chart generation
-./radiocast -test-charts
+# 3. Test local server mode
+./radiocast -deployment local &
+sleep 2
+curl -f http://localhost:8080/health
+pkill radiocast
 
 # 4. Test server startup and health
 timeout 10s ./radiocast -deployment local &

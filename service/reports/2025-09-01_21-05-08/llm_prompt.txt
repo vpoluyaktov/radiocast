@@ -1,0 +1,153 @@
+## Raw Solar and Space Weather Data (as of 2025-09-01 21:05 UTC)
+
+Please analyze the following comprehensive space weather data and generate a detailed radio propagation report. The data includes:
+- NOAA K-index data (geomagnetic activity - last 24 hours, 3-hour intervals)
+- NOAA Solar data (solar flux, sunspot numbers - last 7 days)
+- N0NBH real-time conditions (band conditions, solar metrics)
+- SIDC solar event alerts (last 30 days)
+
+### NOAA K-Index Data (Last 24 Hours, 3-Hour Intervals):
+```json
+[
+  {
+    "time_tag": "2025-09-01T22:03:00",
+    "kp_index": 5.33,
+    "estimated_kp": 5.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-02T01:03:00",
+    "kp_index": 4.67,
+    "estimated_kp": 4.67,
+    "source": "NOAA SWPC"
+  }
+]
+```
+
+### NOAA Solar Data (Last 7 Days):
+```json
+[
+  {
+    "time_tag": "2025-02",
+    "f10.7": 184.31,
+    "ssn": 155.7,
+    "f10.7_adj": 184.31,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-03",
+    "f10.7": 163.78,
+    "ssn": 134.2,
+    "f10.7_adj": 163.78,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-04",
+    "f10.7": 162.21,
+    "ssn": 140.6,
+    "f10.7_adj": 162.21,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-05",
+    "f10.7": 135.25,
+    "ssn": 79.2,
+    "f10.7_adj": 135.25,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-06",
+    "f10.7": 131.45,
+    "ssn": 116.3,
+    "f10.7_adj": 131.45,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-07",
+    "f10.7": 100,
+    "ssn": 125.6,
+    "f10.7_adj": 100,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-08",
+    "f10.7": 100,
+    "ssn": 133.5,
+    "f10.7_adj": 100,
+    "source": "NOAA SWPC"
+  }
+]
+```
+
+### N0NBH Real-time Data (Current Conditions):
+```json
+{
+  "solardata": {
+    "solarflux": "202",
+    "aindex": " 16",
+    "kindex": " 5",
+    "kindexnt": "No Report",
+    "sunspots": "165",
+    "heliumline": "149.3",
+    "protonflux": "49100",
+    "electonflux": "15200",
+    "aurora": " 2",
+    "normalization": "1.99",
+    "latestswpcreport": ""
+  },
+  "time": "",
+  "source": "N0NBH",
+  "calculatedconditions": {
+    "band": [
+      {
+        "name": "17m-15m",
+        "time": "day",
+        "day": "Fair",
+        "night": "Fair",
+        "source": "N0NBH"
+      },
+      {
+        "name": "12m-10m",
+        "time": "day",
+        "day": "Fair",
+        "night": "Poor",
+        "source": "N0NBH"
+      },
+      {
+        "name": "80m-40m",
+        "time": "day",
+        "day": "Poor",
+        "night": "Poor",
+        "source": "N0NBH"
+      },
+      {
+        "name": "30m-20m",
+        "time": "day",
+        "day": "Poor",
+        "night": "Poor",
+        "source": "N0NBH"
+      }
+    ]
+  },
+  "calculatedvhfconditions": {
+    "phenomenon": null
+  }
+}
+```
+
+### SIDC Solar Event Alerts (Last 30 Days):
+```json
+null
+```
+
+### Instructions:
+Analyze all the above data and provide:
+1. Current solar activity summary (solar flux, sunspots, flares)
+2. Geomagnetic conditions (K-index trends, magnetic field)
+3. HF band conditions for each amateur band (80m-10m)
+4. VHF/UHF propagation outlook
+5. 3-day forecast with specific recommendations
+6. Best/worst bands for current conditions
+7. Any alerts or warnings for amateur radio operators
+
+Focus on practical advice for amateur radio operators based on the comprehensive data provided.

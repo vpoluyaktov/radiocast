@@ -62,9 +62,9 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Data fetch and normalization completed successfully")
 	
-	// Generate LLM report
-	log.Println("Generating LLM report...")
-	markdownReport, err := s.LLMClient.GenerateReport(data)
+	// Generate LLM report with raw source data
+	log.Println("Generating LLM report with raw source data...")
+	markdownReport, err := s.LLMClient.GenerateReportWithSources(data, sourceData)
 	if err != nil {
 		log.Printf("LLM report generation failed: %v", err)
 		s.serveMainPage(w)
@@ -168,9 +168,9 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Data fetched successfully for timestamp: %s", data.Timestamp.Format(time.RFC3339))
 
-	// Generate LLM report
-	log.Println("Generating LLM report...")
-	markdownReport, err := s.LLMClient.GenerateReport(data)
+	// Generate LLM report with raw source data
+	log.Println("Generating LLM report with raw source data...")
+	markdownReport, err := s.LLMClient.GenerateReportWithSources(data, sourceData)
 	if err != nil {
 		log.Printf("LLM report generation failed: %v", err)
 		http.Error(w, "LLM report generation failed: "+err.Error(), http.StatusInternalServerError)

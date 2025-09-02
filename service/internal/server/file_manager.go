@@ -73,7 +73,7 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 	}
 	
 	// 3. Save LLM-related files
-	if err := fm.saveLLMFiles(reportDir, data, markdown, files); err != nil {
+	if err := fm.saveLLMFiles(reportDir, data, sourceData, markdown, files); err != nil {
 		log.Printf("Warning: Failed to save LLM files: %v", err)
 	}
 	
@@ -158,7 +158,7 @@ func (fm *FileManager) saveNormalizedData(reportDir string, data *models.Propaga
 }
 
 // saveLLMFiles saves LLM-related files (prompts, responses)
-func (fm *FileManager) saveLLMFiles(reportDir string, data *models.PropagationData, markdown string, files *ReportFiles) error {
+func (fm *FileManager) saveLLMFiles(reportDir string, data *models.PropagationData, sourceData *fetchers.SourceData, markdown string, files *ReportFiles) error {
 	// Save system prompt
 	systemPrompt := fm.server.LLMClient.GetSystemPrompt()
 	systemPromptPath := filepath.Join(reportDir, "llm_system_prompt.txt")
@@ -167,8 +167,8 @@ func (fm *FileManager) saveLLMFiles(reportDir string, data *models.PropagationDa
 	}
 	files.JSONFiles["llm_system_prompt.txt"] = []byte(systemPrompt)
 	
-	// Save user prompt
-	llmPrompt := fm.server.LLMClient.BuildPrompt(data)
+	// Save user prompt (using raw source data)
+	llmPrompt := fm.server.LLMClient.BuildPromptWithRawData(sourceData, data)
 	promptPath := filepath.Join(reportDir, "llm_prompt.txt")
 	if err := os.WriteFile(promptPath, []byte(llmPrompt), 0644); err != nil {
 		return err
