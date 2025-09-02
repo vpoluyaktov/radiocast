@@ -217,7 +217,6 @@ func (fm *FileManager) UploadToGCS(ctx context.Context, files *ReportFiles, time
 	log.Printf("Uploading files to GCS folder: %s", files.FolderPath)
 	
 	// 1. Upload chart images
-	uploadedCharts := []string{}
 	for _, chartFile := range files.ChartFiles {
 		imageData, err := os.ReadFile(chartFile)
 		if err != nil {
@@ -233,7 +232,6 @@ func (fm *FileManager) UploadToGCS(ctx context.Context, files *ReportFiles, time
 			continue
 		}
 		
-		uploadedCharts = append(uploadedCharts, filename)
 		log.Printf("Chart image uploaded successfully: %s", publicURL)
 	}
 	
