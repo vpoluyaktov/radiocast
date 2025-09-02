@@ -1,0 +1,38 @@
+[
+  {
+    "time_tag": "2025-09-02T16:25:00",
+    "kp_index": 3.33,
+    "estimated_kp": 3.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-02T17:25:00",
+    "kp_index": 4.33,
+    "estimated_kp": 4.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-02T18:25:00",
+    "kp_index": 2.33,
+    "estimated_kp": 2.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-02T19:25:00",
+    "kp_index": 4,
+    "estimated_kp": 4,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-02T20:25:00",
+    "kp_index": 4.33,
+    "estimated_kp": 4.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-02T21:25:00",
+    "kp_index": 2.67,
+    "estimated_kp": 2.67,
+    "source": "NOAA SWPC"
+  }
+]

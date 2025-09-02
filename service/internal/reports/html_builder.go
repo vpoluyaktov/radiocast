@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"strings"
 	"time"
 
 	"github.com/russross/blackfriday/v2"
@@ -146,10 +147,113 @@ func (h *HTMLBuilder) ConvertMarkdownToHTMLWithCharts(markdownContent string, ch
 
 // BuildCompleteHTML creates a complete HTML document
 func (h *HTMLBuilder) BuildCompleteHTML(content, charts string, data *models.PropagationData) (string, error) {
-	// Use the new template-based conversion with charts
-	result, err := h.ConvertMarkdownToHTMLWithCharts(content, charts, time.Now().Format("2006-01-02"))
+	// Integrate charts throughout the content instead of at the end
+	integratedContent := h.integrateChartsInContent(content, charts)
+	
+	// Use the new template-based conversion without separate charts section
+	result, err := h.ConvertMarkdownToHTMLWithCharts(integratedContent, "", time.Now().Format("2006-01-02"))
 	if err != nil {
 		return "", err
 	}
 	return result, nil
+}
+
+// integrateChartsInContent replaces chart placeholders with actual chart HTML
+func (h *HTMLBuilder) integrateChartsInContent(content, charts string) string {
+	// Parse chart HTML to extract individual chart elements
+	chartMap := h.parseChartsHTML(charts)
+	
+	// Replace placeholders with actual chart HTML
+	integratedContent := content
+	
+	// Replace chart placeholders with professional chart sections
+	for placeholder, chartHTML := range chartMap {
+		chartSection := fmt.Sprintf(`
+<div class="chart-section">
+	<div class="chart-container-integrated">
+		%s
+	</div>
+</div>`, chartHTML)
+		integratedContent = strings.Replace(integratedContent, placeholder, chartSection, -1)
+	}
+	
+	return integratedContent
+}
+
+// parseChartsHTML extracts individual charts from the charts HTML string
+func (h *HTMLBuilder) parseChartsHTML(charts string) map[string]string {
+	chartMap := make(map[string]string)
+	
+	if charts == "" {
+		return chartMap
+	}
+	
+	// Parse chart containers more robustly
+	lines := strings.Split(charts, "\n")
+	var currentChart strings.Builder
+	var chartTitle string
+	inChartContainer := false
+	
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+		
+		// Start of a chart container
+		if strings.Contains(trimmedLine, "chart-container") && strings.Contains(trimmedLine, "<div") {
+			// Save previous chart if exists
+			if currentChart.Len() > 0 && chartTitle != "" {
+				h.mapChartToPlaceholder(chartTitle, currentChart.String(), chartMap)
+			}
+			// Reset for new chart
+			currentChart.Reset()
+			chartTitle = ""
+			inChartContainer = true
+		}
+		
+		// Extract chart title from h3 tags
+		if inChartContainer && strings.Contains(trimmedLine, "<h3>") {
+			start := strings.Index(trimmedLine, ">") + 1
+			end := strings.LastIndex(trimmedLine, "<")
+			if start > 0 && end > start {
+				chartTitle = strings.TrimSpace(trimmedLine[start:end])
+			}
+		}
+		
+		// Add line to current chart if we're inside a container
+		if inChartContainer {
+			currentChart.WriteString(line + "\n")
+		}
+		
+		// End of chart container
+		if inChartContainer && strings.Contains(trimmedLine, "</div>") && 
+		   (strings.Contains(currentChart.String(), "chart-container") || strings.Contains(currentChart.String(), "img")) {
+			// This might be the end of the chart container
+			if chartTitle != "" {
+				h.mapChartToPlaceholder(chartTitle, currentChart.String(), chartMap)
+			}
+			inChartContainer = false
+		}
+	}
+	
+	// Handle last chart if still processing
+	if currentChart.Len() > 0 && chartTitle != "" {
+		h.mapChartToPlaceholder(chartTitle, currentChart.String(), chartMap)
+	}
+	
+	return chartMap
+}
+
+// mapChartToPlaceholder maps chart titles to their placeholders
+func (h *HTMLBuilder) mapChartToPlaceholder(title, chartHTML string, chartMap map[string]string) {
+	switch {
+	case strings.Contains(title, "Solar Activity"):
+		chartMap["{{SOLAR_ACTIVITY_CHART}}"] = chartHTML
+	case strings.Contains(title, "K Index") || strings.Contains(title, "K-Index"):
+		chartMap["{{K_INDEX_CHART}}"] = chartHTML
+	case strings.Contains(title, "Band Conditions"):
+		chartMap["{{BAND_CONDITIONS_CHART}}"] = chartHTML
+	case strings.Contains(title, "Forecast"):
+		chartMap["{{FORECAST_CHART}}"] = chartHTML
+	case strings.Contains(title, "Propagation Timeline"):
+		chartMap["{{PROPAGATION_TIMELINE_CHART}}"] = chartHTML
+	}
 }
