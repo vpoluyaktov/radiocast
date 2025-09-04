@@ -16,7 +16,7 @@ func TestContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 	
-	url := "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
+	url := "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
 	_, err := fetcher.noaaFetcher.FetchKIndex(ctx, url)
 	if err == nil {
 		t.Error("Expected error due to cancelled context, got nil")

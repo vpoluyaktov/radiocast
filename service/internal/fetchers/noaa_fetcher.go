@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"radiocast/internal/models"
@@ -13,12 +16,10 @@ import (
 
 // Configuration constants for data filtering
 const (
-	// KIndexHistoryHours defines how many hours of K-index data to keep
-	KIndexHistoryHours = 24
-	// KIndexSampleIntervalHours defines the sampling interval for K-index data
-	KIndexSampleIntervalHours = 1
-	// SolarDataHistoryDays defines how many days of solar data to keep
-	SolarDataHistoryDays = 7
+	// KIndexHistoryHours is the number of hours of K-index history to include
+	KIndexHistoryHours = 72 // 72 hours = up to 24 entries (3-hour intervals)
+	// SolarDataHistoryMonths defines how many months of solar data to keep
+	SolarDataHistoryMonths = 6
 )
 
 // NOAAFetcher handles fetching data from NOAA APIs
@@ -33,12 +34,20 @@ func NewNOAAFetcher(client *resty.Client) *NOAAFetcher {
 	}
 }
 
-// FetchKIndex fetches K-index data from NOAA
+// FetchKIndex fetches K-index data from NOAA for the last 72 hours
 func (f *NOAAFetcher) FetchKIndex(ctx context.Context, url string) ([]models.NOAAKIndexResponse, error) {
+	// Always use the provided URL - this is critical for tests
+	kIndexUrl := url
+	// Only use default if URL is empty
+	if kIndexUrl == "" {
+		kIndexUrl = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
+	}
+	
+	// Fetch data from the endpoint
 	resp, err := f.client.R().
 		SetContext(ctx).
 		SetHeader("Accept", "application/json").
-		Get(url)
+		Get(kIndexUrl)
 	
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch NOAA K-index: %w", err)
@@ -48,37 +57,65 @@ func (f *NOAAFetcher) FetchKIndex(ctx context.Context, url string) ([]models.NOA
 		return nil, fmt.Errorf("NOAA K-index API returned status %d", resp.StatusCode())
 	}
 	
-	// NOAA returns array of objects format: [{"time_tag":"...","kp_index":0,"estimated_kp":0.33,"kp":"0P"}]
-	var rawData []models.NOAAKIndexAPIResponse
+	// NOAA endpoint returns array with header row: [["time_tag","Kp","a_running","station_count"], ["2025-08-27 00:00:00.000","1.33","5","8"], ...]
+	var rawData [][]string
 	if err := json.Unmarshal(resp.Body(), &rawData); err != nil {
 		return nil, fmt.Errorf("failed to parse NOAA K-index response: %w", err)
 	}
-
-	if len(rawData) == 0 {
-		return nil, fmt.Errorf("NOAA K-index response has no data")
-	}
-
-	// Convert to our internal format
-	var data []models.NOAAKIndexResponse
-	for _, item := range rawData {
-		data = append(data, models.NOAAKIndexResponse{
-			TimeTag:     item.TimeTag,
-			KpIndex:     item.EstimatedKp, // Use estimated_kp instead of kp_index
-			EstimatedKp: item.EstimatedKp,
-			Source:      "NOAA SWPC",
-		})
+	
+	// Skip the header row (index 0)
+	var kIndexData []models.NOAAKIndexResponse
+	for i := 1; i < len(rawData); i++ {
+		row := rawData[i]
+		if len(row) >= 2 { // Need at least time_tag and Kp
+			// Parse Kp value
+			var kpValue float64
+			if kpStr := row[1]; kpStr != "" {
+				if kpParsed, err := parseFloat(kpStr); err == nil {
+					kpValue = kpParsed
+				}
+			}
+			
+			// Convert time format from "2025-08-27 00:00:00.000" to "2025-08-27T00:00:00"
+			timeTag := row[0]
+			if strings.Contains(timeTag, " ") {
+				timeParts := strings.Split(timeTag, " ")
+				if len(timeParts) >= 2 {
+					// Remove milliseconds if present
+					timePart := timeParts[1]
+					if idx := strings.Index(timePart, "."); idx != -1 {
+						timePart = timePart[:idx]
+					}
+					timeTag = timeParts[0] + "T" + timePart
+				}
+			}
+			
+			// Create response object
+			kIndexData = append(kIndexData, models.NOAAKIndexResponse{
+				TimeTag:     timeTag,
+				KpIndex:     kpValue,
+				EstimatedKp: kpValue,
+				Source:      "NOAA SWPC",
+			})
+		}
 	}
 	
-	// Filter to recent data only
-	return f.filterKIndexRecent(data), nil
+	// Filter to recent data only (last 72 hours - up to 24 entries)
+	return f.filterKIndexRecent(kIndexData), nil
 }
 
-// FetchSolar fetches solar data from NOAA
+// FetchSolar fetches solar data from NOAA for the last 6 months
 func (f *NOAAFetcher) FetchSolar(ctx context.Context, url string) ([]models.NOAASolarResponse, error) {
+	// Use the provided URL or fall back to standard endpoint for solar data
+	solarUrl := url
+	if solarUrl == "" {
+		solarUrl = "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json"
+	}
+	
 	resp, err := f.client.R().
 		SetContext(ctx).
 		SetHeader("Accept", "application/json").
-		Get(url)
+		Get(solarUrl)
 	
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch NOAA solar data: %w", err)
@@ -88,8 +125,15 @@ func (f *NOAAFetcher) FetchSolar(ctx context.Context, url string) ([]models.NOAA
 		return nil, fmt.Errorf("NOAA solar API returned status %d", resp.StatusCode())
 	}
 	
-	// NOAA now returns array of objects format: [{"time-tag":"1749-01","ssn":96.7,"f10.7":-1.0}]
-	var rawData []models.NOAASolarAPIResponse
+	// Define the expected API response structure
+	type NOAASolarAPIResponse struct {
+		TimeTag string  `json:"time-tag"`
+		SSN     float64 `json:"ssn"`
+		F107    float64 `json:"f10.7"`
+	}
+	
+	// NOAA returns array of objects format: [{"time-tag":"1749-01","ssn":96.7,"f10.7":-1.0}]
+	var rawData []NOAASolarAPIResponse
 	if err := json.Unmarshal(resp.Body(), &rawData); err != nil {
 		return nil, fmt.Errorf("failed to parse NOAA solar response: %w", err)
 	}
@@ -131,57 +175,94 @@ func (f *NOAAFetcher) FetchSolar(ctx context.Context, url string) ([]models.NOAA
 		})
 	}
 	
-	// Filter to recent data only
+	// Filter to recent data only (last 6 months)
 	return f.filterSolarRecent(data), nil
 }
 
-// filterKIndexRecent filters K-index data to last 24 hours with 3-hour intervals
+// filterKIndexRecent filters K-index data to last 72 hours
 func (f *NOAAFetcher) filterKIndexRecent(kIndexData []models.NOAAKIndexResponse) []models.NOAAKIndexResponse {
 	if len(kIndexData) == 0 {
 		return kIndexData
 	}
 	
-	var filtered []models.NOAAKIndexResponse
-	now := time.Now()
-	cutoffTime := now.Add(-time.Duration(KIndexHistoryHours) * time.Hour)
+	// First, parse all timestamps and sort data by time
+	type timeEntry struct {
+		time  time.Time
+		entry models.NOAAKIndexResponse
+	}
 	
-	// Sample every KIndexSampleIntervalHours hours
-	lastSampleTime := time.Time{}
-	
+	var timeEntries []timeEntry
 	for _, entry := range kIndexData {
-		if entryTime, err := time.Parse("2006-01-02T15:04:05", entry.TimeTag); err == nil {
-			if entryTime.After(cutoffTime) {
-				// Include if it's the first entry or interval hours since last sample
-				if lastSampleTime.IsZero() || entryTime.Sub(lastSampleTime) >= time.Duration(KIndexSampleIntervalHours)*time.Hour {
-					filtered = append(filtered, entry)
-					lastSampleTime = entryTime
-				}
+		// Handle multiple timestamp formats
+		var entryTime time.Time
+		var err error
+		
+		// Try multiple formats in sequence
+		formats := []string{
+			"2006-01-02T15:04:05",
+			"2006-01-02 15:04",
+			time.RFC3339,
+			"2006-01-02 15:04:05.000",
+			"2006-01-02T15:04:05Z",
+		}
+		
+		for _, format := range formats {
+			entryTime, err = time.Parse(format, entry.TimeTag)
+			if err == nil {
+				break
 			}
+		}
+		
+		if err == nil {
+			timeEntries = append(timeEntries, timeEntry{time: entryTime, entry: entry})
 		}
 	}
 	
-	// If no entries found, take the last 8 entries (roughly last day)
-	if len(filtered) == 0 && len(kIndexData) > 0 {
-		start := len(kIndexData) - 8
-		if start < 0 {
-			start = 0
+	// Sort by time (oldest first)
+	sort.Slice(timeEntries, func(i, j int) bool {
+		return timeEntries[i].time.Before(timeEntries[j].time)
+	})
+	
+	// Get the most recent time
+	var latestTime time.Time
+	if len(timeEntries) > 0 {
+		latestTime = timeEntries[len(timeEntries)-1].time
+	} else {
+		return kIndexData // No valid entries, return original data
+	}
+	
+	// Calculate cutoff time (72 hours before latest)
+	cutoffTime := latestTime.Add(-time.Duration(KIndexHistoryHours) * time.Hour)
+	
+	// Filter to entries within the last 72 hours
+	var filtered []models.NOAAKIndexResponse
+	for _, entry := range timeEntries {
+		if entry.time.After(cutoffTime) || entry.time.Equal(cutoffTime) {
+			filtered = append(filtered, entry.entry)
 		}
-		filtered = kIndexData[start:]
 	}
 	
 	return filtered
 }
 
-// filterSolarRecent filters solar data to keep only recent entries
+// filterSolarRecent filters solar data to keep only the last 6 months
 func (f *NOAAFetcher) filterSolarRecent(solarData []models.NOAASolarResponse) []models.NOAASolarResponse {
 	if len(solarData) == 0 {
 		return solarData
 	}
 	
-	// Take last SolarDataHistoryDays entries to avoid token limits
-	if len(solarData) > SolarDataHistoryDays {
-		return solarData[len(solarData)-SolarDataHistoryDays:]
+	// Take last SolarDataHistoryMonths entries (6 months)
+	if len(solarData) > SolarDataHistoryMonths {
+		return solarData[len(solarData)-SolarDataHistoryMonths:]
 	}
 	
 	return solarData
+}
+
+// parseFloat safely parses a string to float64
+func parseFloat(s string) (float64, error) {
+	if s == "" {
+		return 0, fmt.Errorf("empty string")
+	}
+	return strconv.ParseFloat(s, 64)
 }
