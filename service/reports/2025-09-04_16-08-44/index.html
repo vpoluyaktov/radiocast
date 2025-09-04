@@ -5,97 +5,85 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Radio Propagation Report - 2025-09-04</title>
     <style>
-:root {
-    --bg: #f7f7f8;
-    --surface: #ffffff;
-    --text: #2b2f36;
-    --muted: #636b74;
-    --border: #e5e7eb;
-    --accent: #3b82f6;
-    --shadow-sm: 0 2px 6px rgba(0,0,0,0.06);
-    --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg: #0f1115;
-        --surface: #161a20;
-        --text: #e5e7eb;
-        --muted: #a0a8b2;
-        --border: #2a2f37;
-        --accent: #3b82f6;
-        --shadow-sm: 0 2px 6px rgba(0,0,0,0.4);
-        --shadow-md: 0 8px 24px rgba(0,0,0,0.5);
-    }
-}
-
+     
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     margin: 0;
     padding: 20px;
-    background: var(--bg);
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     min-height: 100vh;
-    color: var(--text);
+    color: #333;
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    background: var(--surface);
+    background: white;
     border-radius: 15px;
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     overflow: hidden;
 }
 
 .header {
-    background: none;
-    color: var(--text);
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    color: #2c3e50;
     padding: 40px;
     text-align: center;
-    border-bottom: none;
     position: relative;
     overflow: hidden;
 }
 
-.header::before { display: none; }
+.header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="radio-waves" patternUnits="userSpaceOnUse" width="20" height="20"><circle cx="10" cy="10" r="8" fill="none" stroke="%23ffffff" stroke-width="0.5" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23radio-waves)"/></svg>') repeat;
+    z-index: 1;
+}
 
 .header > * {
     position: relative;
     z-index: 2;
 }
 
-.header-icon { display: none; }
+.header-icon {
+    font-size: 3em;
+    margin-bottom: 15px;
+    display: block;
+    animation: pulse 2s infinite;
+}
 
 @keyframes pulse {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    50% { transform: scale(1.1); }
 }
 
 .header h1 {
     margin: 0 0 10px 0;
-    font-size: 2.2em;
-    font-weight: 400;
-    letter-spacing: 0.5px;
+    font-size: 2.5em;
+    font-weight: 300;
+    letter-spacing: 2px;
     text-shadow: none;
-    border-bottom: none; /* override global h1 rule */
-    padding-bottom: 0;   /* remove extra spacing from global h1 rule */
 }
 
 .header h2 {
     margin: 0 0 15px 0;
-    font-size: 1.2em;
+    font-size: 1.5em;
     font-weight: 400;
-    opacity: 0.85;
-    color: var(--muted);
+    opacity: 0.8;
+    color: #6c757d;
     text-shadow: none;
 }
 
 .generated-time {
     font-size: 0.9em;
-    opacity: 0.8;
-    font-style: normal;
-    color: var(--muted);
+    opacity: 0.7;
+    font-style: italic;
+    color: #6c757d;
     margin-bottom: 20px;
 }
 
@@ -108,19 +96,20 @@ body {
 }
 
 .status-badge {
-    background: transparent;
-    color: var(--muted);
-    padding: 6px 12px;
-    border-radius: 999px;
+    background: rgba(255,255,255,0.2);
+    color: #ffffff;
+    padding: 8px 16px;
+    border-radius: 20px;
     font-size: 0.85em;
     font-weight: 500;
-    border: 1px solid var(--border);
-    transition: background-color 0.2s ease, color 0.2s ease;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+    transition: all 0.3s ease;
 }
 
 .status-badge:hover {
-    background: rgba(59,130,246,0.06);
-    color: var(--text);
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
 }
 
 .content {
@@ -129,26 +118,26 @@ body {
 
 .charts-section {
     padding: 40px;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-top: 1px solid #e9ecef;
     margin-top: 20px;
 }
 
 .charts-title {
     text-align: center;
-    color: var(--text);
+    color: #2c3e50;
     margin-bottom: 30px;
-    font-size: 1.6em;
+    font-size: 1.8em;
     border: none;
     background: none;
     padding: 0;
 }
 
 .footer {
-    background: var(--bg);
-    color: var(--muted);
+    background: #f8f9fa;
+    color: #6c757d;
     padding: 30px 40px;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid #dee2e6;
 }
 
 .footer-content {
@@ -160,7 +149,7 @@ body {
 }
 
 .data-sources h4 {
-    color: var(--text);
+    color: #007bff;
     margin-bottom: 10px;
     font-size: 1.1em;
 }
@@ -182,78 +171,85 @@ body {
 }
 
 .footer a {
-    color: var(--accent);
+    color: #007bff;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.3s ease;
 }
 
 .footer a:hover {
-    color: #1d4ed8;
+    color: #0056b3;
     text-decoration: underline;
 }
 
 h1 { 
-    color: var(--text);
-    border-bottom: none;
-    padding-bottom: 0;
+    color: #2c3e50; 
+    padding-bottom: 10px; 
     margin-top: 30px;
-    font-size: 1.8em;
+    font-size: 2em;
     position: relative;
 }
 
-h1::before { content: none; }
+h1::before {
+    content: attr(data-emoji);
+    font-size: 1.2em;
+    margin-right: 10px;
+}
 
 h2 { 
-    color: var(--text);
-    margin-top: 25px;
-    font-size: 1.4em;
-    padding: 0;
+    color: #495057; 
+    margin-top: 25px; 
+    font-size: 1.6em;
+    border-left: 4px solid #007bff;
+    padding-left: 15px;
+    background: linear-gradient(90deg, rgba(0,123,255,0.1) 0%, transparent 100%);
+    padding: 10px 15px;
+    border-radius: 0 8px 8px 0;
 }
 
 h3 { 
-    color: var(--muted); 
+    color: #7f8c8d; 
     margin-top: 20px; 
     font-size: 1.4em;
 }
 
 h4 { 
     font-size: 1.2em; 
-    color: var(--muted); 
+    color: #95a5a6; 
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
     margin: 20px 0;
-    background: var(--surface);
+    background: white;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 th, td {
     padding: 12px 15px;
     text-align: left;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid #e8e8e8;
 }
 
 th {
-    background: #f3f4f6;
-    color: #111827;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
     font-weight: 600;
-    text-transform: none;
-    letter-spacing: 0.2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     font-size: 0.9em;
 }
 
 tr:nth-child(even) {
-    background-color: #fafafa;
+    background-color: #f8f9fa;
 }
 
 tr:hover {
-    background-color: #f3f4f6;
-    transition: background-color 0.2s ease;
+    background-color: #fff3cd;
+    transition: background-color 0.3s ease;
 }
 
 /* Status indicators for propagation conditions */
@@ -286,24 +282,25 @@ tr:hover {
 }
 
 code {
-    background: #f3f4f6;
+    background: #f8f9fa;
     padding: 2px 6px;
     border-radius: 4px;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 0.9em;
-    color: inherit;
-    border: 1px solid var(--border);
+    color: #007bff;
+    border: 1px solid #e1e8ed;
 }
 
 pre {
-    background: #f3f4f6;
-    color: var(--text);
+    background: #f8f9fa;
+    color: #495057;
     padding: 20px;
     border-radius: 8px;
     overflow-x: auto;
     margin: 20px 0;
+    border-left: 4px solid #007bff;
     position: relative;
-    border: 1px solid var(--border);
+    border: 1px solid #dee2e6;
 }
 
 pre code {
@@ -316,12 +313,13 @@ pre code {
 }
 
 blockquote {
+    border-left: 4px solid #007bff;
     margin: 20px 0;
     padding: 10px 20px;
-    background: #f3f4f6;
+    background: #f8f9fa;
     border-radius: 0 8px 8px 0;
     font-style: italic;
-    color: var(--muted);
+    color: #6c757d;
 }
 
 ul, ol {
@@ -348,22 +346,23 @@ em {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: var(--accent);
-    color: #ffffff;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
     border: none;
     padding: 12px 20px;
     border-radius: 25px;
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
-    box-shadow: var(--shadow-sm);
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    transition: all 0.3s ease;
     z-index: 1000;
 }
 
 .print-button:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
 }
 
 /* Band analysis table specific styles */
@@ -392,15 +391,15 @@ em {
 .chart-container {
     margin: 20px 0;
     padding: 20px;
-    background: var(--surface);
+    background: white;
     border-radius: 8px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .chart-title {
     font-size: 1.2em;
     font-weight: 600;
-    color: var(--text);
+    color: #2c3e50;
     margin-bottom: 15px;
     text-align: center;
 }
@@ -421,12 +420,19 @@ em {
 .condition-poor { background: #dc3545; color: white; }
 .condition-closed { background: #6c757d; color: white; }
 
-/* Remove emoji-targeted styling for a cleaner look */
+/* Emoji styling for better visibility */
+h2:has-text("🎯") { border-left-color: #28a745; }
+h2:has-text("📻") { border-left-color: #e74c3c; }
+h2:has-text("⏰") { border-left-color: #f39c12; }
+h2:has-text("🌍") { border-left-color: #3498db; }
+h2:has-text("📈") { border-left-color: #9b59b6; }
+h2:has-text("💡") { border-left-color: #f1c40f; }
+h2:has-text("🔬") { border-left-color: #95a5a6; }
 
 /* Quick scan boxes */
 .quick-summary {
-    background: #eef7ef;
-    border: 1px solid #cfe7d2;
+    background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+    border: 2px solid #28a745;
     border-radius: 12px;
     padding: 20px;
     margin: 20px 0;
@@ -442,17 +448,17 @@ em {
 }
 
 .band-card {
-    background: var(--surface);
+    background: white;
     border-radius: 8px;
     padding: 15px;
-    box-shadow: var(--shadow-sm);
-    border-left: 4px solid transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-left: 4px solid #e74c3c;
     transition: transform 0.2s ease;
 }
 
 .band-card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 /* Footer improvements */
@@ -480,15 +486,15 @@ em {
 .chart-container {
     margin: 20px 0;
     padding: 15px;
-    background: var(--surface);
+    background: white;
     border-radius: 8px;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
     text-align: center;
 }
 
 .chart-container h3 {
-    color: var(--text);
+    color: #2c3e50;
     margin-bottom: 15px;
     font-size: 1.2em;
     font-weight: 600;
@@ -503,7 +509,7 @@ em {
     max-width: 100%;
     height: auto;
     border-radius: 4px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     transition: transform 0.2s ease;
 }
 
@@ -515,7 +521,7 @@ em {
 /* Chart grid layout */
 .charts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 20px;
     margin: 20px 0;
 }
@@ -525,7 +531,7 @@ em {
     body { padding: 10px; }
     .container { margin: 0; border-radius: 0; }
     .header { padding: 20px; }
-    .header h1 { font-size: 1.6em; }
+    .header h1 { font-size: 1.8em; }
     .content { padding: 20px; }
     .charts-section { padding: 20px; }
     .footer { padding: 15px 20px; }
@@ -641,10 +647,10 @@ em {
 .chart-section {
     margin: 30px 0;
     padding: 25px;
-    background: var(--surface);
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
     border-radius: 12px;
-    box-shadow: var(--shadow-sm);
-    border-left: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    /* border-left: 4px solid #007bff; */
 }
 
 .chart-container-integrated {
@@ -652,7 +658,7 @@ em {
 }
 
 .chart-container-integrated h3 {
-    color: var(--text);
+    color: #2c3e50;
     font-size: 1.3em;
     margin-bottom: 20px;
     font-weight: 600;
@@ -664,20 +670,20 @@ em {
     max-width: 100%;
     height: auto;
     border-radius: 8px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .chart-container-integrated img:hover {
     transform: scale(1.02);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
 
 /* Responsive chart layout */
 @media (max-width: 768px) {
     .chart-section {
         margin: 20px -10px;
-        padding: 15px;
+        padding: 10px;
         border-radius: 8px;
     }
     
@@ -708,7 +714,7 @@ em {
     }
     
     .header h2 { 
-        font-size: 1.1em; 
+        font-size: 1.2em; 
     }
     
     .content { 
@@ -779,20 +785,7 @@ em {
         font-size: 0.9em;
     }
 }
-
-/* Chart captions */
-.chart-caption {
-    margin-top: 8px;
-    color: var(--muted);
-    font-size: 0.9em;
-    text-align: center;
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-    * { animation: none !important; transition: none !important; }
-}
-
+     
     </style>
     
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -813,23 +806,22 @@ em {
             <div class="header-icon">📡</div>
             <h1>Amateur Radio Propagation Report</h1>
             <h2>2025-09-04</h2>
-            <div class="generated-time">Generated: 2025-09-04 13:04:31 UTC</div>
+            <div class="generated-time">🕒 Generated: 2025-09-04 16:09:15 UTC</div>
         </div>
         <div class="content">
             <h2>🎯 Quick Summary</h2>
 
-<p>Solar activity is strong today with high solar flux (180) and sunspot numbers (150), supporting excellent daytime HF propagation, especially on 20m–15m. Geomagnetic conditions have calmed after recent storms, so expect improved band conditions, but watch for lingering disturbances on polar and high-latitude paths. Now’s a great time to try the higher bands for DX, especially during daylight hours!</p>
+<p>HF conditions are looking up today! High solar flux and sunspot numbers mean 20m–10m bands are open with good daytime DX, but recent geomagnetic storms may cause some fading and noise, especially at high latitudes. Nighttime low bands (80m/40m) are quiet and reliable—get on the air for both local and DX contacts!</p>
 
 <hr />
 
 <h2>📊 Current Solar Activity</h2>
 
 <ul>
-<li><strong>Solar Flux (F10.7):</strong> 180 (very high, means more energy for the ionosphere)</li>
-<li><strong>Sunspot Number:</strong> 150 (plenty of active regions to boost HF propagation)</li>
-<li><strong>Recent Trend:</strong> Solar flux and sunspot numbers have rebounded after a dip in May/June, now at strong levels for late 2025.</li>
-<li><strong>Flares/Disturbances:</strong> No major solar flares reported, but recent geomagnetic storms suggest some recent solar eruptions.</li>
-<li><strong>Impact:</strong> High solar flux = higher MUF (Maximum Usable Frequency), so 10m–15m are open for business!</li>
+<li><strong>Solar Flux (SF):</strong> 172 (very strong; more solar radio energy = better high-band propagation)</li>
+<li><strong>Sunspot Number (SSN):</strong> 150 (robust; supports good ionization for HF)</li>
+<li><strong>Recent Trend:</strong> Solar activity dipped in early summer but is now climbing again—great news for HF!</li>
+<li><strong>Flares:</strong> No major flare activity reported, so no sudden blackouts expected.</li>
 </ul>
 
 
@@ -869,7 +861,7 @@ em {
 
 <tr>
 <td>40m</td>
-<td>🟡 Fair</td>
+<td>🔴 Poor</td>
 <td>🟢 Excellent</td>
 <td>2100-0700 UTC</td>
 <td>Best DX band at night</td>
@@ -896,7 +888,7 @@ em {
 <td>🔵 Good</td>
 <td>🔴 Poor</td>
 <td>1400-1800 UTC</td>
-<td>Solar dependent, open for DX</td>
+<td>Solar dependent</td>
 </tr>
 
 <tr>
@@ -904,7 +896,7 @@ em {
 <td>🟡 Fair</td>
 <td>⚫ Closed</td>
 <td>1500-1700 UTC</td>
-<td>Short, sporadic openings</td>
+<td>Sporadic openings</td>
 </tr>
 
 <tr>
@@ -912,14 +904,16 @@ em {
 <td>🟡 Fair</td>
 <td>⚫ Closed</td>
 <td>1600-1700 UTC</td>
-<td>Watch for brief openings</td>
+<td>Solar cycle dependent</td>
 </tr>
 </tbody>
 </table>
 
 <ul>
-<li><strong>Best Bands:</strong> 20m, 17m, 15m (especially during the day)</li>
-<li><strong>Challenging Bands:</strong> 80m and 40m during daylight; 10m and 12m mostly closed at night</li>
+<li><strong>20m/17m/15m:</strong> Your best bets for daytime DX—strong, stable openings.</li>
+<li><strong>10m/12m:</strong> Watch for short, sporadic openings in the afternoon.</li>
+<li><strong>40m/80m:</strong> Quiet and long at night; great for domestic and some DX.</li>
+<li><strong>VHF/UHF:</strong> No significant enhancements—normal tropo and line-of-sight only.</li>
 </ul>
 
 
@@ -938,10 +932,10 @@ em {
 <h2>📈 Geomagnetic Conditions</h2>
 
 <ul>
-<li><strong>K-index (last 24h):</strong> Recently spiked to 6 (major storm), now settled to 2–3 (quiet to unsettled)</li>
-<li><strong>A-index:</strong> 12 (moderate, some lingering disturbance)</li>
-<li><strong>Trend:</strong> Conditions are improving after a geomagnetic storm. Expect some residual effects, especially on polar paths and at higher latitudes.</li>
-<li><strong>Impact:</strong> Lower K-index means less absorption and better propagation, especially on higher bands.</li>
+<li><strong>Current K-index:</strong> 2–3 (quiet to unsettled)</li>
+<li><strong>Recent Trend:</strong> Past 48 hours saw a geomagnetic storm (K up to 6), but things have calmed down.</li>
+<li><strong>Impact:</strong> HF bands are recovering—expect some lingering absorption or fading, especially on polar paths.</li>
+<li><strong>Aurora:</strong> Low risk for auroral propagation, but high latitudes may still see some effects.</li>
 </ul>
 
 
@@ -960,10 +954,10 @@ em {
 <h2>⏰ Best Operating Times</h2>
 
 <ul>
-<li><strong>Daytime (1000–2200 UTC):</strong> 20m, 17m, and 15m are wide open for DX and intercontinental contacts.</li>
-<li><strong>Late Afternoon (1400–1800 UTC):</strong> 15m and 12m may show brief, strong openings—watch for short-skip and DX.</li>
-<li><strong>Evening/Night (2100–0700 UTC):</strong> 40m and 80m come alive for regional and some DX, especially as noise drops after sunset.</li>
-<li><strong>Grayline (sunrise/sunset):</strong> Enhanced propagation on 40m and 20m for long-haul DX.</li>
+<li><strong>Daytime (1000–2200 UTC):</strong> 20m, 17m, and 15m are wide open—work Europe, North America, and Africa.</li>
+<li><strong>Late Afternoon (1500–1800 UTC):</strong> Watch 12m/10m for brief, exciting DX openings.</li>
+<li><strong>Evening/Night (2100–0700 UTC):</strong> 40m and 80m come alive—excellent for regional and some long-haul DX.</li>
+<li><strong>Grayline (sunrise/sunset):</strong> Try 40m and 20m for enhanced long-path DX.</li>
 </ul>
 
 <hr />
@@ -972,10 +966,10 @@ em {
 
 <ul>
 <li><strong>20m:</strong> Best all-around DX band today—open worldwide, especially east-west paths.</li>
-<li><strong>17m/15m:</strong> Great for transatlantic and transpacific DX, especially mid-day.</li>
-<li><strong>10m/12m:</strong> Watch for brief, sporadic openings—try calling CQ, especially if you hear beacons or FT8 activity.</li>
-<li><strong>Polar Paths:</strong> May still be a bit disturbed from recent storms—try lower latitude paths for more reliability.</li>
-<li><strong>VHF:</strong> No significant tropospheric or auroral enhancement expected, but check 6m for surprise openings.</li>
+<li><strong>17m/15m:</strong> Good for transatlantic and transpacific contacts midday.</li>
+<li><strong>10m/12m:</strong> Check for short, strong openings to South America, Africa, and the Pacific in the afternoon.</li>
+<li><strong>40m:</strong> Nighttime DX to Asia, Oceania, and Europe—low noise, long skip.</li>
+<li><strong>Polar Paths:</strong> Some fading possible due to recent geomagnetic activity, but improving.</li>
 </ul>
 
 <hr />
@@ -983,11 +977,13 @@ em {
 <h2>🔮 3-Day Forecast</h2>
 
 <ul>
-<li><strong>Solar Activity:</strong> High solar flux and sunspot numbers should continue, supporting good HF propagation.</li>
-<li><strong>Geomagnetic:</strong> Conditions expected to remain mostly quiet (K=2–3), with only minor unsettled periods possible.</li>
-<li><strong>HF Bands:</strong> 20m–15m will remain strong; 10m/12m may improve further if geomagnetic activity stays low.</li>
-<li><strong>VHF/UHF:</strong> No major enhancements forecast; normal conditions.</li>
+<li><strong>Solar Activity:</strong> Solar flux and sunspots remain high—expect continued good high-band conditions.</li>
+<li><strong>Geomagnetic Field:</strong> Quiet to unsettled (K=2–3); no major storms forecast.</li>
+<li><strong>HF Bands:</strong> 20m–15m will stay strong, 10m/12m may open briefly each day.</li>
+<li><strong>Low Bands:</strong> 40m/80m will be quiet and reliable at night.</li>
 </ul>
+
+<p><strong>Recommendation:</strong> Plan for daytime DX on high bands and nighttime fun on 40m/80m. Watch for surprise 10m/12m openings!</p>
 
 
 <div class="chart-section">
@@ -1016,9 +1012,11 @@ em {
 </div>
 
 <ul>
-<li><strong>00–06 UTC:</strong> 40m/80m best for night-time DX and regional QSOs.</li>
-<li><strong>10–18 UTC:</strong> 20m, 17m, 15m open for worldwide DX; 10m/12m may open briefly.</li>
-<li><strong>18–22 UTC:</strong> 20m remains strong; 40m/80m start to improve as sun sets.</li>
+<li><strong>00–06 UTC:</strong> 40m/80m best for DX and local nets.</li>
+<li><strong>06–12 UTC:</strong> 20m opens to Asia and Pacific; 40m still useful.</li>
+<li><strong>12–18 UTC:</strong> 20m/17m/15m prime time for worldwide DX.</li>
+<li><strong>18–22 UTC:</strong> 15m/12m/10m may open briefly; 20m still strong.</li>
+<li><strong>22–24 UTC:</strong> 40m/80m take over for nighttime activity.</li>
 </ul>
 
 <hr />
@@ -1026,11 +1024,11 @@ em {
 <h2>💡 Operator Tips</h2>
 
 <ul>
-<li><strong>Contesters:</strong> Focus on 20m and 15m during the day for high rates; 40m and 80m after dark.</li>
-<li><strong>DXers:</strong> Try 17m and 15m for rare DX, especially midday. Check 10m for surprise openings—use FT8 or WSPR to spot activity.</li>
-<li><strong>Casual Ops:</strong> 20m is your best bet for reliable contacts all day. In the evening, 40m is great for longer ragchews.</li>
-<li><strong>Antennas:</strong> If you have a tribander or multi-band vertical, now’s the time to use it on the higher bands!</li>
-<li><strong>Digital Modes:</strong> FT8/FT4 will help you find and exploit marginal band openings, especially on 10m/12m.</li>
+<li><strong>Contesters:</strong> Focus on 20m/15m during the day, 40m at night. Check 10m for surprise multipliers!</li>
+<li><strong>DXers:</strong> Use grayline times for best long-path chances, especially on 20m and 17m.</li>
+<li><strong>Casual Ops:</strong> Try 17m and 15m for less crowded, high-quality SSB/CW contacts.</li>
+<li><strong>Digital Modes:</strong> FT8/FT4 will be hot on 20m–10m during the day; 40m/80m at night.</li>
+<li><strong>Antennas:</strong> If you have a tribander or vertical, now’s the time to use it on the higher bands.</li>
 </ul>
 
 <hr />
@@ -1038,30 +1036,28 @@ em {
 <h2>🔬 Technical Details</h2>
 
 <ul>
-<li><strong>Solar Flux (F10.7):</strong> 180 (very strong, supports high MUF)</li>
-<li><strong>Sunspot Number:</strong> 150 (active sun, good for HF)</li>
-<li><strong>A-index:</strong> 12 (moderate, some disturbance)</li>
-<li><strong>K-index:</strong> 2 (quiet, improving)</li>
-<li><strong>Recent K-index Trend:</strong> Peaked at 6 (storm), now settled to 2–3</li>
-<li><strong>Monthly Sunspot Numbers:</strong> Averaging 125–150 over the past few months</li>
-<li><strong>VHF/UHF:</strong> No significant aurora or tropospheric ducting reported</li>
+<li><strong>Solar Flux Index (SFI):</strong> 172 (excellent for 10m–20m propagation)</li>
+<li><strong>Sunspot Number:</strong> 150 (supports strong ionization)</li>
+<li><strong>A-index:</strong> 10 (quiet)</li>
+<li><strong>K-index:</strong> 2 (quiet; recent max K=6, now settled)</li>
+<li><strong>Recent Sunspot Trend:</strong> Rebounding after summer dip; August SSN 133.5, now 150.</li>
+<li><strong>Last 24h K-index:</strong> Peaked at 6 (storm), now 2–3 (quiet)</li>
+<li><strong>Aurora Index:</strong> 4 (low)</li>
+<li><strong>Proton/Electron Flux:</strong> Elevated but not at storm levels</li>
 </ul>
 
-<hr />
-
-<p><strong>Summary:</strong><br />
-HF conditions are excellent today, especially on 20m–15m. Geomagnetic conditions are settling, so expect improving DX and contest opportunities. Watch for brief 10m/12m openings, and enjoy the best propagation of the current solar cycle!</p>
+<p><strong>Summary:</strong> High solar activity and recovering geomagnetic field mean great high-band propagation—get on the air and enjoy the bands!</p>
 
         </div>
         <div class="footer">
             <div class="footer-content">
                 <div class="data-sources">
-                    <h4>Data Sources</h4>
+                    <h4>📡 Data Sources</h4>
                     <p>NOAA SWPC • N0NBH Solar Data • SIDC Sunspot Data</p>
                 </div>
                 <div class="service-info">
                     <p>Report generated by <a href="https://github.com/vpoluyaktov/radiocast" target="_blank" rel="noopener noreferrer">Radio Propagation Service</a> using AI</p>
-                    <p>v0.1.0.138</p>
+                    <p>0.1.0.141</p>
                     <p class="disclaimer">⚠️ For amateur radio use only. Conditions may vary by location.</p>
                     <p>Developed by KK7UNL</p>
                 </div>
