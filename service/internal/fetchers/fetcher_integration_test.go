@@ -16,7 +16,7 @@ func TestFetchAllDataIntegration(t *testing.T) {
 	ctx := context.Background()
 	
 	// Use real API endpoints (fetcher will use working endpoints internally)
-	noaaKURL := "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
+	noaaKURL := "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
 	noaaSolarURL := "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json"
 	n0nbhURL := "https://www.hamqsl.com/solarapi.php?format=json" // Fetcher uses working XML endpoint
 	sidcURL := "https://www.sidc.be/products/meu" // Fetcher uses working CSV endpoint
@@ -140,7 +140,7 @@ func TestNormalizeDataWithRealData(t *testing.T) {
 	ctx := context.Background()
 	
 	// Fetch real NOAA data
-	kIndexData, err := fetcher.noaaFetcher.FetchKIndex(ctx, "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json")
+	kIndexData, err := fetcher.noaaFetcher.FetchKIndex(ctx, "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json")
 	if err != nil {
 		t.Fatalf("Failed to fetch K-index data: %v", err)
 	}

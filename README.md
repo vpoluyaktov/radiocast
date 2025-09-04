@@ -172,7 +172,7 @@ All configuration is via environment variables:
 ## Data Sources
 
 ### NOAA Space Weather Prediction Center
-- **K-index**: `https://services.swpc.noaa.gov/json/planetary_k_index_1m.json`
+- **K-index**: `https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json`
 - **Solar data**: `https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json`
 
 ### N0NBH Solar Data API

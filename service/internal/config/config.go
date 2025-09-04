@@ -24,7 +24,7 @@ type Config struct {
 	LocalReportsDir string `env:"LOCAL_REPORTS_DIR,default=./reports"`
 	
 	// Data source URLs
-	NOAAKIndexURL string `env:"NOAA_K_INDEX_URL,default=https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"`
+	NOAAKIndexURL string `env:"NOAA_K_INDEX_URL,default=https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"`
 	NOAASolarURL  string `env:"NOAA_SOLAR_URL,default=https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json"`
 	N0NBHSolarURL string `env:"N0NBH_SOLAR_URL,default=https://www.hamqsl.com/solarapi.php?format=json"`
 	SIDCRSSURL    string `env:"SIDC_RSS_URL,default=https://www.sidc.be/products/meu"`
