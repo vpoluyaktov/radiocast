@@ -215,39 +215,6 @@ func (cg *ChartGenerator) generateKIndexChartWithSources(data *models.Propagatio
 	return filename, nil
 }
 
-// filterKIndexRecent filters K-index data to only include entries from the last 72 hours
-// and sorts them chronologically
-func filterKIndexRecent(data []models.NOAAKIndexResponse) []models.NOAAKIndexResponse {
-	if len(data) == 0 {
-		return data
-	}
-
-	now := time.Now().UTC()
-	// Use 72 hours for K-index history to show 3 days of data
-	historyStart := now.Add(-72 * time.Hour)
-
-	// Filter for recent data
-	var filtered []models.NOAAKIndexResponse
-	for _, d := range data {
-		t, err := parseNOAATime(d.TimeTag)
-		if err != nil {
-			continue
-		}
-		if t.After(historyStart) {
-			filtered = append(filtered, d)
-		}
-	}
-
-	// Sort by time to ensure proper ordering
-	sort.Slice(filtered, func(i, j int) bool {
-		ti, _ := parseNOAATime(filtered[i].TimeTag)
-		tj, _ := parseNOAATime(filtered[j].TimeTag)
-		return ti.Before(tj)
-	})
-
-	return filtered
-}
-
 // extractKIndexPoints converts sourceData NOAAKIndex into time/value slices with robust parsing
 func extractKIndexPoints(sourceData *models.SourceData) ([]time.Time, []float64) {
 	var points []struct{ t time.Time; v float64 }
