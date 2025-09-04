@@ -81,7 +81,7 @@ debug_apis() {
     print_header "API Endpoints Debug"
     
     print_status "Testing NOAA K-Index API..."
-    if curl -s --max-time 10 "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json" | head -3; then
+    if curl -s --max-time 10 "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json" | head -3; then
         print_success "NOAA K-Index API responding"
     else
         print_error "NOAA K-Index API failed"
