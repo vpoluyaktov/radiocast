@@ -1,4 +1,4 @@
-## Raw Solar and Space Weather Data (as of 2025-09-05 09:59 UTC)
+## Raw Solar and Space Weather Data (as of 2025-09-05 15:36 UTC)
 
 Please analyze the following comprehensive space weather data and generate a detailed radio propagation report. The data includes:
 - NOAA K-index data (geomagnetic activity - last 24 hours, 1-hour intervals)
@@ -9,18 +9,6 @@ Please analyze the following comprehensive space weather data and generate a det
 ### NOAA K-Index Data (Last 24 Hours, 1-Hour Intervals):
 ```json
 [
-  {
-    "time_tag": "2025-09-02T12:00:00",
-    "kp_index": 3,
-    "estimated_kp": 3,
-    "source": "NOAA SWPC"
-  },
-  {
-    "time_tag": "2025-09-02T15:00:00",
-    "kp_index": 4.33,
-    "estimated_kp": 4.33,
-    "source": "NOAA SWPC"
-  },
   {
     "time_tag": "2025-09-02T18:00:00",
     "kp_index": 5,
@@ -158,6 +146,18 @@ Please analyze the following comprehensive space weather data and generate a det
     "kp_index": 1.33,
     "estimated_kp": 1.33,
     "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-05T15:00:00",
+    "kp_index": 1.67,
+    "estimated_kp": 1.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-05T18:00:00",
+    "kp_index": 2.67,
+    "estimated_kp": 2.67,
+    "source": "NOAA SWPC"
   }
 ]
 ```
@@ -214,15 +214,15 @@ Please analyze the following comprehensive space weather data and generate a det
 ```json
 {
   "solardata": {
-    "solarflux": "172",
-    "aindex": " 10",
-    "kindex": " 1",
+    "solarflux": "149",
+    "aindex": " 11",
+    "kindex": " 2",
     "kindexnt": "No Report",
-    "sunspots": "142",
-    "heliumline": "137.2",
-    "protonflux": "219",
-    "electonflux": "3450",
-    "aurora": " 1",
+    "sunspots": "128",
+    "heliumline": "137.7",
+    "protonflux": "148",
+    "electonflux": "3400",
+    "aurora": " 3",
     "normalization": "1.99",
     "latestswpcreport": ""
   },
@@ -231,9 +231,16 @@ Please analyze the following comprehensive space weather data and generate a det
   "calculatedconditions": {
     "band": [
       {
+        "name": "12m-10m",
+        "time": "day",
+        "day": "Fair",
+        "night": "Poor",
+        "source": "N0NBH"
+      },
+      {
         "name": "80m-40m",
         "time": "day",
-        "day": "Poor",
+        "day": "Fair",
         "night": "Good",
         "source": "N0NBH"
       },
@@ -249,13 +256,6 @@ Please analyze the following comprehensive space weather data and generate a det
         "time": "day",
         "day": "Good",
         "night": "Good",
-        "source": "N0NBH"
-      },
-      {
-        "name": "12m-10m",
-        "time": "day",
-        "day": "Good",
-        "night": "Poor",
         "source": "N0NBH"
       }
     ]

@@ -20,7 +20,7 @@ func (cg *ChartGenerator) generateSolarActivitySnippet(data *models.PropagationD
 	}
 
 	option := map[string]interface{}{
-		"title": map[string]interface{}{"text": "Current Solar Activity", "left": "center"},
+		// "title": map[string]interface{}{"text": "Current Solar Activity", "left": "center"},
 		"tooltip": map[string]interface{}{"trigger": "axis", "axisPointer": map[string]interface{}{"type": "shadow"}},
 		"grid": map[string]interface{}{"left": "8%", "right": "4%", "bottom": "8%", "containLabel": true},
 		"xAxis": map[string]interface{}{"type": "category", "data": labels},

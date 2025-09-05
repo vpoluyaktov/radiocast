@@ -105,6 +105,12 @@ func (g *GCSClient) StoreFile(ctx context.Context, fileData []byte, filename str
 		writer.ContentType = "text/plain"
 	} else if strings.HasSuffix(filename, ".md") {
 		writer.ContentType = "text/markdown"
+	} else if strings.HasSuffix(filename, ".png") {
+		writer.ContentType = "image/png"
+	} else if strings.HasSuffix(filename, ".jpg") || strings.HasSuffix(filename, ".jpeg") {
+		writer.ContentType = "image/jpeg"
+	} else if strings.HasSuffix(filename, ".gif") {
+		writer.ContentType = "image/gif"
 	} else {
 		writer.ContentType = "application/octet-stream"
 	}
