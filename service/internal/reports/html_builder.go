@@ -274,7 +274,7 @@ func (h *HTMLBuilder) integrateChartsInContent(content, charts string) string {
 	}
 	
 	// Debug logging to see what's in the chartMap
-	for placeholder, _ := range chartMap {
+	for placeholder := range chartMap {
 		log.Printf("Chart placeholder found: %s", placeholder)
 	}
 	
