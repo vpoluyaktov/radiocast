@@ -9,6 +9,7 @@ import (
 
 // generateBandConditionsSnippet builds an ECharts heatmap-like dot matrix for 24h x bands
 func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.PropagationData) (ChartSnippet, error) {
+	// No debug needed
 	id := "chart-band-conditions"
 
 	bands := []string{"10m", "12m", "15m", "17m", "20m", "40m", "80m"}
@@ -31,6 +32,7 @@ func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.Propagation
 		for h := 0; h < 24; h++ {
 			cond := b.night
 			if h >= 6 && h < 18 { cond = b.day }
+			// Ensure we're correctly mapping the condition to its numeric value
 			val := cg.conditionToValue(cond)
 			// Only use 3 elements per data point to match the working example
 			points = append(points, []interface{}{h, row, val})
@@ -46,10 +48,12 @@ func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.Propagation
 			"formatter": `function(params) {
 				var bands = ['10m', '12m', '15m', '17m', '20m', '40m', '80m'];
 				var value = params.data[2];
+				// Ensure we're correctly mapping all five condition levels
 				var label = value === 0 ? 'Closed' : 
 						   value === 1 ? 'Poor' : 
 						   value === 2 ? 'Fair' : 
-						   value === 3 ? 'Good' : 'Excellent';
+						   value === 3 ? 'Good' : 
+						   value === 4 ? 'Excellent' : 'Unknown';
 				return label + ' | ' + bands[params.data[1]] + ' @ ' + params.data[0] + ':00';
 			}`,
 		},
