@@ -25,7 +25,7 @@ func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.Propagation
 		"6m":  {data.BandData.Band6m.Day, data.BandData.Band6m.Night},
 	}
 
-	// build 24h x bands points; encode condition as numeric for visual encoding and tooltip text
+	// build 24h x bands points; encode condition as numeric for visual encoding
 	points := make([][]interface{}, 0, 24*len(bands))
 	for row, band := range bands {
 		b := bc[band]
@@ -33,24 +33,53 @@ func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.Propagation
 			cond := b.night
 			if h >= 6 && h < 18 { cond = b.day }
 			val := cg.conditionToValue(cond)
-			points = append(points, []interface{}{h, row, val, cond})
+			// Only use 3 elements per data point to match the working example
+			points = append(points, []interface{}{h, row, val})
 		}
 	}
 
 	// visualMap for categories mapped to colors
-	// 0 Closed (dark), 1 Poor (red), 2 Fair (yellow), 3 Good (blue), 4 Excellent (green)
+	// 0 Closed (dark), 1 Poor (red), 2 Fair (yellow), 3 Good (green), 4 Excellent (blue)
 	option := map[string]interface{}{
 		"title": map[string]interface{}{"text": "HF Band Conditions (24h Matrix)", "left": "center"},
 		"tooltip": map[string]interface{}{
-			"trigger": "item",
-			"formatter": "{c3} | {b1} @ {b0}:00",
+			"position": "top",
+			"formatter": `function (params) {
+				var bands = ['6m', '10m', '12m', '15m', '17m', '20m', '40m', '80m'];
+				var value = params.data[2];
+				var label = value === 0 ? 'No Data' : 
+						   value === 1 ? 'Poor' : 
+						   value === 2 ? 'Fair' : 
+						   value === 3 ? 'Good' : 'Excellent';
+				return label + ' | ' + bands[params.data[1]] + ' @ ' + params.data[0] + ':00';
+			}`,
 		},
 		"grid": map[string]interface{}{"left": 110, "right": 40, "bottom": 80, "top": 60},
-		"xAxis": map[string]interface{}{"type": "category", "data": hours24(), "name": "UTC Hour"},
-		"yAxis": map[string]interface{}{"type": "category", "data": bands, "name": "Band"},
+		"xAxis": map[string]interface{}{
+			"type": "category", 
+			"data": hours24(), 
+			"name": "UTC Hour",
+			"splitArea": map[string]interface{}{"show": true},
+		},
+		"yAxis": map[string]interface{}{
+			"type": "category", 
+			"data": bands, 
+			"name": "Band",
+			"splitArea": map[string]interface{}{"show": true},
+		},
 		"visualMap": map[string]interface{}{
-			"min": 0, "max": 4, "show": true, "orient": "horizontal", "left": "center", "bottom": 30,
-			"inRange": map[string]interface{}{"color": []string{"#1e1e1e", "#dc3545", "#ffc107", "#3366cc", "#28a745"}},
+			"type": "piecewise",
+			"orient": "horizontal", 
+			"left": "center", 
+			"bottom": 30,
+			"showLabel": true,
+			"pieces": []interface{}{
+				map[string]interface{}{"value": 0, "label": "No Data", "color": "#1e1e1e"},
+				map[string]interface{}{"value": 1, "label": "Poor", "color": "#dc3545"},
+				map[string]interface{}{"value": 2, "label": "Fair", "color": "#ffc107"},
+				map[string]interface{}{"value": 3, "label": "Good", "color": "#28a745"},
+				map[string]interface{}{"value": 4, "label": "Excellent", "color": "#3366cc"},
+			},
 		},
 		"series": []interface{}{
 			map[string]interface{}{
@@ -58,6 +87,10 @@ func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.Propagation
 				"data": points,
 				"label": map[string]interface{}{"show": false},
 				"emphasis": map[string]interface{}{"itemStyle": map[string]interface{}{"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.3)"}},
+				"itemStyle": map[string]interface{}{
+					"borderWidth": 1,
+					"borderColor": "#f5f5f5",
+				},
 			},
 		},
 	}
