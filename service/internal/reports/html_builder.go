@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"log"
+	"regexp"
 	"strings"
 	"time"
 
@@ -235,6 +237,91 @@ func (h *HTMLBuilder) integrateChartsInContent(content, charts string) string {
 		chartMap = h.createDirectChartMapping(charts)
 	}
 	
+	// Extract the ECharts script and initialization scripts from the charts HTML
+	var echartsScript, initScripts string
+	if charts != "" {
+		// Extract the ECharts script tag - try multiple patterns
+		echartsScriptMatch := regexp.MustCompile(`<script[^>]*src="[^"]*echarts\.min\.js[^"]*"[^>]*></script>`).FindString(charts)
+		if echartsScriptMatch == "" {
+			// Try alternative pattern
+			echartsScriptMatch = regexp.MustCompile(`<script[^>]*src="[^"]*files/echarts\.min\.js[^"]*"[^>]*></script>`).FindString(charts)
+		}
+		if echartsScriptMatch == "" {
+			// Hardcode the script tag as fallback
+			echartsScript = `<script src="echarts.min.js"></script>`
+			log.Println("Using hardcoded ECharts script tag")
+		} else {
+			// Fix the path to use a relative path instead of /files/
+			echartsScriptMatch = strings.Replace(echartsScriptMatch, `src="/files/echarts.min.js"`, `src="echarts.min.js"`, -1)
+			echartsScript = echartsScriptMatch
+			log.Println("Found and fixed ECharts script tag in HTML")
+		}
+		
+		// Extract the initialization scripts - try multiple patterns
+		initScriptsMatches := regexp.MustCompile(`<script[^>]*>\s*\(function\([^)]*\)\s*\{[\s\S]*?\}\)[\s\S]*?;\s*</script>`).FindAllString(charts, -1)
+		if len(initScriptsMatches) == 0 {
+			// Try alternative pattern
+			initScriptsMatches = regexp.MustCompile(`<script[^>]*>[\s\S]*?function[\s\S]*?\{[\s\S]*?\}[\s\S]*?</script>`).FindAllString(charts, -1)
+		}
+		if len(initScriptsMatches) > 0 {
+			for _, script := range initScriptsMatches {
+				initScripts += script + "\n"
+				log.Println("Found chart initialization script")
+			}
+		} else {
+			log.Println("No chart initialization scripts found")
+		}
+	}
+	
+	// Debug logging to see what's in the chartMap
+	for placeholder, _ := range chartMap {
+		log.Printf("Chart placeholder found: %s", placeholder)
+	}
+	
+	// Add hardcoded placeholders if they're missing
+	if _, ok := chartMap["{{SOLAR_ACTIVITY_CHART}}"]; !ok && strings.Contains(charts, "chart-solar-activity") {
+		// Find the chart container for solar activity
+		solarActivityMatch := regexp.MustCompile(`<div[^>]*chart-container[^>]*>[\s\S]*?<h3>Current Solar Activity</h3>[\s\S]*?</div>[\s]*</div>`).FindString(charts)
+		if solarActivityMatch != "" {
+			chartMap["{{SOLAR_ACTIVITY_CHART}}"] = solarActivityMatch
+			log.Println("Added solar activity chart from regex match")
+		}
+	}
+	
+	if _, ok := chartMap["{{K_INDEX_CHART}}"]; !ok && (strings.Contains(charts, "chart-k-index") || strings.Contains(charts, "chart-forecast")) {
+		// Find the chart container for K-index
+		kIndexMatch := regexp.MustCompile(`<div[^>]*chart-container[^>]*>[\s\S]*?<h3>([^<]*K-[iI]ndex[^<]*)</h3>[\s\S]*?</div>[\s]*</div>`).FindString(charts)
+		if kIndexMatch != "" {
+			chartMap["{{K_INDEX_CHART}}"] = kIndexMatch
+			log.Println("Added K-index chart from regex match")
+		} else {
+			// Try with forecast chart as fallback
+			kIndexMatch = regexp.MustCompile(`<div[^>]*chart-container[^>]*>[\s\S]*?<h3>3-Day K-index Forecast</h3>[\s\S]*?</div>[\s]*</div>`).FindString(charts)
+			if kIndexMatch != "" {
+				chartMap["{{K_INDEX_CHART}}"] = kIndexMatch
+				log.Println("Added K-index forecast chart from regex match")
+			}
+		}
+	}
+	
+	if _, ok := chartMap["{{BAND_CONDITIONS_CHART}}"]; !ok && strings.Contains(charts, "chart-band-conditions") {
+		// Find the chart container for band conditions
+		bandConditionsMatch := regexp.MustCompile(`<div[^>]*chart-container[^>]*>[\s\S]*?<h3>HF Band Conditions[\s\S]*?</h3>[\s\S]*?</div>[\s]*</div>`).FindString(charts)
+		if bandConditionsMatch != "" {
+			chartMap["{{BAND_CONDITIONS_CHART}}"] = bandConditionsMatch
+			log.Println("Added band conditions chart from regex match")
+		}
+	}
+	
+	if _, ok := chartMap["{{FORECAST_CHART}}"]; !ok && strings.Contains(charts, "chart-forecast") {
+		// Find the chart container for forecast
+		forecastMatch := regexp.MustCompile(`<div[^>]*chart-container[^>]*>[\s\S]*?<h3>3-Day K-index Forecast</h3>[\s\S]*?</div>[\s]*</div>`).FindString(charts)
+		if forecastMatch != "" {
+			chartMap["{{FORECAST_CHART}}"] = forecastMatch
+			log.Println("Added forecast chart from regex match")
+		}
+	}
+	
 	// Replace placeholders with actual chart HTML
 	integratedContent := content
 	
@@ -253,14 +340,40 @@ func (h *HTMLBuilder) integrateChartsInContent(content, charts string) string {
 		if strings.Contains(integratedContent, "<p>"+placeholder+"</p>") {
 			// If the placeholder is wrapped in <p> tags, replace the whole thing
 			integratedContent = strings.Replace(integratedContent, "<p>"+placeholder+"</p>", chartSection, -1)
+			log.Printf("Replaced placeholder in p tags: %s", placeholder)
 		} else {
 			// Otherwise do a direct replacement
 			integratedContent = strings.Replace(integratedContent, placeholder, chartSection, -1)
+			log.Printf("Replaced placeholder directly: %s", placeholder)
 		}
 	}
 	
 	// Clean up any potential literal </div> tags that might have been incorrectly parsed
 	integratedContent = strings.Replace(integratedContent, "&lt;/div&gt;", "", -1)
+	
+	// Add the ECharts script and initialization scripts before the closing body tag
+	if echartsScript != "" || initScripts != "" {
+		scriptSection := "\n<!-- Chart Scripts -->\n" + echartsScript + "\n" + initScripts
+		
+		// Make sure we have a body tag to replace
+		if strings.Contains(integratedContent, "</body>") {
+			integratedContent = strings.Replace(integratedContent, "</body>", scriptSection+"\n</body>", 1)
+			log.Println("Added chart scripts before closing body tag")
+		} else {
+			// If no body tag, add at the end
+			integratedContent = integratedContent + "\n" + scriptSection
+			log.Println("Added chart scripts at the end of HTML")
+		}
+		
+		// Verify scripts were added
+		if !strings.Contains(integratedContent, echartsScript) {
+			log.Println("WARNING: ECharts script was not added to the HTML")
+		}
+		
+		log.Println("Added chart scripts to HTML")
+	} else {
+		log.Println("No chart scripts to add")
+	}
 	
 	return integratedContent
 }

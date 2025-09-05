@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-04T17:37:17.351198043-07:00",
+  "timestamp": "2025-09-04T18:24:54.110157451-07:00",
   "solar_data": {
     "solar_flux_index": 100,
     "solar_flux_data_source": "N0NBH",
@@ -11,7 +11,7 @@
     "last_major_flare": "",
     "solar_wind_speed": 0,
     "solar_wind_data_source": "",
-    "proton_flux": 732,
+    "proton_flux": 572,
     "proton_flux_data_source": "N0NBH"
   },
   "geomag_data": {
@@ -65,7 +65,7 @@
   },
   "forecast": {
     "today": {
-      "date": "2025-09-04T17:37:17.351272467-07:00",
+      "date": "2025-09-04T18:24:54.110167693-07:00",
       "k_index_forecast": "2.7",
       "solar_activity": "",
       "hf_conditions": "Poor to Fair",
@@ -81,7 +81,7 @@
       ]
     },
     "tomorrow": {
-      "date": "2025-09-05T17:37:17.351272735-07:00",
+      "date": "2025-09-05T18:24:54.110167728-07:00",
       "k_index_forecast": "2.2-3.2",
       "solar_activity": "",
       "hf_conditions": "Poor to Fair",
@@ -90,7 +90,7 @@
       "worst_bands": null
     },
     "day_after": {
-      "date": "2025-09-06T17:37:17.351273183-07:00",
+      "date": "2025-09-06T18:24:54.110167783-07:00",
       "k_index_forecast": "1.7-3.7",
       "solar_activity": "",
       "hf_conditions": "Poor to Fair",

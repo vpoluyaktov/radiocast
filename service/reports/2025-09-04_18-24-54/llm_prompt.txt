@@ -1,4 +1,4 @@
-## Raw Solar and Space Weather Data (as of 2025-09-04 17:37 UTC)
+## Raw Solar and Space Weather Data (as of 2025-09-04 18:24 UTC)
 
 Please analyze the following comprehensive space weather data and generate a detailed radio propagation report. The data includes:
 - NOAA K-index data (geomagnetic activity - last 24 hours, 1-hour intervals)
@@ -220,9 +220,9 @@ Please analyze the following comprehensive space weather data and generate a det
     "kindexnt": "No Report",
     "sunspots": "150",
     "heliumline": "140.2",
-    "protonflux": "732",
-    "electonflux": "25500",
-    "aurora": " 3",
+    "protonflux": "572",
+    "electonflux": "3920",
+    "aurora": " 2",
     "normalization": "1.99",
     "latestswpcreport": ""
   },
