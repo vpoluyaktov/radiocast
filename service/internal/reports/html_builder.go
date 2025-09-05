@@ -20,6 +20,118 @@ type HTMLBuilder struct {
 	templateLoader *TemplateLoader
 }
 
+// replaceBandTableWithData finds the first table after the '📻 Band-by-Band Analysis' header
+// and replaces it with a table generated from models.BandData. This guarantees the table
+// matches the same data source used by charts.
+func (h *HTMLBuilder) replaceBandTableWithData(htmlContent string, data *models.PropagationData) string {
+    heading := "<h2>📻 Band-by-Band Analysis</h2>"
+    idx := strings.Index(htmlContent, heading)
+    if idx == -1 {
+        return htmlContent
+    }
+
+    // Search after the heading for the first <table ...>...</table>
+    after := htmlContent[idx+len(heading):]
+    tableStart := strings.Index(after, "<table")
+    if tableStart == -1 {
+        return htmlContent
+    }
+
+    // Find the matching closing </table>
+    tableEnd := strings.Index(after[tableStart:], "</table>")
+    if tableEnd == -1 {
+        return htmlContent
+    }
+    tableEnd += tableStart + len("</table>")
+
+    // Build the replacement table HTML
+    bandTable := h.buildBandTableHTML(data)
+    if bandTable == "" {
+        return htmlContent
+    }
+
+    // Replace the table segment (remove exactly the located table)
+    before := htmlContent[:idx+len(heading)]
+    replaced := before + "\n" + bandTable + after[tableEnd:]
+    return replaced
+}
+
+// buildBandTableHTML builds the Band-by-Band Analysis table HTML from models.BandData
+func (h *HTMLBuilder) buildBandTableHTML(data *models.PropagationData) string {
+    if data == nil {
+        return ""
+    }
+
+    // Helper to render a row
+    row := func(band string, day string, night string, times string, notes string) string {
+        return fmt.Sprintf(
+            "<tr>\n<td>%s</td>\n<td>%s</td>\n<td>%s</td>\n<td>%s</td>\n<td>%s</td>\n</tr>",
+            band, toEmojiCondition(day), toEmojiCondition(night), template.HTMLEscapeString(times), template.HTMLEscapeString(notes),
+        )
+    }
+
+    // Basic best-times and notes heuristics by band
+    // These are static hints to keep parity with current reports
+    best := map[string]string{
+        "80m": "2200-0600 UTC",
+        "40m": "2100-0700 UTC",
+        "20m": "1000-2200 UTC",
+        "17m": "1200-2000 UTC",
+        "15m": "1400-1800 UTC",
+        "12m": "1500-1700 UTC",
+        "10m": "1600-1700 UTC",
+    }
+    notes := map[string]string{
+        "80m": "Low noise after sunset",
+        "40m": "Best DX band at night",
+        "20m": "Reliable all day",
+        "17m": "Good for EU/NA",
+        "15m": "Solar dependent",
+        "12m": "Sporadic openings",
+        "10m": "Solar cycle dependent",
+    }
+
+    var b strings.Builder
+    b.WriteString("<table class=\"band-analysis-table\">\n<thead>\n<tr>\n")
+    b.WriteString("<th>Band</th><th>Day Condition</th><th>Night Condition</th><th>Best Times</th><th>Notes</th>\n")
+    b.WriteString("</tr>\n</thead>\n<tbody>\n")
+    bd := data.BandData
+    b.WriteString(row("80m", bd.Band80m.Day, bd.Band80m.Night, best["80m"], notes["80m"]))
+    b.WriteString("\n")
+    b.WriteString(row("40m", bd.Band40m.Day, bd.Band40m.Night, best["40m"], notes["40m"]))
+    b.WriteString("\n")
+    b.WriteString(row("20m", bd.Band20m.Day, bd.Band20m.Night, best["20m"], notes["20m"]))
+    b.WriteString("\n")
+    b.WriteString(row("17m", bd.Band17m.Day, bd.Band17m.Night, best["17m"], notes["17m"]))
+    b.WriteString("\n")
+    b.WriteString(row("15m", bd.Band15m.Day, bd.Band15m.Night, best["15m"], notes["15m"]))
+    b.WriteString("\n")
+    b.WriteString(row("12m", bd.Band12m.Day, bd.Band12m.Night, best["12m"], notes["12m"]))
+    b.WriteString("\n")
+    b.WriteString(row("10m", bd.Band10m.Day, bd.Band10m.Night, best["10m"], notes["10m"]))
+    b.WriteString("\n</tbody>\n</table>")
+    return b.String()
+}
+
+// toEmojiCondition maps textual condition to the emoji label used in the table
+func toEmojiCondition(cond string) string {
+    c := strings.ToLower(strings.TrimSpace(cond))
+    switch c {
+    case "excellent":
+        return "🟢 Excellent"
+    case "good":
+        return "🟡 Good"
+    case "fair":
+        return "🟠 Fair"
+    case "poor":
+        return "🔴 Poor"
+    case "closed":
+        return "⚫ Closed"
+    default:
+        return cond
+    }
+}
+
 // NewHTMLBuilder creates a new HTML builder
 func NewHTMLBuilder() *HTMLBuilder {
 	return &HTMLBuilder{
@@ -213,11 +325,23 @@ func (h *HTMLBuilder) ConvertMarkdownToHTMLWithCharts(content string, charts str
 
 // BuildCompleteHTML creates a complete HTML document
 func (h *HTMLBuilder) BuildCompleteHTML(content, charts string, data *models.PropagationData) (string, error) {
-	// First convert markdown to HTML to ensure proper HTML structure
-	htmlContent := h.MarkdownToHTML(content)
-	
-	// Then integrate charts throughout the content
-	integratedContent := h.integrateChartsInContent(htmlContent, charts)
+    // First convert markdown to HTML to ensure proper HTML structure
+    htmlContent := h.MarkdownToHTML(content)
+
+    // Inject Band-by-Band Analysis table from data if placeholder present
+    if data != nil && strings.Contains(htmlContent, "{{BAND_TABLE}}") {
+        bandTable := h.buildBandTableHTML(data)
+        htmlContent = strings.ReplaceAll(htmlContent, "{{BAND_TABLE}}", bandTable)
+    }
+
+    // Regardless of placeholder, enforce that the Band-by-Band Analysis table
+    // reflects live BandData to keep it consistent with charts.
+    if data != nil {
+        htmlContent = h.replaceBandTableWithData(htmlContent, data)
+    }
+
+    // Then integrate charts throughout the content
+    integratedContent := h.integrateChartsInContent(htmlContent, charts)
 	
 	// Use the template-based conversion without separate charts section
 	result, err := h.ConvertMarkdownToHTMLWithCharts(integratedContent, "", time.Now().Format("2006-01-02"))
@@ -246,13 +370,38 @@ func (h *HTMLBuilder) integrateChartsInContent(content, charts string) string {
 	// Extract the ECharts script and initialization scripts from the charts HTML
 	echartsScript, initScripts := h.extractScripts(charts)
 	
-	// Replace placeholders with chart HTML
-	integratedContent := h.replacePlaceholders(content, chartMap)
-	
-	// Add scripts to the HTML
-	integratedContent = h.addScriptsToHTML(integratedContent, echartsScript, initScripts)
-	
-	return integratedContent
+    // Replace placeholders with chart HTML
+    integratedContent := h.replacePlaceholders(content, chartMap)
+
+    // If the Band Conditions chart exists but wasn't placed (placeholder missing),
+    // inject it right after the Band-by-Band Analysis header to ensure it appears.
+    if chartHTML, ok := chartMap["{{BAND_CONDITIONS_CHART}}"]; ok {
+        if !strings.Contains(integratedContent, "chart-band-conditions") {
+            heading := "<h2>📻 Band-by-Band Analysis</h2>"
+            pos := strings.Index(integratedContent, heading)
+            if pos != -1 {
+                insertAt := pos + len(heading)
+                // Wrap with the same container used elsewhere for consistency
+                chartSection := fmt.Sprintf(`
+<div class="chart-section">
+	<div class="chart-container-integrated">
+		%s
+	</div>
+</div>`, chartHTML)
+                integratedContent = integratedContent[:insertAt] + "\n" + chartSection + integratedContent[insertAt:]
+                log.Println("DEBUG: Injected Band Conditions chart after Band-by-Band Analysis header")
+            } else {
+                // Fallback: append at the end of content
+                integratedContent += "\n" + chartHTML
+                log.Println("WARNING: Band-by-Band Analysis header not found; appended Band Conditions chart at end")
+            }
+        }
+    }
+
+    // Add scripts to the HTML
+    integratedContent = h.addScriptsToHTML(integratedContent, echartsScript, initScripts)
+    
+    return integratedContent
 }
 
 // extractCharts extracts all charts from the HTML
