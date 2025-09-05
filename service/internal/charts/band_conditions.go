@@ -94,11 +94,30 @@ func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.Propagation
 		},
 	}
 
+	// Extract the formatter function string before JSON serialization
+	formatterFunc := option["tooltip"].(map[string]interface{})["formatter"].(string)
+	
+	// Remove the formatter from the option map for proper JSON serialization
+	delete(option["tooltip"].(map[string]interface{}), "formatter")
+	
 	optJSON, err := json.Marshal(option)
 	if err != nil { return ChartSnippet{}, err }
-
+	
 	div := fmt.Sprintf("<div id=\"%s\" style=\"width:100%%;height:500px;\"></div>", id)
-	script := fmt.Sprintf(`<script>(function(){var el=document.getElementById('%s');if(!el)return;var c=echarts.init(el);var option=%s;c.setOption(option);window.addEventListener('resize',function(){c.resize();});})();</script>`, id, string(optJSON))
+	
+	// Create the script with the formatter as a proper JavaScript function, not a string
+	script := fmt.Sprintf(`<script>(function(){
+	var el=document.getElementById('%s');
+	if(!el)return;
+	var c=echarts.init(el);
+	var option=%s;
+	// Set the formatter as a JavaScript function, not a string
+	option.tooltip = option.tooltip || {};
+	option.tooltip.position = 'top';
+	option.tooltip.formatter = %s;
+	c.setOption(option);
+	window.addEventListener('resize',function(){c.resize();});
+})();</script>`, id, string(optJSON), formatterFunc)
 
 	return ChartSnippet{ID: id, Title: "HF Band Conditions (24h)", Div: div, Script: script}, nil
 }
