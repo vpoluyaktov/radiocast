@@ -39,7 +39,7 @@ func (cg *ChartGenerator) generatePropagationTimelineSnippet(data *models.Propag
 	for i, t := range times { xdata[i] = t.Format(time.RFC3339) }
 
 	option := map[string]interface{}{
-		"title": map[string]interface{}{"text": "Propagation Quality Timeline (24 Hours)", "left": "center"},
+		// "title": map[string]interface{}{"text": "Propagation Quality Timeline (24 Hours)", "left": "center"},
 		"tooltip": map[string]interface{}{"trigger": "axis"},
 		"legend": map[string]interface{}{"data": []string{"K-index", "Solar Flux"}, "bottom": 0},
 		"grid": map[string]interface{}{"left": "8%", "right": "8%", "bottom": "12%", "containLabel": true},

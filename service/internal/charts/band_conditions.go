@@ -42,7 +42,7 @@ func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.Propagation
 	// visualMap for categories mapped to colors
 	// 0 Closed (black), 1 Poor (red), 2 Fair (orange), 3 Good (yellow), 4 Excellent (green)
 	option := map[string]interface{}{
-		"title": map[string]interface{}{"text": "HF Band Conditions (24h Matrix)", "left": "center"},
+		// "title": map[string]interface{}{"text": "HF Band Conditions (24h Matrix)", "left": "center"},
 		"tooltip": map[string]interface{}{
 			"position": "top",
 			"formatter": `function(params) {

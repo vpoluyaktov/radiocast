@@ -5,9 +5,9 @@
     "kindex": " 2",
     "kindexnt": "No Report",
     "sunspots": "128",
-    "heliumline": "137.6",
-    "protonflux": "168",
-    "electonflux": "3440",
+    "heliumline": "137.7",
+    "protonflux": "148",
+    "electonflux": "3400",
     "aurora": " 3",
     "normalization": "1.99",
     "latestswpcreport": ""
@@ -16,6 +16,13 @@
   "source": "N0NBH",
   "calculatedconditions": {
     "band": [
+      {
+        "name": "12m-10m",
+        "time": "day",
+        "day": "Fair",
+        "night": "Poor",
+        "source": "N0NBH"
+      },
       {
         "name": "80m-40m",
         "time": "day",
@@ -35,13 +42,6 @@
         "time": "day",
         "day": "Good",
         "night": "Good",
-        "source": "N0NBH"
-      },
-      {
-        "name": "12m-10m",
-        "time": "day",
-        "day": "Fair",
-        "night": "Poor",
         "source": "N0NBH"
       }
     ]
