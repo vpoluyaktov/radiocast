@@ -17,6 +17,13 @@
   "calculatedconditions": {
     "band": [
       {
+        "name": "80m-40m",
+        "time": "day",
+        "day": "Poor",
+        "night": "Good",
+        "source": "N0NBH"
+      },
+      {
         "name": "30m-20m",
         "time": "day",
         "day": "Good",
@@ -35,13 +42,6 @@
         "time": "day",
         "day": "Good",
         "night": "Poor",
-        "source": "N0NBH"
-      },
-      {
-        "name": "80m-40m",
-        "time": "day",
-        "day": "Poor",
-        "night": "Good",
         "source": "N0NBH"
       }
     ]

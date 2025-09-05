@@ -45,15 +45,15 @@ For Band Analysis, use this TABLE format:
 
 | Band | Day Condition | Night Condition | Best Times | Notes |
 |------|---------------|-----------------|------------|-------|
-| 80m | 🔴 Poor | 🔵 Good | 2200-0600 UTC | Low noise after sunset |
+| 80m | 🔴 Poor | 🟡 Good | 2200-0600 UTC | Low noise after sunset |
 | 40m | 🔴 Poor | 🟢 Excellent | 2100-0700 UTC | Best DX band at night |
-| 20m | 🟢 Excellent | 🔵 Good | 1000-2200 UTC | Reliable all day |
-| 17m | 🔵 Good | 🟡 Fair | 1200-2000 UTC | Good for EU/NA |
-| 15m | 🔵 Good | 🔴 Poor | 1400-1800 UTC | Solar dependent |
-| 12m | 🟡 Fair | ⚫ Closed | 1500-1700 UTC | Sporadic openings |
-| 10m | 🟡 Fair | ⚫ Closed | 1600-1700 UTC | Solar cycle dependent |
+| 20m | 🟢 Excellent | 🟡 Good | 1000-2200 UTC | Reliable all day |
+| 17m | 🟡 Good | 🟠 Fair | 1200-2000 UTC | Good for EU/NA |
+| 15m | 🟡 Good | 🔴 Poor | 1400-1800 UTC | Solar dependent |
+| 12m | 🟠 Fair | ⚫ Closed | 1500-1700 UTC | Sporadic openings |
+| 10m | 🟠 Fair | ⚫ Closed | 1600-1700 UTC | Solar cycle dependent |
 
-Use condition indicators: 🟢 Excellent | 🔵 Good | 🟡 Fair | 🔴 Poor | ⚫ Closed
+Use condition indicators: 🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed
 
 Make the report engaging and easy to scan quickly!
 
