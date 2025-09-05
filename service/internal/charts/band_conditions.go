@@ -11,7 +11,7 @@ import (
 func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.PropagationData) (ChartSnippet, error) {
 	id := "chart-band-conditions"
 
-	bands := []string{"6m", "10m", "12m", "15m", "17m", "20m", "40m", "80m"}
+	bands := []string{"10m", "12m", "15m", "17m", "20m", "40m", "80m"}
 	// map band to day/night strings
 	type bn struct{ day, night string }
 	bc := map[string]bn{
@@ -22,7 +22,6 @@ func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.Propagation
 		"15m": {data.BandData.Band15m.Day, data.BandData.Band15m.Night},
 		"12m": {data.BandData.Band12m.Day, data.BandData.Band12m.Night},
 		"10m": {data.BandData.Band10m.Day, data.BandData.Band10m.Night},
-		"6m":  {data.BandData.Band6m.Day, data.BandData.Band6m.Night},
 	}
 
 	// build 24h x bands points; encode condition as numeric for visual encoding
@@ -44,8 +43,8 @@ func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.Propagation
 		"title": map[string]interface{}{"text": "HF Band Conditions (24h Matrix)", "left": "center"},
 		"tooltip": map[string]interface{}{
 			"position": "top",
-			"formatter": `function (params) {
-				var bands = ['6m', '10m', '12m', '15m', '17m', '20m', '40m', '80m'];
+			"formatter": `function(params) {
+				var bands = ['10m', '12m', '15m', '17m', '20m', '40m', '80m'];
 				var value = params.data[2];
 				var label = value === 0 ? 'No Data' : 
 						   value === 1 ? 'Poor' : 
