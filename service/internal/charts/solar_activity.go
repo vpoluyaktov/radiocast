@@ -1,68 +1,38 @@
 package charts
 
 import (
+	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
-
-	"github.com/wcharczuk/go-chart/v2"
-	"github.com/wcharczuk/go-chart/v2/drawing"
 
 	"radiocast/internal/models"
 )
 
-// generateSolarActivityChart creates a chart showing current solar conditions
-func (cg *ChartGenerator) generateSolarActivityChart(data *models.PropagationData) (string, error) {
-	filename := filepath.Join(cg.outputDir, "solar_activity.png")
+// generateSolarActivitySnippet builds an ECharts bar chart for current solar activity
+func (cg *ChartGenerator) generateSolarActivitySnippet(data *models.PropagationData) (ChartSnippet, error) {
+	id := "chart-solar-activity"
 
-	// Create bar chart for solar metrics
-	graph := chart.BarChart{
-		Title: "Current Solar Activity",
-		TitleStyle: chart.Style{
-			FontSize: 16,
-			FontColor: drawing.ColorBlack,
-		},
-		Background: chart.Style{
-			Padding: chart.Box{
-				Top:    40,
-				Left:   20,
-				Right:  20,
-				Bottom: 20,
-			},
-		},
-		Height: 400,
-		Width:  600,
-		Bars: []chart.Value{
-			{Value: data.SolarData.SolarFluxIndex, Label: "Solar Flux"},
-			{Value: float64(data.SolarData.SunspotNumber), Label: "Sunspots"},
-			{Value: data.GeomagData.KIndex * 50, Label: "K-index (x50)"}, // Scale for visibility
-		},
-		BarWidth: 80,
-		XAxis: chart.Style{
-			FontSize: 12,
-		},
-		YAxis: chart.YAxis{
-			Name: "Values",
-			NameStyle: chart.Style{
-				FontSize: 12,
-			},
-			Style: chart.Style{
-				FontSize: 10,
-			},
-		},
+	labels := []string{"Solar Flux", "Sunspots", "K-index"}
+	values := []float64{data.SolarData.SolarFluxIndex, float64(data.SolarData.SunspotNumber), data.GeomagData.KIndex}
+
+	seriesData := make([]map[string]interface{}, 0, len(values))
+	for _, v := range values {
+		seriesData = append(seriesData, map[string]interface{}{"value": v})
 	}
 
-	// Save chart to file
-	f, err := os.Create(filename)
-	if err != nil {
-		return "", fmt.Errorf("failed to create solar activity chart file: %w", err)
-	}
-	defer f.Close()
-
-	err = graph.Render(chart.PNG, f)
-	if err != nil {
-		return "", fmt.Errorf("failed to render solar activity chart: %w", err)
+	option := map[string]interface{}{
+		"title": map[string]interface{}{"text": "Current Solar Activity", "left": "center"},
+		"tooltip": map[string]interface{}{"trigger": "axis", "axisPointer": map[string]interface{}{"type": "shadow"}},
+		"grid": map[string]interface{}{"left": "8%", "right": "4%", "bottom": "8%", "containLabel": true},
+		"xAxis": map[string]interface{}{"type": "category", "data": labels},
+		"yAxis": map[string]interface{}{"type": "value"},
+		"series": []interface{}{map[string]interface{}{"type": "bar", "data": seriesData, "barWidth": "40%"}},
 	}
 
-	return filename, nil
+	optJSON, err := json.Marshal(option)
+	if err != nil { return ChartSnippet{}, err }
+
+	div := fmt.Sprintf("<div id=\"%s\" style=\"width:100%%;height:360px;\"></div>", id)
+	script := fmt.Sprintf(`<script>(function(){var el=document.getElementById('%s');if(!el)return;var c=echarts.init(el);var option=%s;c.setOption(option);window.addEventListener('resize',function(){c.resize();});})();</script>`, id, string(optJSON))
+
+	return ChartSnippet{ID: id, Title: "Current Solar Activity", Div: div, Script: script}, nil
 }

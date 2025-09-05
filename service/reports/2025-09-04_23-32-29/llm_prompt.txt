@@ -1,4 +1,4 @@
-## Raw Solar and Space Weather Data (as of 2025-09-04 16:08 UTC)
+## Raw Solar and Space Weather Data (as of 2025-09-04 23:32 UTC)
 
 Please analyze the following comprehensive space weather data and generate a detailed radio propagation report. The data includes:
 - NOAA K-index data (geomagnetic activity - last 24 hours, 1-hour intervals)
@@ -9,24 +9,6 @@ Please analyze the following comprehensive space weather data and generate a det
 ### NOAA K-Index Data (Last 24 Hours, 1-Hour Intervals):
 ```json
 [
-  {
-    "time_tag": "2025-09-01T18:00:00",
-    "kp_index": 2.67,
-    "estimated_kp": 2.67,
-    "source": "NOAA SWPC"
-  },
-  {
-    "time_tag": "2025-09-01T21:00:00",
-    "kp_index": 6,
-    "estimated_kp": 6,
-    "source": "NOAA SWPC"
-  },
-  {
-    "time_tag": "2025-09-02T00:00:00",
-    "kp_index": 5.33,
-    "estimated_kp": 5.33,
-    "source": "NOAA SWPC"
-  },
   {
     "time_tag": "2025-09-02T03:00:00",
     "kp_index": 4.33,
@@ -158,6 +140,24 @@ Please analyze the following comprehensive space weather data and generate a det
     "kp_index": 2.33,
     "estimated_kp": 2.33,
     "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-04T21:00:00",
+    "kp_index": 2.67,
+    "estimated_kp": 2.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-05T00:00:00",
+    "kp_index": 1.67,
+    "estimated_kp": 1.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-05T03:00:00",
+    "kp_index": 0.67,
+    "estimated_kp": 0.67,
+    "source": "NOAA SWPC"
   }
 ]
 ```
@@ -216,13 +216,13 @@ Please analyze the following comprehensive space weather data and generate a det
   "solardata": {
     "solarflux": "172",
     "aindex": " 10",
-    "kindex": " 2",
+    "kindex": " 0",
     "kindexnt": "No Report",
     "sunspots": "150",
-    "heliumline": "140.6",
-    "protonflux": "515",
-    "electonflux": "4020",
-    "aurora": " 4",
+    "heliumline": "139.6",
+    "protonflux": "321",
+    "electonflux": "4180",
+    "aurora": " 1",
     "normalization": "1.99",
     "latestswpcreport": ""
   },
@@ -230,20 +230,6 @@ Please analyze the following comprehensive space weather data and generate a det
   "source": "N0NBH",
   "calculatedconditions": {
     "band": [
-      {
-        "name": "17m-15m",
-        "time": "day",
-        "day": "Good",
-        "night": "Good",
-        "source": "N0NBH"
-      },
-      {
-        "name": "12m-10m",
-        "time": "day",
-        "day": "Good",
-        "night": "Poor",
-        "source": "N0NBH"
-      },
       {
         "name": "80m-40m",
         "time": "day",
@@ -256,6 +242,20 @@ Please analyze the following comprehensive space weather data and generate a det
         "time": "day",
         "day": "Good",
         "night": "Good",
+        "source": "N0NBH"
+      },
+      {
+        "name": "17m-15m",
+        "time": "day",
+        "day": "Good",
+        "night": "Good",
+        "source": "N0NBH"
+      },
+      {
+        "name": "12m-10m",
+        "time": "day",
+        "day": "Good",
+        "night": "Poor",
         "source": "N0NBH"
       }
     ]

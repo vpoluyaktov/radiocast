@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"radiocast/internal/charts"
 )
 
 // ChartHTMLBuilder handles chart HTML generation
@@ -12,6 +14,48 @@ type ChartHTMLBuilder struct{}
 // NewChartHTMLBuilder creates a new chart HTML builder
 func NewChartHTMLBuilder() *ChartHTMLBuilder {
 	return &ChartHTMLBuilder{}
+}
+
+// BuildEChartsHTML creates HTML for go-echarts charts using local asset path.
+// folderPath is empty for local mode and non-empty for GCS mode (used to prefix the /files route).
+// This method ensures echarts.min.js is loaded once from the proxied /files path (no CDN).
+func (c *ChartHTMLBuilder) BuildEChartsHTML(snippets []charts.ChartSnippet, folderPath string) string {
+	if len(snippets) == 0 {
+		return "<p>No charts available</p>"
+	}
+
+	var html strings.Builder
+	html.WriteString("<div class=\"charts-section\">\n")
+	html.WriteString("<h2>Charts and Analysis</h2>\n")
+	html.WriteString("<div class=\"charts-grid\">\n")
+
+	for _, sn := range snippets {
+		// Title above each chart div for consistency with previous layout
+		html.WriteString("\t<div class=\"chart-container\">\n")
+		if sn.Title != "" {
+			html.WriteString(fmt.Sprintf("\t\t<h3>%s</h3>\n", sn.Title))
+		}
+		// Insert the chart container div
+		html.WriteString("\t\t" + sn.Div + "\n")
+		html.WriteString("\t</div>\n")
+	}
+
+	html.WriteString("</div>\n")
+
+	// Load ECharts from public CDN instead of local files
+	const cdnPath = "https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"
+	html.WriteString(fmt.Sprintf("<script src=\"%s\"></script>\n", cdnPath))
+
+	// Append all chart init scripts
+	for _, sn := range snippets {
+		html.WriteString(sn.Script)
+		if !strings.HasSuffix(sn.Script, "\n") {
+			html.WriteString("\n")
+		}
+	}
+
+	html.WriteString("</div>\n")
+	return html.String()
 }
 
 // BuildChartsHTML creates HTML for chart images using proxy URLs

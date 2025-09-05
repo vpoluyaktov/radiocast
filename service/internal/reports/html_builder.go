@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"log"
+	"regexp"
 	"strings"
 	"time"
 
@@ -225,22 +227,267 @@ func (h *HTMLBuilder) BuildCompleteHTML(content, charts string, data *models.Pro
 	return result, nil
 }
 
+// Chart represents a chart with its ID, title, HTML content, and placeholder
+type Chart struct {
+	ID         string
+	Title      string
+	HTML       string
+	Placeholder string
+}
+
 // integrateChartsInContent replaces chart placeholders with actual chart HTML
 func (h *HTMLBuilder) integrateChartsInContent(content, charts string) string {
-	// Parse chart HTML to extract individual chart elements
-	chartMap := h.parseChartsHTML(charts)
+	// Extract all charts from the HTML
+	extractedCharts := h.extractCharts(charts)
 	
-	// If no charts parsed, try direct filename-based mapping
-	if len(chartMap) == 0 && charts != "" {
-		chartMap = h.createDirectChartMapping(charts)
+	// Map charts to their placeholders
+	chartMap := h.mapChartsToPlaceholders(extractedCharts)
+	
+	// Extract the ECharts script and initialization scripts from the charts HTML
+	echartsScript, initScripts := h.extractScripts(charts)
+	
+	// Replace placeholders with chart HTML
+	integratedContent := h.replacePlaceholders(content, chartMap)
+	
+	// Add scripts to the HTML
+	integratedContent = h.addScriptsToHTML(integratedContent, echartsScript, initScripts)
+	
+	return integratedContent
+}
+
+// extractCharts extracts all charts from the HTML
+func (h *HTMLBuilder) extractCharts(charts string) []Chart {
+	if charts == "" {
+		return nil
 	}
 	
-	// Replace placeholders with actual chart HTML
-	integratedContent := content
+	var extractedCharts []Chart
 	
-	// Replace chart placeholders with professional chart sections
+	// Use regex to find all chart containers
+	chartContainerRegex := regexp.MustCompile(`<div[^>]*chart-container[^>]*>[\s\S]*?<h3>([^<]+)</h3>[\s\S]*?<div[^>]*id="(chart-[^"]+)"[^>]*>[\s\S]*?</div>[\s\S]*?</div>`)
+	matches := chartContainerRegex.FindAllStringSubmatch(charts, -1)
+	
+	processedIDs := make(map[string]bool)
+	
+	for _, match := range matches {
+		if len(match) >= 3 {
+			title := strings.TrimSpace(match[1])
+			id := match[2]
+			html := match[0]
+			
+			// Skip if we've already processed this chart ID
+			if processedIDs[id] {
+				log.Printf("DEBUG: Skipping duplicate chart with ID: %s and title: %s", id, title)
+				continue
+			}
+			
+			processedIDs[id] = true
+			
+			// Determine placeholder based on title and ID
+			placeholder := h.determinePlaceholder(title, id)
+			
+			if placeholder != "" {
+				extractedCharts = append(extractedCharts, Chart{
+					ID:         id,
+					Title:      title,
+					HTML:       html,
+					Placeholder: placeholder,
+				})
+				log.Printf("DEBUG: Extracted chart - ID: %s, Title: %s, Placeholder: %s", id, title, placeholder)
+			}
+		}
+	}
+	
+	// If no charts were found with the regex, try a more lenient approach
+	if len(extractedCharts) == 0 {
+		extractedCharts = h.extractChartsLenient(charts)
+	}
+	
+	return extractedCharts
+}
+
+// extractScripts extracts the ECharts script and initialization scripts from the charts HTML
+func (h *HTMLBuilder) extractScripts(charts string) (string, string) {
+	var initScripts string
+	
+	if charts == "" {
+		return "", ""
+	}
+	
+	// Always use the CDN version of ECharts
+	echartsScript := `<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>`
+	log.Println("Using CDN version of ECharts")
+	
+	// Extract the initialization scripts - try multiple patterns
+	initScriptsMatches := regexp.MustCompile(`<script[^>]*>\s*\(function\([^)]*\)\s*\{[\s\S]*?\}\)[\s\S]*?;\s*</script>`).FindAllString(charts, -1)
+	if len(initScriptsMatches) == 0 {
+		// Try alternative pattern
+		initScriptsMatches = regexp.MustCompile(`<script[^>]*>[\s\S]*?function[\s\S]*?\{[\s\S]*?\}[\s\S]*?</script>`).FindAllString(charts, -1)
+	}
+	
+	if len(initScriptsMatches) > 0 {
+		for _, script := range initScriptsMatches {
+			initScripts += script + "\n"
+			log.Println("Found chart initialization script")
+		}
+	} else {
+		// If no initialization scripts found, generate default ones for common chart IDs
+		log.Println("No chart initialization scripts found, generating default ones")
+		
+		// Generate default initialization scripts for common chart IDs
+		commonChartIDs := []string{"chart-solar-activity", "chart-band-conditions", "chart-propagation-timeline", "chart-k-index-trend", "chart-forecast"}
+		
+		for _, id := range commonChartIDs {
+			if strings.Contains(charts, id) || strings.Contains(charts, "id=\""+id+"\"") {
+				initScripts += fmt.Sprintf(`
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var chartDom = document.getElementById('%s');
+    if (chartDom) {
+      var myChart = echarts.init(chartDom);
+      var option = {
+        title: { text: '' },
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['Data'] },
+        grid: { left: '3%%', right: '4%%', bottom: '3%%', containLabel: true },
+        xAxis: { type: 'category', data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] },
+        yAxis: { type: 'value' },
+        series: [{ name: 'Data', type: 'line', data: [120, 132, 101, 134, 90, 230, 210] }]
+      };
+      myChart.setOption(option);
+      window.addEventListener('resize', function() { myChart.resize(); });
+    }
+  });
+</script>`, id)
+				log.Printf("Generated default initialization script for chart ID: %s", id)
+			}
+		}
+	}
+	
+	return echartsScript, initScripts
+}
+
+// extractChartsLenient extracts charts using a more lenient approach
+func (h *HTMLBuilder) extractChartsLenient(charts string) []Chart {
+	var extractedCharts []Chart
+	processedIDs := make(map[string]bool)
+	
+	// Check for specific chart patterns
+	chartPatterns := []struct {
+		IDPattern   string
+		TitlePattern string
+		Placeholder string
+	}{
+		{"chart-solar-activity", "Solar Activity", "{{CHART_SOLAR_ACTIVITY}}"},
+		{"chart-geomagnetic-conditions", "Geomagnetic Conditions", "{{CHART_GEOMAGNETIC_CONDITIONS}}"},
+		{"chart-propagation-timeline", "Propagation Quality Timeline", "{{CHART_PROPAGATION_TIMELINE}}"},
+		{"chart-band-conditions", "Band Conditions", "{{CHART_BAND_CONDITIONS}}"},
+	}
+	
+	for _, pattern := range chartPatterns {
+		// Try to find the chart div by ID
+		idRegex := regexp.MustCompile(fmt.Sprintf(`<div[^>]*chart-container[^>]*>[\s\S]*?<div[^>]*id="%s"[^>]*>[\s\S]*?</div>[\s\S]*?</div>`, pattern.IDPattern))
+		match := idRegex.FindString(charts)
+		
+		if match != "" && !processedIDs[pattern.IDPattern] {
+			processedIDs[pattern.IDPattern] = true
+			extractedCharts = append(extractedCharts, Chart{
+				ID:         pattern.IDPattern,
+				Title:      pattern.TitlePattern,
+				HTML:       match,
+				Placeholder: pattern.Placeholder,
+			})
+			log.Printf("DEBUG: Extracted chart (lenient) - ID: %s, Placeholder: %s", pattern.IDPattern, pattern.Placeholder)
+		}
+	}
+	
+	return extractedCharts
+}
+
+// determinePlaceholder determines the placeholder for a chart based on its title and ID
+func (h *HTMLBuilder) determinePlaceholder(title, id string) string {
+	// Map chart titles to placeholders
+	titleToPlaceholder := map[string]string{
+		"Solar Activity":              "{{SOLAR_ACTIVITY_CHART}}",
+		"Geomagnetic Conditions":      "{{K_INDEX_CHART}}",
+		"K-Index":                     "{{K_INDEX_CHART}}",
+		"Propagation Quality Timeline": "{{PROPAGATION_TIMELINE_CHART}}",
+		"Band Conditions":             "{{BAND_CONDITIONS_CHART}}",
+		"Forecast":                    "{{FORECAST_CHART}}",
+		"Propagation Forecast":        "{{FORECAST_CHART}}",
+	}
+	
+	// Map chart IDs to placeholders as a fallback
+	idToPlaceholder := map[string]string{
+		"chart-solar-activity":         "{{SOLAR_ACTIVITY_CHART}}",
+		"chart-geomagnetic-conditions": "{{K_INDEX_CHART}}",
+		"chart-k-index":               "{{K_INDEX_CHART}}",
+		"chart-propagation-timeline":   "{{PROPAGATION_TIMELINE_CHART}}",
+		"chart-band-conditions":        "{{BAND_CONDITIONS_CHART}}",
+		"chart-forecast":              "{{FORECAST_CHART}}",
+		"chart-propagation-forecast":   "{{FORECAST_CHART}}",
+	}
+	
+	// First try to match by title
+	if placeholder, ok := titleToPlaceholder[title]; ok {
+		log.Printf("DEBUG: Matched chart by title: %s -> %s", title, placeholder)
+		return placeholder
+	}
+	
+	// Then try to match by ID
+	if placeholder, ok := idToPlaceholder[id]; ok {
+		log.Printf("DEBUG: Matched chart by ID: %s -> %s", id, placeholder)
+		return placeholder
+	}
+	
+	// Try partial title matches
+	for knownTitle, placeholder := range titleToPlaceholder {
+		if strings.Contains(title, knownTitle) || strings.Contains(knownTitle, title) {
+			log.Printf("DEBUG: Matched chart by partial title: %s ~ %s -> %s", title, knownTitle, placeholder)
+			return placeholder
+		}
+	}
+	
+	// Try partial ID matches
+	for knownID, placeholder := range idToPlaceholder {
+		if strings.Contains(id, knownID) || strings.Contains(knownID, id) {
+			log.Printf("DEBUG: Matched chart by partial ID: %s ~ %s -> %s", id, knownID, placeholder)
+			return placeholder
+		}
+	}
+	
+	log.Printf("WARNING: Could not determine placeholder for chart - Title: %s, ID: %s", title, id)
+	return ""
+}
+
+// mapChartsToPlaceholders maps charts to their placeholders, avoiding duplicates
+func (h *HTMLBuilder) mapChartsToPlaceholders(charts []Chart) map[string]string {
+	chartMap := make(map[string]string)
+	processedPlaceholders := make(map[string]bool)
+	
+	// First pass: map charts to placeholders
+	for _, chart := range charts {
+		// Skip if we've already processed this placeholder
+		if processedPlaceholders[chart.Placeholder] {
+			log.Printf("DEBUG: Skipping duplicate placeholder: %s for chart ID: %s", chart.Placeholder, chart.ID)
+			continue
+		}
+		
+		processedPlaceholders[chart.Placeholder] = true
+		chartMap[chart.Placeholder] = chart.HTML
+		log.Printf("DEBUG: Mapped chart ID: %s to placeholder: %s", chart.ID, chart.Placeholder)
+	}
+	
+	return chartMap
+}
+
+// replacePlaceholders replaces placeholders in the content with chart HTML
+func (h *HTMLBuilder) replacePlaceholders(content string, chartMap map[string]string) string {
+	result := content
+	
+	// Replace placeholders with chart HTML
 	for placeholder, chartHTML := range chartMap {
-		// Create a properly escaped chart section
+		// Create a properly formatted chart section with appropriate div structure
 		chartSection := fmt.Sprintf(`
 <div class="chart-section">
 	<div class="chart-container-integrated">
@@ -248,212 +495,55 @@ func (h *HTMLBuilder) integrateChartsInContent(content, charts string) string {
 	</div>
 </div>`, chartHTML)
 		
-		// Make sure the placeholder is on its own line to avoid partial replacements
-		// This helps prevent issues with markdown parsing and HTML tags
-		if strings.Contains(integratedContent, "<p>"+placeholder+"</p>") {
-			// If the placeholder is wrapped in <p> tags, replace the whole thing
-			integratedContent = strings.Replace(integratedContent, "<p>"+placeholder+"</p>", chartSection, -1)
+		// Check if the placeholder exists in the content
+		if strings.Contains(result, placeholder) {
+			log.Printf("DEBUG: Replacing placeholder: %s with chart HTML", placeholder)
+			result = strings.ReplaceAll(result, placeholder, chartSection)
 		} else {
-			// Otherwise do a direct replacement
-			integratedContent = strings.Replace(integratedContent, placeholder, chartSection, -1)
+			// Check if the placeholder is wrapped in paragraph tags
+			paragraphWrappedPlaceholder := fmt.Sprintf("<p>%s</p>", placeholder)
+			if strings.Contains(result, paragraphWrappedPlaceholder) {
+				log.Printf("DEBUG: Replacing paragraph-wrapped placeholder: %s with chart HTML", paragraphWrappedPlaceholder)
+				result = strings.ReplaceAll(result, paragraphWrappedPlaceholder, chartSection)
+			} else {
+				log.Printf("WARNING: Placeholder not found in content: %s", placeholder)
+			}
 		}
 	}
 	
-	// Clean up any potential literal </div> tags that might have been incorrectly parsed
-	integratedContent = strings.Replace(integratedContent, "&lt;/div&gt;", "", -1)
+	// Remove any paragraph tags that might be wrapping our chart sections
+	result = strings.ReplaceAll(result, "<p>\n<div class=\"chart-section\">", "\n<div class=\"chart-section\">")
+	result = strings.ReplaceAll(result, "</div></p>", "</div>")
 	
-	return integratedContent
+	return result
 }
 
-// createDirectChartMapping creates chart mapping based on filenames when parsing fails
-func (h *HTMLBuilder) createDirectChartMapping(charts string) map[string]string {
-	chartMap := make(map[string]string)
+// addScriptsToHTML adds ECharts scripts and initialization scripts to the HTML
+func (h *HTMLBuilder) addScriptsToHTML(content, echartsScript, initScripts string) string {
+	result := content
 	
-	// Look for image tags and map them directly
-	if strings.Contains(charts, "solar_activity.png") {
-		start := strings.Index(charts, "<div class=\"chart-container\">")
-		if start != -1 {
-			end := strings.Index(charts[start:], "</div>")
-			if end != -1 {
-				chartHTML := charts[start : start+end+6]
-				if strings.Contains(chartHTML, "solar_activity.png") {
-					chartMap["{{SOLAR_ACTIVITY_CHART}}"] = chartHTML
-				}
-			}
+	// Add ECharts script and initialization scripts before the closing body tag
+	if echartsScript != "" || initScripts != "" {
+		// Ensure we have the ECharts script
+		if echartsScript == "" {
+			echartsScript = `<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>`
+			log.Println("DEBUG: Added default ECharts CDN script")
 		}
-	}
-	
-	if strings.Contains(charts, "k_index_trend.png") {
-		// Find the chart container for K-index
-		lines := strings.Split(charts, "\n")
-		var currentChart strings.Builder
-		inKIndexChart := false
 		
-		for _, line := range lines {
-			if strings.Contains(line, "chart-container") && !inKIndexChart {
-				currentChart.Reset()
-				inKIndexChart = true
-			}
-			
-			if inKIndexChart {
-				currentChart.WriteString(line + "\n")
-				if strings.Contains(line, "k_index_trend.png") {
-					// Continue until we find the closing div
-					continue
-				}
-				if strings.Contains(line, "</div>") && strings.Contains(currentChart.String(), "k_index_trend.png") {
-					chartMap["{{K_INDEX_CHART}}"] = currentChart.String()
-					inKIndexChart = false
-					break
-				}
-			}
-		}
-	}
-	
-	if strings.Contains(charts, "band_conditions.png") {
-		// Similar logic for band conditions
-		lines := strings.Split(charts, "\n")
-		var currentChart strings.Builder
-		inBandChart := false
+		// Combine scripts
+		scripts := echartsScript + "\n" + initScripts
 		
-		for _, line := range lines {
-			if strings.Contains(line, "chart-container") && !inBandChart {
-				currentChart.Reset()
-				inBandChart = true
-			}
-			
-			if inBandChart {
-				currentChart.WriteString(line + "\n")
-				if strings.Contains(line, "</div>") && strings.Contains(currentChart.String(), "band_conditions.png") {
-					chartMap["{{BAND_CONDITIONS_CHART}}"] = currentChart.String()
-					inBandChart = false
-					break
-				}
-			}
+		// Check if body tag exists
+		if strings.Contains(result, "</body>") {
+			result = strings.Replace(result, "</body>", scripts+"\n</body>", 1)
+		} else {
+			// If no body tag, append to the end
+			result = result + "\n" + scripts
 		}
-	}
-	
-	if strings.Contains(charts, "forecast.png") {
-		lines := strings.Split(charts, "\n")
-		var currentChart strings.Builder
-		inForecastChart := false
 		
-		for _, line := range lines {
-			if strings.Contains(line, "chart-container") && !inForecastChart {
-				currentChart.Reset()
-				inForecastChart = true
-			}
-			
-			if inForecastChart {
-				currentChart.WriteString(line + "\n")
-				if strings.Contains(line, "</div>") && strings.Contains(currentChart.String(), "forecast.png") {
-					chartMap["{{FORECAST_CHART}}"] = currentChart.String()
-					inForecastChart = false
-					break
-				}
-			}
-		}
+		log.Println("DEBUG: Added ECharts script and initialization scripts to HTML")
 	}
 	
-	if strings.Contains(charts, "propagation_timeline.png") {
-		lines := strings.Split(charts, "\n")
-		var currentChart strings.Builder
-		inTimelineChart := false
-		
-		for _, line := range lines {
-			if strings.Contains(line, "chart-container") && !inTimelineChart {
-				currentChart.Reset()
-				inTimelineChart = true
-			}
-			
-			if inTimelineChart {
-				currentChart.WriteString(line + "\n")
-				if strings.Contains(line, "</div>") && strings.Contains(currentChart.String(), "propagation_timeline.png") {
-					chartMap["{{PROPAGATION_TIMELINE_CHART}}"] = currentChart.String()
-					inTimelineChart = false
-					break
-				}
-			}
-		}
-	}
-	
-	return chartMap
+	return result
 }
 
-// parseChartsHTML extracts individual charts from the charts HTML string
-func (h *HTMLBuilder) parseChartsHTML(charts string) map[string]string {
-	chartMap := make(map[string]string)
-	
-	if charts == "" {
-		return chartMap
-	}
-	
-	// Parse chart containers more robustly
-	lines := strings.Split(charts, "\n")
-	var currentChart strings.Builder
-	var chartTitle string
-	inChartContainer := false
-	
-	for _, line := range lines {
-		trimmedLine := strings.TrimSpace(line)
-		
-		// Start of a chart container
-		if strings.Contains(trimmedLine, "chart-container") && strings.Contains(trimmedLine, "<div") {
-			// Save previous chart if exists
-			if currentChart.Len() > 0 && chartTitle != "" {
-				h.mapChartToPlaceholder(chartTitle, currentChart.String(), chartMap)
-			}
-			// Reset for new chart
-			currentChart.Reset()
-			chartTitle = ""
-			inChartContainer = true
-		}
-		
-		// Extract chart title from h3 tags
-		if inChartContainer && strings.Contains(trimmedLine, "<h3>") {
-			start := strings.Index(trimmedLine, ">") + 1
-			end := strings.LastIndex(trimmedLine, "<")
-			if start > 0 && end > start {
-				chartTitle = strings.TrimSpace(trimmedLine[start:end])
-			}
-		}
-		
-		// Add line to current chart if we're inside a container
-		if inChartContainer {
-			currentChart.WriteString(line + "\n")
-		}
-		
-		// End of chart container
-		if inChartContainer && strings.Contains(trimmedLine, "</div>") && 
-		   (strings.Contains(currentChart.String(), "chart-container") || strings.Contains(currentChart.String(), "img")) {
-			// This might be the end of the chart container
-			if chartTitle != "" {
-				h.mapChartToPlaceholder(chartTitle, currentChart.String(), chartMap)
-			}
-			inChartContainer = false
-		}
-	}
-	
-	// Handle last chart if still processing
-	if currentChart.Len() > 0 && chartTitle != "" {
-		h.mapChartToPlaceholder(chartTitle, currentChart.String(), chartMap)
-	}
-	
-	return chartMap
-}
-
-// mapChartToPlaceholder maps chart titles to their placeholders
-func (h *HTMLBuilder) mapChartToPlaceholder(title, chartHTML string, chartMap map[string]string) {
-	switch {
-	case strings.Contains(title, "Solar Activity"):
-		chartMap["{{SOLAR_ACTIVITY_CHART}}"] = chartHTML
-	case strings.Contains(title, "K Index") || strings.Contains(title, "K-Index"):
-		chartMap["{{K_INDEX_CHART}}"] = chartHTML
-	case strings.Contains(title, "Band Conditions"):
-		chartMap["{{BAND_CONDITIONS_CHART}}"] = chartHTML
-	case strings.Contains(title, "Forecast"):
-		chartMap["{{FORECAST_CHART}}"] = chartHTML
-	case strings.Contains(title, "Propagation Timeline"):
-		chartMap["{{PROPAGATION_TIMELINE_CHART}}"] = chartHTML
-	}
-}
