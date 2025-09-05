@@ -2,13 +2,13 @@
   "solardata": {
     "solarflux": "172",
     "aindex": " 10",
-    "kindex": " 2",
+    "kindex": " 1",
     "kindexnt": "No Report",
     "sunspots": "150",
-    "heliumline": "140.2",
-    "protonflux": "572",
-    "electonflux": "3920",
-    "aurora": " 2",
+    "heliumline": "139.6",
+    "protonflux": "384",
+    "electonflux": "3610",
+    "aurora": " 1",
     "normalization": "1.99",
     "latestswpcreport": ""
   },

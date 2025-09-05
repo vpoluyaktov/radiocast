@@ -10,7 +10,7 @@ import (
 
 // generatePropagationTimelineSnippet builds a dual-series line chart for K-index (primary) and Solar Flux (secondary)
 func (cg *ChartGenerator) generatePropagationTimelineSnippet(data *models.PropagationData, sourceData *models.SourceData) (ChartSnippet, error) {
-	id := "chart-prop-timeline"
+	id := "chart-propagation-timeline"
 
 	var times []time.Time
 	var kValues []float64

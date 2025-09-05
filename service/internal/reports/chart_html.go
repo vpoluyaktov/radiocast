@@ -42,14 +42,9 @@ func (c *ChartHTMLBuilder) BuildEChartsHTML(snippets []charts.ChartSnippet, fold
 
 	html.WriteString("</div>\n")
 
-	// Load local echarts asset once (proxied by Go server under /files)
-	var assetPath string
-	if folderPath != "" {
-		assetPath = fmt.Sprintf("/files/%s/echarts.min.js", folderPath)
-	} else {
-		assetPath = "/files/echarts.min.js"
-	}
-	html.WriteString(fmt.Sprintf("<script src=\"%s\"></script>\n", assetPath))
+	// Load ECharts from public CDN instead of local files
+	const cdnPath = "https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"
+	html.WriteString(fmt.Sprintf("<script src=\"%s\"></script>\n", cdnPath))
 
 	// Append all chart init scripts
 	for _, sn := range snippets {
