@@ -8,14 +8,33 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"radiocast/internal/imagery"
 	"radiocast/internal/models"
 )
 
 // FileManager handles unified file operations for both local and GCS modes
 type FileManager struct {
 	server *Server
+}
+
+// injectSunGIFIntoHTML inserts a section with the generated Sun GIF near the top of the body.
+// If folderPath is non-empty (GCS mode), it will prefix the src with that path.
+func (fm *FileManager) injectSunGIFIntoHTML(html, gifRelName, folderPath string) string {
+	imgSrc := "/files/" + gifRelName
+	if folderPath != "" {
+		// Ensure folderPath ends with '/'
+		if !strings.HasSuffix(folderPath, "/") { folderPath += "/" }
+		imgSrc = "/files/" + folderPath + gifRelName
+	}
+	section := fmt.Sprintf(`\n<div class="chart-section"><div class="chart-container-integrated"><h3>Sun: Last 24 Hours</h3><img src="%s" alt="Sun last 24h" style="max-width:100%%;height:auto;border-radius:8px;" /></div></div>\n`, imgSrc)
+	// Insert right after opening <body>
+	if strings.Contains(html, "<body>") {
+		return strings.Replace(html, "<body>", "<body>\n"+section, 1)
+	}
+	return html + section
 }
 
 // NewFileManager creates a new file manager
@@ -30,6 +49,7 @@ type ReportFiles struct {
 	JSONFiles      map[string][]byte
 	ReportDir      string
 	FolderPath     string // GCS folder path
+	AssetFiles     map[string][]byte // additional assets like GIFs
 }
 
 // GenerateAllFiles creates all report files (HTML, charts, JSON) in a unified way
@@ -53,6 +73,7 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 	files := &ReportFiles{
 		ReportDir: reportDir,
 		JSONFiles: make(map[string][]byte),
+		AssetFiles: make(map[string][]byte),
 	}
 	
 	// Generate GCS folder path for consistency
@@ -81,6 +102,21 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 		log.Printf("Warning: Failed to save LLM files: %v", err)
 	}
 	
+	// 3.5. Generate Sun GIF (last 24h) using Helioviewer and ffmpeg
+	gifRelName := "sun_24h.gif"
+	gifPath := filepath.Join(reportDir, gifRelName)
+	if err := imagery.GenerateSunGIF(ctx, reportDir, data.Timestamp, gifPath); err != nil {
+		log.Printf("Warning: Failed to generate Sun GIF: %v", err)
+	} else {
+		// Read the GIF into memory for potential GCS upload
+		if b, rerr := os.ReadFile(gifPath); rerr == nil {
+			files.AssetFiles[gifRelName] = b
+			log.Printf("Generated Sun GIF: %s (%d bytes)", gifPath, len(b))
+		} else {
+			log.Printf("Warning: Could not read generated GIF %s: %v", gifPath, rerr)
+		}
+	}
+
 	// 4. Generate HTML report using ECharts snippets only
 	var html string
 	var err error
@@ -94,11 +130,12 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate HTML: %w", err)
 	}
-	files.HTMLContent = html
+	// Inject Sun GIF section into HTML if generated
+	files.HTMLContent = fm.injectSunGIFIntoHTML(html, gifRelName, files.FolderPath)
 	
 	// 5. Save HTML file locally (index.html for consistency)
 	htmlPath := filepath.Join(reportDir, "index.html")
-	if err := os.WriteFile(htmlPath, []byte(html), 0644); err != nil {
+	if err := os.WriteFile(htmlPath, []byte(files.HTMLContent), 0644); err != nil {
 		log.Printf("Failed to save HTML report: %v", err)
 	}
 	
@@ -206,8 +243,18 @@ func (fm *FileManager) UploadToGCS(ctx context.Context, files *ReportFiles, time
 			log.Printf("JSON file uploaded successfully: %s", filename)
 		}
 	}
-	
-	// 3. Upload HTML report
+
+	// 3. Upload asset files (images, GIFs)
+	for filename, data := range files.AssetFiles {
+		log.Printf("Uploading asset file %s (%d bytes) to GCS", filename, len(data))
+		if err := fm.server.Storage.StoreFile(ctx, data, filename, timestamp); err != nil {
+			log.Printf("Failed to store asset file %s: %v", filename, err)
+		} else {
+			log.Printf("Asset file uploaded successfully: %s", filename)
+		}
+	}
+
+	// 4. Upload HTML report
 	log.Printf("Uploading HTML report (%d bytes) to GCS", len(files.HTMLContent))
 	reportURL, err := fm.server.Storage.StoreReport(ctx, files.HTMLContent, timestamp)
 	if err != nil {
