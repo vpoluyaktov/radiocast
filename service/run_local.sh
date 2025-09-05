@@ -33,6 +33,59 @@ print_header() {
     echo -e "${CYAN}=== $1 ===${NC}"
 }
 
+debug_helioviewer() {
+    # Fetches the list of data sources from Helioviewer and tests the getClosestImage endpoint.
+    print_status "Fetching Helioviewer data sources..."
+    if ! curl -sS https://api.helioviewer.org/v2/getDataSources/ -o /tmp/helio_ds.json; then
+        print_error "Failed to download Helioviewer data sources."
+        return 1
+    fi
+
+    print_status "Downloaded Helioviewer data sources. First 5 lines:"
+    head -n 5 /tmp/helio_ds.json
+
+    SOURCE_ID=$(python3 -c '
+import json, sys
+try:
+    with open("/tmp/helio_ds.json") as f:
+        data = json.load(f)
+    # The structure is [Observatory][Instrument][Detector][Measurement]
+    sdo_aia = data.get("SDO", {}).get("AIA", {})
+    if not sdo_aia:
+        print("SDO/AIA not found in data sources", file=sys.stderr)
+        sys.exit(1)
+
+    for measurement in ["304", "193", "171"]:
+        source_id = sdo_aia.get(measurement, {}).get("sourceId")
+        if source_id:
+            print(source_id)
+            sys.exit(0)
+
+    print("No sourceId found for SDO/AIA 304, 193, or 171", file=sys.stderr)
+    sys.exit(1)
+except Exception as e:
+    print(f"Error parsing sourceId: {e}", file=sys.stderr)
+    sys.exit(1)
+'
+    )
+
+    if [[ -z "$SOURCE_ID" ]]; then
+        print_error "Could not parse sourceId for SDO/AIA/304 from Helioviewer data sources."
+        return 1
+    fi
+    print_success "Found sourceId for SDO/AIA 304: $SOURCE_ID"
+
+    DATE_NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    print_status "Testing getClosestImage for date: $DATE_NOW with sourceId: $SOURCE_ID"
+
+    if curl -sS "https://api.helioviewer.org/v2/getClosestImage/?date=$DATE_NOW&sourceId=$SOURCE_ID" | grep -q '"id"'; then
+        print_success "Helioviewer getClosestImage API responding correctly."
+    else
+        print_error "Helioviewer getClosestImage API call failed."
+        return 1
+    fi
+}
+
 show_usage() {
     echo "Radio Propagation Service - Local Runner"
     echo ""
@@ -110,6 +163,10 @@ debug_apis() {
     else
         print_error "SIDC API failed"
     fi
+
+    echo ""
+    print_status "Testing Helioviewer API..."
+    debug_helioviewer
 }
 
 

@@ -248,6 +248,8 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 				contentType = "text/html"
 			} else if strings.HasSuffix(filePath, ".png") {
 				contentType = "image/png"
+			} else if strings.HasSuffix(filePath, ".gif") {
+				contentType = "image/gif"
 			} else if strings.HasSuffix(filePath, ".json") {
 				contentType = "application/json"
 			} else if strings.HasSuffix(filePath, ".txt") {

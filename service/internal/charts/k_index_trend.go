@@ -41,7 +41,7 @@ func (cg *ChartGenerator) generateKIndexTrendSnippet(data *models.PropagationDat
 	for i, t := range times { xdata[i] = t.Format(time.RFC3339) }
 
 	option := map[string]interface{}{
-		"title": map[string]interface{}{"text": "K-index Trend (72 Hours)", "left": "center"},
+		// "title": map[string]interface{}{"text": "K-index Trend (72 Hours)", "left": "center"},
 		"tooltip": map[string]interface{}{"trigger": "axis"},
 		"grid": map[string]interface{}{"left": "8%", "right": "4%", "bottom": "12%", "containLabel": true},
 		"xAxis": map[string]interface{}{"type": "category", "data": xdata, "axisLabel": map[string]interface{}{"rotate": 0}},

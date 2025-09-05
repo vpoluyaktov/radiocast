@@ -19,8 +19,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o radiocast .
 # Final stage
 FROM alpine:latest
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates tzdata
+# Install ca-certificates for HTTPS requests and ffmpeg + fonts for GIF generation
+RUN apk --no-cache add ca-certificates tzdata ffmpeg ttf-dejavu
 
 # Create non-root user first
 RUN adduser -D -s /bin/sh radiocast

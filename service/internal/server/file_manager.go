@@ -8,14 +8,71 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
+	"radiocast/internal/imagery"
 	"radiocast/internal/models"
 )
 
 // FileManager handles unified file operations for both local and GCS modes
 type FileManager struct {
 	server *Server
+}
+
+// prepareSunGIFHTML generates the HTML section for the Sun GIF with the correct path.
+// If folderPath is non-empty (GCS mode), it will prefix the src with that path.
+func (fm *FileManager) prepareSunGIFHTML(gifRelName, folderPath string) string {
+	var imgSrc string
+	if fm.server.Storage != nil {
+		// GCS mode - use the full folder path
+		// Ensure folderPath ends with '/'
+		if !strings.HasSuffix(folderPath, "/") { folderPath += "/" }
+		imgSrc = "/files/" + folderPath + gifRelName
+	} else {
+		// Local mode - use the timestamp directory name from reportDir
+		// For local mode, we need to extract the timestamp directory from the ReportDir
+		timestampDir := filepath.Base(filepath.Dir(filepath.Join(fm.server.ReportsDir, gifRelName)))
+		
+		// In GenerateAllFiles, we can get the timestamp directory directly from the ReportFiles.ReportDir
+		if reportDir := filepath.Base(filepath.Dir(gifRelName)); reportDir != "" && reportDir != "." {
+			timestampDir = reportDir
+		}
+		
+		// Use the timestamp directory in the URL path
+		imgSrc = "/files/" + timestampDir + "/" + gifRelName
+	}
+	
+	return fmt.Sprintf(`<div class="chart-section"><div class="chart-container-integrated"><h3>Sun Images for Past 24 Hours</h3><img src="%s" alt="Sun last 24h" style="max-width:100%%;height:auto;border-radius:8px;" /><br/><i>Images copyrighted by the SDO/NASA and Helioviewer project</i></div></div>`, imgSrc)
+}
+
+// injectSunGIFIntoHTML replaces the {{SUN_GIF}} placeholder with the actual Sun GIF HTML.
+// If the placeholder is not found, it inserts after the Current Solar Activity header.
+func (fm *FileManager) injectSunGIFIntoHTML(html, gifRelName, folderPath string) string {
+	// Generate the HTML for the Sun GIF
+	sunGifHTML := fm.prepareSunGIFHTML(gifRelName, folderPath)
+	
+	// First try to replace the placeholder if it exists
+	const placeholder = "{{SUN_GIF}}"
+	if strings.Contains(html, placeholder) {
+		return strings.Replace(html, placeholder, sunGifHTML, 1)
+	}
+	
+	// If no placeholder, insert after the Current Solar Activity header
+	if strings.Contains(html, "<h2>📊 Current Solar Activity</h2>") {
+		return strings.Replace(html, "<h2>📊 Current Solar Activity</h2>", "<h2>📊 Current Solar Activity</h2>\n"+sunGifHTML, 1)
+	} else if strings.Contains(html, "Current Solar Activity") {
+		// Try a more generic match if the exact header isn't found
+		regex := regexp.MustCompile(`(<h2[^>]*>.*Current Solar Activity.*</h2>)`)
+		return regex.ReplaceAllString(html, "${1}\n"+sunGifHTML)
+	} else {
+		// Fallback: Insert right after opening <body> if section header not found
+		if strings.Contains(html, "<body>") {
+			return strings.Replace(html, "<body>", "<body>\n"+sunGifHTML, 1)
+		}
+		return html + sunGifHTML
+	}
 }
 
 // NewFileManager creates a new file manager
@@ -30,6 +87,7 @@ type ReportFiles struct {
 	JSONFiles      map[string][]byte
 	ReportDir      string
 	FolderPath     string // GCS folder path
+	AssetFiles     map[string][]byte // additional assets like GIFs
 }
 
 // GenerateAllFiles creates all report files (HTML, charts, JSON) in a unified way
@@ -53,6 +111,7 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 	files := &ReportFiles{
 		ReportDir: reportDir,
 		JSONFiles: make(map[string][]byte),
+		AssetFiles: make(map[string][]byte),
 	}
 	
 	// Generate GCS folder path for consistency
@@ -81,6 +140,21 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 		log.Printf("Warning: Failed to save LLM files: %v", err)
 	}
 	
+	// 3.5. Generate Sun GIF (last 24h) using Helioviewer and ffmpeg
+	gifRelName := "sun_24h.gif"
+	gifPath := filepath.Join(reportDir, gifRelName)
+	if err := imagery.GenerateSunGIF(ctx, reportDir, data.Timestamp, gifPath); err != nil {
+		log.Printf("Warning: Failed to generate Sun GIF: %v", err)
+	} else {
+		// Read the GIF into memory for potential GCS upload
+		if b, rerr := os.ReadFile(gifPath); rerr == nil {
+			files.AssetFiles[gifRelName] = b
+			log.Printf("Generated Sun GIF: %s (%d bytes)", gifPath, len(b))
+		} else {
+			log.Printf("Warning: Could not read generated GIF %s: %v", gifPath, rerr)
+		}
+	}
+
 	// 4. Generate HTML report using ECharts snippets only
 	var html string
 	var err error
@@ -94,11 +168,12 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate HTML: %w", err)
 	}
-	files.HTMLContent = html
+	// Inject Sun GIF section into HTML if generated
+	files.HTMLContent = fm.injectSunGIFIntoHTML(html, gifRelName, files.FolderPath)
 	
 	// 5. Save HTML file locally (index.html for consistency)
 	htmlPath := filepath.Join(reportDir, "index.html")
-	if err := os.WriteFile(htmlPath, []byte(html), 0644); err != nil {
+	if err := os.WriteFile(htmlPath, []byte(files.HTMLContent), 0644); err != nil {
 		log.Printf("Failed to save HTML report: %v", err)
 	}
 	
@@ -206,8 +281,18 @@ func (fm *FileManager) UploadToGCS(ctx context.Context, files *ReportFiles, time
 			log.Printf("JSON file uploaded successfully: %s", filename)
 		}
 	}
-	
-	// 3. Upload HTML report
+
+	// 3. Upload asset files (images, GIFs)
+	for filename, data := range files.AssetFiles {
+		log.Printf("Uploading asset file %s (%d bytes) to GCS", filename, len(data))
+		if err := fm.server.Storage.StoreFile(ctx, data, filename, timestamp); err != nil {
+			log.Printf("Failed to store asset file %s: %v", filename, err)
+		} else {
+			log.Printf("Asset file uploaded successfully: %s", filename)
+		}
+	}
+
+	// 4. Upload HTML report
 	log.Printf("Uploading HTML report (%d bytes) to GCS", len(files.HTMLContent))
 	reportURL, err := fm.server.Storage.StoreReport(ctx, files.HTMLContent, timestamp)
 	if err != nil {
