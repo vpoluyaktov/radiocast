@@ -253,21 +253,28 @@ tr:hover {
 }
 
 .status-good { 
-    background-color: #17a2b8 !important; 
-    color: white; 
-    font-weight: bold;
-    text-align: center;
-}
-
-.status-fair { 
     background-color: #ffc107 !important; 
     color: #212529; 
     font-weight: bold;
     text-align: center;
 }
 
+.status-fair { 
+    background-color: #fd7e14 !important; 
+    color: white; 
+    font-weight: bold;
+    text-align: center;
+}
+
 .status-poor { 
     background-color: #dc3545 !important; 
+    color: white; 
+    font-weight: bold;
+    text-align: center;
+}
+
+.status-closed { 
+    background-color: #000000 !important; 
     color: white; 
     font-weight: bold;
     text-align: center;
@@ -407,10 +414,10 @@ em {
 }
 
 .condition-excellent { background: #28a745; color: white; }
-.condition-good { background: #17a2b8; color: white; }
-.condition-fair { background: #ffc107; color: #212529; }
+.condition-good { background: #ffc107; color: #212529; }
+.condition-fair { background: #fd7e14; color: white; }
 .condition-poor { background: #dc3545; color: white; }
-.condition-closed { background: #6c757d; color: white; }
+.condition-closed { background: #000000; color: white; }
 
 /* Emoji styling for better visibility */
 h2:has-text("🎯") { border-left-color: #28a745; }

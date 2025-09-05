@@ -38,7 +38,7 @@ func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.Propagation
 	}
 
 	// visualMap for categories mapped to colors
-	// 0 Closed (dark), 1 Poor (red), 2 Fair (yellow), 3 Good (green), 4 Excellent (blue)
+	// 0 Closed (black), 1 Poor (red), 2 Fair (orange), 3 Good (yellow), 4 Excellent (green)
 	option := map[string]interface{}{
 		"title": map[string]interface{}{"text": "HF Band Conditions (24h Matrix)", "left": "center"},
 		"tooltip": map[string]interface{}{
@@ -46,7 +46,7 @@ func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.Propagation
 			"formatter": `function(params) {
 				var bands = ['10m', '12m', '15m', '17m', '20m', '40m', '80m'];
 				var value = params.data[2];
-				var label = value === 0 ? 'No Data' : 
+				var label = value === 0 ? 'Closed' : 
 						   value === 1 ? 'Poor' : 
 						   value === 2 ? 'Fair' : 
 						   value === 3 ? 'Good' : 'Excellent';
@@ -73,11 +73,11 @@ func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.Propagation
 			"bottom": 30,
 			"showLabel": true,
 			"pieces": []interface{}{
-				map[string]interface{}{"value": 0, "label": "No Data", "color": "#1e1e1e"},
+				map[string]interface{}{"value": 0, "label": "Closed", "color": "#000000"},
 				map[string]interface{}{"value": 1, "label": "Poor", "color": "#dc3545"},
-				map[string]interface{}{"value": 2, "label": "Fair", "color": "#ffc107"},
-				map[string]interface{}{"value": 3, "label": "Good", "color": "#28a745"},
-				map[string]interface{}{"value": 4, "label": "Excellent", "color": "#3366cc"},
+				map[string]interface{}{"value": 2, "label": "Fair", "color": "#fd7e14"},
+				map[string]interface{}{"value": 3, "label": "Good", "color": "#ffc107"},
+				map[string]interface{}{"value": 4, "label": "Excellent", "color": "#28a745"},
 			},
 		},
 		"series": []interface{}{
