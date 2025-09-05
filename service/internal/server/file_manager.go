@@ -189,12 +189,6 @@ func (fm *FileManager) saveLLMFiles(reportDir string, data *models.PropagationDa
 	return nil
 }
 
-// generateChartsWithSources creates PNG chart files with access to source data
-func (fm *FileManager) generateChartsWithSources(reportDir string, data *models.PropagationData, sourceData *models.SourceData) ([]string, error) {
-	// Deprecated: PNG charts removed.
-	return []string{}, nil
-}
-
 // UploadToGCS uploads all files to GCS storage
 func (fm *FileManager) UploadToGCS(ctx context.Context, files *ReportFiles, timestamp time.Time) (string, error) {
 	if fm.server.Storage == nil {
