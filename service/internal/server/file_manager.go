@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
 
-	"radiocast/internal/charts"
 	"radiocast/internal/models"
 )
 
@@ -61,6 +61,11 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 		timestamp.Year(), timestamp.Month(), timestamp.Day(),
 		timestamp.Hour(), timestamp.Minute(), timestamp.Second())
 	
+	// Copy local chart assets (echarts.min.js) into report directory if available
+	if err := fm.copyLocalChartAssets(reportDir); err != nil {
+		log.Printf("Warning: Failed to copy local chart assets: %v", err)
+	}
+	
 	// 1. Save separate JSON files for each data source
 	if err := fm.saveSourceJSONFiles(reportDir, sourceData, files); err != nil {
 		log.Printf("Warning: Failed to save source JSON files: %v", err)
@@ -76,22 +81,22 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 		log.Printf("Warning: Failed to save LLM files: %v", err)
 	}
 	
-	// 4. Generate PNG charts with source data
-	chartFiles, err := fm.generateChartsWithSources(reportDir, data, sourceData)
-	if err != nil {
-		log.Printf("Warning: Failed to generate charts: %v", err)
-		chartFiles = []string{}
+	// 4. Generate HTML report using ECharts snippets only
+	var html string
+	var err error
+	if fm.server.Storage != nil {
+		// GCS mode - provide folderPath so /files route can resolve local echarts.min.js
+		html, err = fm.server.Generator.GenerateHTMLWithSourcesAndFolderPath(markdown, data, sourceData, files.FolderPath)
+	} else {
+		// Local mode
+		html, err = fm.server.Generator.GenerateHTMLWithSources(markdown, data, sourceData)
 	}
-	files.ChartFiles = chartFiles
-	
-	// 5. Generate HTML report
-	html, err := fm.generateHTML(markdown, data, chartFiles, files.FolderPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate HTML: %w", err)
 	}
 	files.HTMLContent = html
 	
-	// 6. Save HTML file locally (index.html for consistency)
+	// 5. Save HTML file locally (index.html for consistency)
 	htmlPath := filepath.Join(reportDir, "index.html")
 	if err := os.WriteFile(htmlPath, []byte(html), 0644); err != nil {
 		log.Printf("Failed to save HTML report: %v", err)
@@ -184,28 +189,10 @@ func (fm *FileManager) saveLLMFiles(reportDir string, data *models.PropagationDa
 	return nil
 }
 
-
 // generateChartsWithSources creates PNG chart files with access to source data
 func (fm *FileManager) generateChartsWithSources(reportDir string, data *models.PropagationData, sourceData *models.SourceData) ([]string, error) {
-	chartGen := charts.NewChartGenerator(reportDir)
-	log.Printf("Generating PNG charts in directory: %s", reportDir)
-	chartFiles, err := chartGen.GenerateChartsWithSources(data, sourceData)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Successfully generated %d chart files: %v", len(chartFiles), chartFiles)
-	return chartFiles, nil
-}
-
-// generateHTML creates the HTML report
-func (fm *FileManager) generateHTML(markdown string, data *models.PropagationData, chartFiles []string, folderPath string) (string, error) {
-	if fm.server.Storage != nil {
-		// GCS mode - charts will be uploaded separately, use folder path for URLs
-		return fm.server.Generator.GenerateHTMLWithFolderPath(markdown, data, chartFiles, folderPath)
-	} else {
-		// Local mode - charts are in same directory
-		return fm.server.Generator.GenerateHTMLWithLocalCharts(markdown, data, chartFiles)
-	}
+	// Deprecated: PNG charts removed.
+	return []string{}, nil
 }
 
 // UploadToGCS uploads all files to GCS storage
@@ -215,25 +202,6 @@ func (fm *FileManager) UploadToGCS(ctx context.Context, files *ReportFiles, time
 	}
 	
 	log.Printf("Uploading files to GCS folder: %s", files.FolderPath)
-	
-	// 1. Upload chart images
-	for _, chartFile := range files.ChartFiles {
-		imageData, err := os.ReadFile(chartFile)
-		if err != nil {
-			log.Printf("Failed to read chart file %s: %v", chartFile, err)
-			continue
-		}
-		
-		filename := filepath.Base(chartFile)
-		log.Printf("Uploading chart image %s (%d bytes) to GCS", filename, len(imageData))
-		publicURL, err := fm.server.Storage.StoreChartImage(ctx, imageData, filename, timestamp)
-		if err != nil {
-			log.Printf("Failed to store chart image %s: %v", filename, err)
-			continue
-		}
-		
-		log.Printf("Chart image uploaded successfully: %s", publicURL)
-	}
 	
 	// 2. Upload JSON files
 	for filename, data := range files.JSONFiles {
@@ -262,4 +230,52 @@ func (fm *FileManager) Cleanup(files *ReportFiles) {
 		log.Printf("Cleaning up temporary directory: %s", files.ReportDir)
 		os.RemoveAll(files.ReportDir)
 	}
+}
+
+// copyLocalChartAssets copies vendored chart assets (no CDN) into the report directory if available.
+// Currently copies: echarts.min.js from service/internal/assets/
+func (fm *FileManager) copyLocalChartAssets(reportDir string) error {
+    // Determine repository-relative asset path. The binary runs from service/, so use a relative path from there.
+    // We attempt both a path relative to the service root and an absolute path fallback using executable directory if needed in the future.
+    candidates := []string{
+        filepath.Join("internal", "assets", "echarts.min.js"),
+        filepath.Join("service", "internal", "assets", "echarts.min.js"),
+        filepath.Join("..", "service", "internal", "assets", "echarts.min.js"),
+    }
+    var src string
+    for _, c := range candidates {
+        if _, err := os.Stat(c); err == nil {
+            src = c
+            break
+        }
+    }
+    if src == "" {
+        // Asset not present; non-fatal per requirements
+        log.Printf("echarts.min.js not found in assets; skipping copy")
+        return nil
+    }
+
+    dst := filepath.Join(reportDir, "echarts.min.js")
+    in, err := os.Open(src)
+    if err != nil {
+        return fmt.Errorf("open asset %s: %w", src, err)
+    }
+    defer in.Close()
+    out, err := os.Create(dst)
+    if err != nil {
+        return fmt.Errorf("create asset %s: %w", dst, err)
+    }
+    defer func() {
+        if cerr := out.Close(); cerr != nil {
+            log.Printf("warning: closing asset file: %v", cerr)
+        }
+    }()
+    if _, err := io.Copy(out, in); err != nil {
+        return fmt.Errorf("copy asset: %w", err)
+    }
+    if err := out.Sync(); err != nil {
+        log.Printf("warning: fsync asset: %v", err)
+    }
+    log.Printf("Copied echarts.min.js to report dir: %s", dst)
+    return nil
 }

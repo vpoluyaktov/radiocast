@@ -4,7 +4,7 @@ import (
 	"radiocast/internal/models"
 )
 
-// ChartGenerator handles creation of static chart images
+// ChartGenerator handles creation of ECharts snippets for interactive charts
 type ChartGenerator struct {
 	outputDir string
 }
@@ -16,44 +16,29 @@ func NewChartGenerator(outputDir string) *ChartGenerator {
 	}
 }
 
-// GenerateCharts creates all chart images for the report
-func (cg *ChartGenerator) GenerateCharts(data *models.PropagationData) ([]string, error) {
-	return cg.GenerateChartsWithSources(data, nil)
-}
-
-// GenerateChartsWithSources creates all chart images for the report with access to source data
-func (cg *ChartGenerator) GenerateChartsWithSources(data *models.PropagationData, sourceData *models.SourceData) ([]string, error) {
-	var chartFiles []string
-
-	// Generate solar activity chart
-	if solarChart, err := cg.generateSolarActivityChart(data); err == nil {
-		chartFiles = append(chartFiles, solarChart)
-	}
-
-	// Generate K-index trend chart with real data
-	if kIndexChart, err := cg.generateKIndexChartWithSources(data, sourceData); err == nil {
-		chartFiles = append(chartFiles, kIndexChart)
-	}
-
-	// Generate band conditions chart
-	if bandChart, err := cg.generateBandConditionsChart(data); err == nil {
-		chartFiles = append(chartFiles, bandChart)
-	}
-
-	// Generate forecast chart
-	if forecastChart, err := cg.generateForecastChart(data); err == nil {
-		chartFiles = append(chartFiles, forecastChart)
-	}
-
-	// Generate propagation quality timeline
-	if timelineChart, err := cg.generatePropagationTimelineChart(data, sourceData); err == nil {
-		chartFiles = append(chartFiles, timelineChart)
-	}
-
-	return chartFiles, nil
-}
-
-// GenerateForecastChart creates a forecast chart (exported for testing)
-func (cg *ChartGenerator) GenerateForecastChart(data *models.PropagationData) (string, error) {
-	return cg.generateForecastChart(data)
+// GenerateEChartsSnippetsWithSources builds embeddable go-echarts charts. For now returns empty
+// to preserve current PNG-based rendering until individual charts are migrated.
+func (cg *ChartGenerator) GenerateEChartsSnippetsWithSources(data *models.PropagationData, sourceData *models.SourceData) ([]ChartSnippet, error) {
+    var snippets []ChartSnippet
+    // Solar Activity (Bar)
+    if sn, err := cg.generateSolarActivitySnippet(data); err == nil {
+        snippets = append(snippets, sn)
+    }
+    // K-index Trend (Line + EMA(5) + guide lines)
+    if sn, err := cg.generateKIndexTrendSnippet(data, sourceData); err == nil {
+        snippets = append(snippets, sn)
+    }
+    // Band Conditions (Heatmap)
+    if sn, err := cg.generateBandConditionsSnippet(data); err == nil {
+        snippets = append(snippets, sn)
+    }
+    // Forecast (Bar)
+    if sn, err := cg.generateForecastSnippet(data); err == nil {
+        snippets = append(snippets, sn)
+    }
+    // Propagation Timeline (Dual-axis Line)
+    if sn, err := cg.generatePropagationTimelineSnippet(data, sourceData); err == nil {
+        snippets = append(snippets, sn)
+    }
+    return snippets, nil
 }

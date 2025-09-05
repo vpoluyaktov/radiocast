@@ -683,7 +683,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 @media (max-width: 768px) {
     .chart-section {
         margin: 20px -10px;
-        padding: 10px;
+        padding: 15px;
         border-radius: 8px;
     }
     
@@ -806,31 +806,30 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
             <div class="header-icon">📡</div>
             <h1>Amateur Radio Propagation Report</h1>
             <h2>2025-09-04</h2>
-            <div class="generated-time">🕒 Generated: 2025-09-04 16:09:15 UTC</div>
+            <div class="generated-time">🕒 Generated: 2025-09-04 17:37:47 UTC</div>
         </div>
         <div class="content">
             <h2>🎯 Quick Summary</h2>
 
-<p>HF conditions are looking up today! High solar flux and sunspot numbers mean 20m–10m bands are open with good daytime DX, but recent geomagnetic storms may cause some fading and noise, especially at high latitudes. Nighttime low bands (80m/40m) are quiet and reliable—get on the air for both local and DX contacts!</p>
+<p>HF conditions are improving after recent geomagnetic storms. With high solar flux (172) and a healthy sunspot count (150), expect good daytime openings on 20m–10m, especially for DX. Nighttime low bands (40m/80m) will be quieter and reliable—get on the air for some solid contacts!</p>
 
 <hr />
 
 <h2>📊 Current Solar Activity</h2>
 
 <ul>
-<li><strong>Solar Flux (SF):</strong> 172 (very strong; more solar radio energy = better high-band propagation)</li>
-<li><strong>Sunspot Number (SSN):</strong> 150 (robust; supports good ionization for HF)</li>
-<li><strong>Recent Trend:</strong> Solar activity dipped in early summer but is now climbing again—great news for HF!</li>
+<li><strong>Solar Flux (F10.7):</strong> 172 (very strong, means more energy in the ionosphere)</li>
+<li><strong>Sunspot Number:</strong> 150 (well above average, supports higher band openings)</li>
+<li><strong>Recent Trend:</strong> Solar flux and sunspots have rebounded after a dip in May/June, now supporting robust HF propagation.</li>
 <li><strong>Flares:</strong> No major flare activity reported, so no sudden blackouts expected.</li>
 </ul>
 
 
 <div class="chart-section">
 	<div class="chart-container-integrated">
-				<div class="chart-container">
-			<h3>Solar Activity</h3>
-			<img src="/files/solar_activity.png" alt="Solar Activity" class="chart-image">
-		</div>
+			<div class="chart-container">
+		<h3>Current Solar Activity</h3>
+		<div id="chart-solar-activity" style="width:100%;height:360px;"></div>
 
 	</div>
 </div>
@@ -910,19 +909,16 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 </table>
 
 <ul>
-<li><strong>20m/17m/15m:</strong> Your best bets for daytime DX—strong, stable openings.</li>
-<li><strong>10m/12m:</strong> Watch for short, sporadic openings in the afternoon.</li>
-<li><strong>40m/80m:</strong> Quiet and long at night; great for domestic and some DX.</li>
-<li><strong>VHF/UHF:</strong> No significant enhancements—normal tropo and line-of-sight only.</li>
+<li><strong>Best Bands Now:</strong> 20m, 17m, 15m (day); 40m, 80m (night)</li>
+<li><strong>Watch for:</strong> Short 10m/12m openings in the afternoon, especially for north-south paths</li>
 </ul>
 
 
 <div class="chart-section">
 	<div class="chart-container-integrated">
-				<div class="chart-container">
-			<h3>Band Conditions</h3>
-			<img src="/files/band_conditions.png" alt="Band Conditions" class="chart-image">
-		</div>
+			<div class="chart-container">
+		<h3>HF Band Conditions (24h)</h3>
+		<div id="chart-band-conditions" style="width:100%;height:500px;"></div>
 
 	</div>
 </div>
@@ -932,32 +928,22 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 <h2>📈 Geomagnetic Conditions</h2>
 
 <ul>
-<li><strong>Current K-index:</strong> 2–3 (quiet to unsettled)</li>
-<li><strong>Recent Trend:</strong> Past 48 hours saw a geomagnetic storm (K up to 6), but things have calmed down.</li>
-<li><strong>Impact:</strong> HF bands are recovering—expect some lingering absorption or fading, especially on polar paths.</li>
-<li><strong>Aurora:</strong> Low risk for auroral propagation, but high latitudes may still see some effects.</li>
+<li><strong>Current K-index:</strong> 2 (quiet)</li>
+<li><strong>Recent Trend:</strong> K-index was stormy (K=5–6) two days ago but has settled to quiet (K=1–3) over the last 24 hours.</li>
+<li><strong>Impact:</strong> HF propagation is recovering—expect less fading and noise, especially on low bands. Aurora is low (3), so minimal auroral disturbance.</li>
 </ul>
 
-
-<div class="chart-section">
-	<div class="chart-container-integrated">
-				<div class="chart-container">
-			<h3>K Index Trend</h3>
-			<img src="/files/k_index_trend.png" alt="K Index Trend" class="chart-image">
-		</div>
-
-	</div>
-</div>
+<p>{{K_INDEX_CHART}}</p>
 
 <hr />
 
 <h2>⏰ Best Operating Times</h2>
 
 <ul>
-<li><strong>Daytime (1000–2200 UTC):</strong> 20m, 17m, and 15m are wide open—work Europe, North America, and Africa.</li>
-<li><strong>Late Afternoon (1500–1800 UTC):</strong> Watch 12m/10m for brief, exciting DX openings.</li>
-<li><strong>Evening/Night (2100–0700 UTC):</strong> 40m and 80m come alive—excellent for regional and some long-haul DX.</li>
-<li><strong>Grayline (sunrise/sunset):</strong> Try 40m and 20m for enhanced long-path DX.</li>
+<li><strong>Morning (1000–1400 UTC):</strong> 20m and 17m open for east-west DX; 15m starts to open.</li>
+<li><strong>Afternoon (1400–1800 UTC):</strong> 15m, 12m, and 10m may open for north-south DX (South America, Africa, Oceania).</li>
+<li><strong>Evening (2000–0600 UTC):</strong> 40m and 80m come alive for regional and some DX; noise drops after sunset.</li>
+<li><strong>Late Night (0600–1000 UTC):</strong> 40m remains strong for long-haul DX, especially to the Pacific.</li>
 </ul>
 
 <hr />
@@ -965,11 +951,11 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 <h2>🌍 DX Opportunities</h2>
 
 <ul>
-<li><strong>20m:</strong> Best all-around DX band today—open worldwide, especially east-west paths.</li>
-<li><strong>17m/15m:</strong> Good for transatlantic and transpacific contacts midday.</li>
-<li><strong>10m/12m:</strong> Check for short, strong openings to South America, Africa, and the Pacific in the afternoon.</li>
-<li><strong>40m:</strong> Nighttime DX to Asia, Oceania, and Europe—low noise, long skip.</li>
-<li><strong>Polar Paths:</strong> Some fading possible due to recent geomagnetic activity, but improving.</li>
+<li><strong>20m:</strong> Wide open for intercontinental DX most of the day—try long path in the morning, short path in the afternoon.</li>
+<li><strong>17m/15m:</strong> Good for Europe, North America, and South America in the early afternoon.</li>
+<li><strong>10m/12m:</strong> Watch for brief, sporadic E or F2 openings—check beacons and FT8 for activity.</li>
+<li><strong>40m:</strong> Excellent for DX at night, especially after midnight UTC.</li>
+<li><strong>Geographic Patterns:</strong> North-south paths (e.g., EU–Africa, NA–SA) are favored on higher bands; east-west (e.g., NA–EU, EU–VK) best on 20m/17m.</li>
 </ul>
 
 <hr />
@@ -977,21 +963,19 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 <h2>🔮 3-Day Forecast</h2>
 
 <ul>
-<li><strong>Solar Activity:</strong> Solar flux and sunspots remain high—expect continued good high-band conditions.</li>
-<li><strong>Geomagnetic Field:</strong> Quiet to unsettled (K=2–3); no major storms forecast.</li>
-<li><strong>HF Bands:</strong> 20m–15m will stay strong, 10m/12m may open briefly each day.</li>
-<li><strong>Low Bands:</strong> 40m/80m will be quiet and reliable at night.</li>
+<li><strong>Solar Activity:</strong> Solar flux and sunspots should remain high, supporting good HF propagation.</li>
+<li><strong>Geomagnetic Field:</strong> Expected to stay quiet (K=1–3), so low noise and stable conditions.</li>
+<li><strong>HF Bands:</strong> 20m–15m will be reliable during the day; 40m/80m strong at night.</li>
+<li><strong>VHF:</strong> No major tropospheric or auroral enhancements expected.</li>
+<li><strong>Alerts:</strong> No significant solar storms or radio blackouts forecast.</li>
 </ul>
-
-<p><strong>Recommendation:</strong> Plan for daytime DX on high bands and nighttime fun on 40m/80m. Watch for surprise 10m/12m openings!</p>
 
 
 <div class="chart-section">
 	<div class="chart-container-integrated">
-				<div class="chart-container">
-			<h3>Forecast</h3>
-			<img src="/files/forecast.png" alt="Forecast" class="chart-image">
-		</div>
+			<div class="chart-container">
+		<h3>3-Day K-index Forecast</h3>
+		<div id="chart-forecast" style="width:100%;height:360px;"></div>
 
 	</div>
 </div>
@@ -1000,23 +984,12 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 
 <h2>📡 Propagation Timeline</h2>
 
-
-<div class="chart-section">
-	<div class="chart-container-integrated">
-				<div class="chart-container">
-			<h3>Propagation Timeline</h3>
-			<img src="/files/propagation_timeline.png" alt="Propagation Timeline" class="chart-image">
-		</div>
-
-	</div>
-</div>
+<p>{{PROPAGATION_TIMELINE_CHART}}</p>
 
 <ul>
-<li><strong>00–06 UTC:</strong> 40m/80m best for DX and local nets.</li>
-<li><strong>06–12 UTC:</strong> 20m opens to Asia and Pacific; 40m still useful.</li>
-<li><strong>12–18 UTC:</strong> 20m/17m/15m prime time for worldwide DX.</li>
-<li><strong>18–22 UTC:</strong> 15m/12m/10m may open briefly; 20m still strong.</li>
-<li><strong>22–24 UTC:</strong> 40m/80m take over for nighttime activity.</li>
+<li><strong>Day:</strong> 20m–15m best for DX, 10m/12m possible short openings.</li>
+<li><strong>Night:</strong> 40m/80m best for regional and some DX, especially after local sunset.</li>
+<li><strong>Greyline:</strong> Sunrise/sunset periods offer enhanced long-path DX on 40m/20m.</li>
 </ul>
 
 <hr />
@@ -1024,11 +997,11 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 <h2>💡 Operator Tips</h2>
 
 <ul>
-<li><strong>Contesters:</strong> Focus on 20m/15m during the day, 40m at night. Check 10m for surprise multipliers!</li>
-<li><strong>DXers:</strong> Use grayline times for best long-path chances, especially on 20m and 17m.</li>
-<li><strong>Casual Ops:</strong> Try 17m and 15m for less crowded, high-quality SSB/CW contacts.</li>
-<li><strong>Digital Modes:</strong> FT8/FT4 will be hot on 20m–10m during the day; 40m/80m at night.</li>
-<li><strong>Antennas:</strong> If you have a tribander or vertical, now’s the time to use it on the higher bands.</li>
+<li><strong>Contesters:</strong> Focus on 20m and 15m during daylight; 40m at night for multipliers.</li>
+<li><strong>DXers:</strong> Check 17m/15m for new countries in the afternoon; monitor 10m for surprise openings.</li>
+<li><strong>Casual Ops:</strong> Try 20m mid-morning to early evening for reliable QSOs worldwide.</li>
+<li><strong>Digital Modes:</strong> FT8/FT4 will help spot fleeting 10m/12m openings—watch PSKReporter for activity spikes.</li>
+<li><strong>Low Power (QRP):</strong> Take advantage of quiet geomagnetic conditions—less noise means better chances on 40m/20m.</li>
 </ul>
 
 <hr />
@@ -1036,17 +1009,20 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 <h2>🔬 Technical Details</h2>
 
 <ul>
-<li><strong>Solar Flux Index (SFI):</strong> 172 (excellent for 10m–20m propagation)</li>
-<li><strong>Sunspot Number:</strong> 150 (supports strong ionization)</li>
-<li><strong>A-index:</strong> 10 (quiet)</li>
-<li><strong>K-index:</strong> 2 (quiet; recent max K=6, now settled)</li>
-<li><strong>Recent Sunspot Trend:</strong> Rebounding after summer dip; August SSN 133.5, now 150.</li>
-<li><strong>Last 24h K-index:</strong> Peaked at 6 (storm), now 2–3 (quiet)</li>
-<li><strong>Aurora Index:</strong> 4 (low)</li>
-<li><strong>Proton/Electron Flux:</strong> Elevated but not at storm levels</li>
+<li><strong>Solar Flux Index (SFI):</strong> 172 (excellent for HF)</li>
+<li><strong>Sunspot Number:</strong> 150 (supports high MUF)</li>
+<li><strong>K-index:</strong> 2 (quiet, low absorption)</li>
+<li><strong>A-index:</strong> 10 (moderate, but trending down)</li>
+<li><strong>Recent K-index History:</strong> Stormy (K=5–6) 48 hours ago, now quiet (K=1–3)</li>
+<li><strong>Monthly Sunspot Trend:</strong> Peaked last fall, dipped in May, rebounding since July</li>
+<li><strong>Helium Line:</strong> 140.2 (stable, no major flare risk)</li>
+<li><strong>Aurora Index:</strong> 3 (no significant auroral propagation)</li>
+<li><strong>VHF/UHF Outlook:</strong> No major enhancements; normal tropo conditions</li>
 </ul>
 
-<p><strong>Summary:</strong> High solar activity and recovering geomagnetic field mean great high-band propagation—get on the air and enjoy the bands!</p>
+<hr />
+
+<p><strong>Summary:</strong> HF is back in business after a brief geomagnetic storm. Daytime high bands are open—make the most of 20m–15m, and don’t forget the low bands at night. Check 10m/12m for surprise DX, and enjoy the quiet bands while they last!</p>
 
         </div>
         <div class="footer">
@@ -1057,7 +1033,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
                 </div>
                 <div class="service-info">
                     <p>Report generated by <a href="https://github.com/vpoluyaktov/radiocast" target="_blank" rel="noopener noreferrer">Radio Propagation Service</a> using AI</p>
-                    <p>0.1.0.141</p>
+                    <p>0.1.0.143</p>
                     <p class="disclaimer">⚠️ For amateur radio use only. Conditions may vary by location.</p>
                     <p>Developed by KK7UNL</p>
                 </div>
