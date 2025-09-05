@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-05T15:36:44.873296275-07:00",
+  "timestamp": "2025-09-05T15:58:23.461745156-07:00",
   "solar_data": {
     "solar_flux_index": 100,
     "solar_flux_data_source": "N0NBH",
@@ -65,7 +65,7 @@
   },
   "forecast": {
     "today": {
-      "date": "2025-09-05T15:36:44.873370732-07:00",
+      "date": "2025-09-05T15:58:23.461754537-07:00",
       "k_index_forecast": "2.7",
       "solar_activity": "",
       "hf_conditions": "Poor to Fair",
@@ -81,7 +81,7 @@
       ]
     },
     "tomorrow": {
-      "date": "2025-09-06T15:36:44.873370938-07:00",
+      "date": "2025-09-06T15:58:23.461754572-07:00",
       "k_index_forecast": "2.2-3.2",
       "solar_activity": "",
       "hf_conditions": "Poor to Fair",
@@ -90,7 +90,7 @@
       "worst_bands": null
     },
     "day_after": {
-      "date": "2025-09-07T15:36:44.873371254-07:00",
+      "date": "2025-09-07T15:58:23.461754628-07:00",
       "k_index_forecast": "1.7-3.7",
       "solar_activity": "",
       "hf_conditions": "Poor to Fair",

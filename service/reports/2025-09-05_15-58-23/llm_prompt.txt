@@ -1,4 +1,4 @@
-## Raw Solar and Space Weather Data (as of 2025-09-05 15:36 UTC)
+## Raw Solar and Space Weather Data (as of 2025-09-05 15:58 UTC)
 
 Please analyze the following comprehensive space weather data and generate a detailed radio propagation report. The data includes:
 - NOAA K-index data (geomagnetic activity - last 24 hours, 1-hour intervals)
@@ -231,6 +231,13 @@ Please analyze the following comprehensive space weather data and generate a det
   "calculatedconditions": {
     "band": [
       {
+        "name": "17m-15m",
+        "time": "day",
+        "day": "Good",
+        "night": "Good",
+        "source": "N0NBH"
+      },
+      {
         "name": "12m-10m",
         "time": "day",
         "day": "Fair",
@@ -246,13 +253,6 @@ Please analyze the following comprehensive space weather data and generate a det
       },
       {
         "name": "30m-20m",
-        "time": "day",
-        "day": "Good",
-        "night": "Good",
-        "source": "N0NBH"
-      },
-      {
-        "name": "17m-15m",
         "time": "day",
         "day": "Good",
         "night": "Good",
