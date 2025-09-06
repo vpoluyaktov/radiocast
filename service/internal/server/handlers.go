@@ -30,6 +30,16 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		
+		// Store the latest report folder path
+		latestReport := reports[0]
+		// Extract folder path from the report path
+		// Report paths typically look like: 2025/09/06/PropagationReport-2025-09-06-05-59-07/index.html
+		folderPath := strings.TrimSuffix(latestReport, "/index.html")
+		if folderPath != "" {
+			s.LatestReportFolder = folderPath
+			log.Printf("Set latest report folder path to: %s", s.LatestReportFolder)
+		}
+		
 		// Serve the latest report
 		reportContent, err := s.Storage.GetReport(ctx, reports[0])
 		if err != nil {
@@ -209,6 +219,12 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Report stored locally in: %s", files.ReportDir)
 	}
 	
+	// Store the latest report folder path
+	if s.DeploymentMode == DeploymentGCS && files.FolderPath != "" {
+		s.LatestReportFolder = files.FolderPath
+		log.Printf("Set latest report folder path to: %s", s.LatestReportFolder)
+	}
+
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -238,26 +254,35 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 	
 	ctx := r.Context()
 	
-	// Try to serve from GCS first if available
+	// Check if this is a direct file request like background.png without a folder path
+	isRootFileRequest := !strings.Contains(filePath, "/")
+	
+	// For GCS storage
 	if s.Storage != nil {
+		// If it's a root file request and we have a latest report folder, use that path
+		if isRootFileRequest && s.LatestReportFolder != "" {
+			// Construct the full path using the latest report folder
+			fullPath := s.LatestReportFolder + "/" + filePath
+			log.Printf("Redirecting root file request %s to latest report folder: %s", filePath, fullPath)
+			
+			// Try to get the file from the latest report folder
+			fileData, err := s.Storage.GetFile(ctx, fullPath)
+			if err == nil {
+				// Set appropriate content type
+				contentType := determineContentType(filePath)
+				w.Header().Set("Content-Type", contentType)
+				w.Header().Set("Cache-Control", "public, max-age=3600")
+				w.Write(fileData)
+				return
+			}
+			log.Printf("Failed to get file from latest report folder: %v", err)
+		}
+		
+		// Try to serve from GCS with the original path
 		fileData, err := s.Storage.GetFile(ctx, filePath)
 		if err == nil {
-			// Set appropriate content type based on file extension
-			contentType := "application/octet-stream"
-			if strings.HasSuffix(filePath, ".html") {
-				contentType = "text/html"
-			} else if strings.HasSuffix(filePath, ".png") {
-				contentType = "image/png"
-			} else if strings.HasSuffix(filePath, ".gif") {
-				contentType = "image/gif"
-			} else if strings.HasSuffix(filePath, ".json") {
-				contentType = "application/json"
-			} else if strings.HasSuffix(filePath, ".txt") {
-				contentType = "text/plain"
-			} else if strings.HasSuffix(filePath, ".md") {
-				contentType = "text/markdown"
-			}
-			
+			// Set appropriate content type
+			contentType := determineContentType(filePath)
 			w.Header().Set("Content-Type", contentType)
 			w.Header().Set("Cache-Control", "public, max-age=3600")
 			w.Write(fileData)
@@ -273,30 +298,57 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Try to find the file in the most recent report directory
+	// For local storage
+	// Try to find the file in the specified path first
 	localPath := filepath.Join(s.ReportsDir, filePath)
 	if _, err := os.Stat(localPath); os.IsNotExist(err) {
-		// If not found directly, try to find in the latest report directory
-		entries, err := os.ReadDir(s.ReportsDir)
-		if err != nil {
-			http.Error(w, "File not found", http.StatusNotFound)
-			return
-		}
-		
-		// Find the most recent directory
-		var latestDir string
-		for _, entry := range entries {
-			if entry.IsDir() && entry.Name() > latestDir {
-				latestDir = entry.Name()
+		// If not found directly and it's a root file request, try to find in the latest report directory
+		if isRootFileRequest {
+			entries, err := os.ReadDir(s.ReportsDir)
+			if err != nil {
+				http.Error(w, "File not found", http.StatusNotFound)
+				return
 			}
-		}
-		
-		if latestDir != "" {
-			localPath = filepath.Join(s.ReportsDir, latestDir, filepath.Base(filePath))
+			
+			// Find the most recent directory
+			var latestDir string
+			for _, entry := range entries {
+				if entry.IsDir() && entry.Name() > latestDir {
+					latestDir = entry.Name()
+				}
+			}
+			
+			if latestDir != "" {
+				localPath = filepath.Join(s.ReportsDir, latestDir, filePath)
+				log.Printf("Redirecting root file request %s to latest local report folder: %s", filePath, latestDir)
+			}
 		}
 	}
 	
 	http.ServeFile(w, r, localPath)
+}
+
+// determineContentType determines the content type based on file extension
+func determineContentType(filePath string) string {
+	contentType := "application/octet-stream"
+	if strings.HasSuffix(filePath, ".html") {
+		contentType = "text/html"
+	} else if strings.HasSuffix(filePath, ".png") {
+		contentType = "image/png"
+	} else if strings.HasSuffix(filePath, ".gif") {
+		contentType = "image/gif"
+	} else if strings.HasSuffix(filePath, ".json") {
+		contentType = "application/json"
+	} else if strings.HasSuffix(filePath, ".txt") {
+		contentType = "text/plain"
+	} else if strings.HasSuffix(filePath, ".md") {
+		contentType = "text/markdown"
+	} else if strings.HasSuffix(filePath, ".css") {
+		contentType = "text/css"
+	} else if strings.HasSuffix(filePath, ".js") {
+		contentType = "application/javascript"
+	}
+	return contentType
 }
 
 // HandleListReports lists recent reports

@@ -22,13 +22,14 @@ const (
 
 // Server represents the main application server
 type Server struct {
-	Config         *config.Config
-	Fetcher        *fetchers.DataFetcher
-	LLMClient      *llm.OpenAIClient
-	Generator      *reports.Generator
-	Storage        *storage.GCSClient
-	DeploymentMode DeploymentMode
-	ReportsDir     string
+	Config            *config.Config
+	Fetcher           *fetchers.DataFetcher
+	LLMClient         *llm.OpenAIClient
+	Generator         *reports.Generator
+	Storage           *storage.GCSClient
+	DeploymentMode    DeploymentMode
+	ReportsDir        string
+	LatestReportFolder string // Stores the path to the latest report folder
 }
 
 // NewServer creates a new server instance
