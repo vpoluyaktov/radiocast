@@ -39,11 +39,11 @@ func GenerateSunGIF(ctx context.Context, reportDir string, ts time.Time, outputG
 	client := &hvHTTP{timeout: 30 * time.Second}
 
 	// Resolve a Helioviewer sourceId for SDO/AIA with preferred measurements
-	sourceID, err := client.lookupSourceID(ctx, "SDO", "AIA", "AIA", "304")
+	sourceID, err := client.lookupSourceID(ctx, "SDO", "AIA", "AIA", "171")
 	if err != nil {
 		return fmt.Errorf("helio datasource lookup failed; %w", err)
 	}
-	log.Printf("SunGIF: Using SDO/AIA 304 with sourceID: %d", sourceID)
+	log.Printf("SunGIF: Using SDO/AIA 171 with sourceID: %d", sourceID)
 
 	// Generate time points for the last 24 hours
 	base := ts.UTC().Truncate(time.Hour)
