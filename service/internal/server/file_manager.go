@@ -303,6 +303,28 @@ func (fm *FileManager) UploadToGCS(ctx context.Context, files *ReportFiles, time
 			log.Printf("Asset file uploaded successfully: %s", filename)
 		}
 	}
+	
+	// Special handling for background image if not already in AssetFiles
+	if _, exists := files.AssetFiles["background.png"]; !exists {
+		// Try to find background image in assets directory
+		candidates := []string{
+			filepath.Join("internal", "assets", "background.png"),
+			filepath.Join("service", "internal", "assets", "background.png"),
+			filepath.Join("..", "service", "internal", "assets", "background.png"),
+		}
+		
+		for _, path := range candidates {
+			if data, err := os.ReadFile(path); err == nil {
+				log.Printf("Found background.png at %s, uploading to GCS (%d bytes)", path, len(data))
+				if err := fm.server.Storage.StoreFile(ctx, data, "background.png", timestamp); err != nil {
+					log.Printf("Failed to store background.png: %v", err)
+				} else {
+					log.Printf("Background image uploaded successfully")
+				}
+				break
+			}
+		}
+	}
 
 	// 4. Upload HTML report
 	log.Printf("Uploading HTML report (%d bytes) to GCS", len(files.HTMLContent))
