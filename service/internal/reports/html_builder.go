@@ -348,6 +348,26 @@ func (h *HTMLBuilder) BuildCompleteHTML(content, charts string, data *models.Pro
 	if err != nil {
 		return "", err
 	}
+
+	// Fix background image URL for GCS deployment
+	// If the URL contains "PropagationReport-" (indicating GCS deployment), update the background image path
+	if strings.Contains(result, "PropagationReport-") {
+		// Extract the folder path from the HTML content
+		folderPathRegex := regexp.MustCompile(`/files/([^"']+)/sun_72h\.gif`)
+		matches := folderPathRegex.FindStringSubmatch(result)
+		if len(matches) > 1 {
+			folderPath := matches[1]
+			// Replace the background image URL with the full path
+			result = strings.Replace(
+				result, 
+				"background-image: url('background.png')", 
+				fmt.Sprintf("background-image: url('/files/%s/background.png')", folderPath),
+				1,
+			)
+			log.Printf("Updated background image URL to use GCS path: /files/%s/background.png", folderPath)
+		}
+	}
+
 	return result, nil
 }
 
