@@ -1,29 +1,43 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
+    line-height: 1.7;
     margin: 0;
     padding: 20px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background-image: url('background.png');
+    background-size: contain;
+    background-repeat: repeat-y;
+    background-position: top center;
     min-height: 100vh;
     color: #333;
+    position: relative;
+}
+
+/* Removed white overlay to let background image show through */
+body::before {
+    display: none;
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    background: white;
+    background: rgba(255, 255, 255, 0.3);
     border-radius: 15px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     overflow: hidden;
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
 }
 
 .header {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    background: rgba(255, 255, 255, 0.25);
     color: #2c3e50;
     padding: 40px;
     text-align: center;
     position: relative;
     overflow: hidden;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
 .header::before {
@@ -66,17 +80,21 @@ body {
     margin: 0 0 15px 0;
     font-size: 1.5em;
     font-weight: 400;
-    opacity: 0.8;
-    color: #6c757d;
+    color: #333;
+    background: none;
+    border: none;
+    padding: 0;
     text-shadow: none;
 }
 
 .generated-time {
     font-size: 0.9em;
-    opacity: 0.7;
+    opacity: 0.9;
     font-style: italic;
-    color: #6c757d;
+    color: #495057;
     margin-bottom: 20px;
+    font-weight: 500;
+    text-shadow: 0 0 2px rgba(255,255,255,0.7);
 }
 
 .quick-status {
@@ -106,13 +124,20 @@ body {
 
 .content {
     padding: 40px;
+    position: relative;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
 }
 
 .charts-section {
     padding: 40px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-top: 1px solid #e9ecef;
+    background: rgba(255, 255, 255, 0.15);
+    border-top: 1px solid rgba(0,0,0,0.1);
     margin-top: 20px;
+    position: relative;
+    z-index: 1;
 }
 
 .charts-title {
@@ -126,10 +151,14 @@ body {
 }
 
 .footer {
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.3);
     color: #6c757d;
     padding: 30px 40px;
-    border-top: 1px solid #dee2e6;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
 }
 
 .footer-content {
@@ -175,11 +204,13 @@ body {
 }
 
 h1 { 
-    color: #2c3e50; 
+    color: #1a2533; 
     padding-bottom: 10px; 
     margin-top: 30px;
     font-size: 2em;
     position: relative;
+    text-shadow: 0 0 3px rgba(255,255,255,0.9), 0 0 5px rgba(255,255,255,0.7);
+    font-weight: 700;
 }
 
 h1::before {
@@ -189,14 +220,16 @@ h1::before {
 }
 
 h2 { 
-    color: #495057; 
+    color: #222; 
     margin-top: 25px; 
     font-size: 1.6em;
-    border-left: 4px solid #007bff;
+    border-left: 4px solid #0056b3;
     padding-left: 15px;
-    background: linear-gradient(90deg, rgba(0,123,255,0.1) 0%, transparent 100%);
+    background: linear-gradient(90deg, rgba(0,86,179,0.3) 0%, rgba(0,123,255,0.1) 80%, transparent 100%);
     padding: 10px 15px;
     border-radius: 0 8px 8px 0;
+    text-shadow: 0 0 3px rgba(255,255,255,0.9), 0 0 5px rgba(255,255,255,0.7);
+    font-weight: 600;
 }
 
 h3 { 
@@ -329,11 +362,14 @@ ul, ol {
 li {
     margin: 8px 0;
     line-height: 1.6;
+    text-shadow: 0 0 2px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,0.6);
+    font-weight: 500;
 }
 
 strong {
-    color: #2c3e50;
-    font-weight: 600;
+    color: #1a2533;
+    font-weight: 700;
+    text-shadow: 0 0 2px rgba(255,255,255,0.9), 0 0 4px rgba(255,255,255,0.7);
 }
 
 em {
@@ -646,10 +682,12 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 .chart-section {
     margin: 30px 0;
     padding: 25px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 12px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     /* border-left: 4px solid #007bff; */
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .chart-container-integrated {

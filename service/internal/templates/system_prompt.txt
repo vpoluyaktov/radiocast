@@ -59,6 +59,6 @@ Writing Style Guidelines:
 - Include specific frequency recommendations and timing
 - Mention geographic patterns (north-south vs east-west paths)
 - Give contest and DX activity specific advice
-Use condition indicators in surrounding narrative if needed: 🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed
+CRITICAL: Use condition indicators exactly using this color scheme in surrounding narrative if needed: 🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed
 
 Make the report engaging and easy to scan quickly!

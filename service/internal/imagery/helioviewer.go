@@ -17,8 +17,8 @@ import (
 	"time"
 )
 
-// GenerateSunGIF downloads last 24 hourly solar images from Helioviewer and assembles them into a GIF.
-// The GIF duration is ~12s (2 fps across 24 frames) and loops 10 times. Each frame is annotated with the UTC hour label.
+// GenerateSunGIF downloads last 72 hourly solar images from Helioviewer and assembles them into a GIF.
+// The GIF duration is ~24s (4 fps across 72 frames) and loops 10 times. Each frame is annotated with the UTC hour label.
 func GenerateSunGIF(ctx context.Context, reportDir string, ts time.Time, outputGIF string) error {
 	// Create a single temporary directory for all processing
 	tmpRootDir := filepath.Join(os.TempDir(), fmt.Sprintf("helio_gif_%d", time.Now().UnixNano()))
@@ -45,10 +45,10 @@ func GenerateSunGIF(ctx context.Context, reportDir string, ts time.Time, outputG
 	}
 	log.Printf("SunGIF: Using SDO/AIA 171 with sourceID: %d", sourceID)
 
-	// Generate time points for the last 24 hours
+	// Generate time points for the last 72 hours
 	base := ts.UTC().Truncate(time.Hour)
 	var hours []time.Time
-	for i := 23; i >= 0; i-- {
+	for i := 71; i >= 0; i-- {
 		hours = append(hours, base.Add(-time.Duration(i)*time.Hour))
 	}
 
@@ -139,7 +139,7 @@ func GenerateSunGIF(ctx context.Context, reportDir string, ts time.Time, outputG
 
 	// Use the optimized ffmpeg command for GIF generation
 	cmd := exec.CommandContext(ctx, "ffmpeg", "-y",
-		"-framerate", "2",
+		"-framerate", "4",
 		"-i", filepath.Join(finalDir, "frame%02d.jpg"),
 		"-vf", "scale=512:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=64:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle",
 		"-loop", "10",
