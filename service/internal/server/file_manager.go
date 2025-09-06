@@ -125,6 +125,18 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 		log.Printf("Warning: Failed to copy local chart assets: %v", err)
 	}
 	
+	// Add background image to AssetFiles for GCS upload
+	backgroundFile := filepath.Join(reportDir, "background.png")
+	if _, err := os.Stat(backgroundFile); err == nil {
+		backgroundData, err := os.ReadFile(backgroundFile)
+		if err == nil {
+			files.AssetFiles["background.png"] = backgroundData
+			log.Printf("Added background.png (%d bytes) to GCS upload queue", len(backgroundData))
+		} else {
+			log.Printf("Warning: Could not read background image for GCS upload: %v", err)
+		}
+	}
+	
 	// 1. Save separate JSON files for each data source
 	if err := fm.saveSourceJSONFiles(reportDir, sourceData, files); err != nil {
 		log.Printf("Warning: Failed to save source JSON files: %v", err)
@@ -312,10 +324,10 @@ func (fm *FileManager) Cleanup(files *ReportFiles) {
 }
 
 // copyLocalChartAssets copies vendored chart assets (no CDN) into the report directory if available.
-// Currently copies: echarts.min.js and background.jpg from service/internal/assets/
+// Currently copies: echarts.min.js and background.png from service/internal/assets/
 func (fm *FileManager) copyLocalChartAssets(reportDir string) error {
     // List of assets to copy
-    assets := []string{"echarts.min.js", "background.jpg"}
+    assets := []string{"echarts.min.js", "background.png"}
     
     for _, asset := range assets {
         // Try different possible paths for the asset
