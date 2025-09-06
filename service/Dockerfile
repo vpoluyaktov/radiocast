@@ -31,6 +31,7 @@ WORKDIR /home/radiocast
 COPY --from=builder --chown=radiocast:radiocast /app/radiocast .
 COPY --from=builder --chown=radiocast:radiocast /app/internal/templates ./internal/templates
 COPY --from=builder --chown=radiocast:radiocast /app/internal/reports ./internal/reports
+COPY --from=builder --chown=radiocast:radiocast /app/internal/assets ./internal/assets
 
 # Make binary executable
 RUN chmod +x radiocast

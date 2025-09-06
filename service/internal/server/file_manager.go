@@ -44,7 +44,7 @@ func (fm *FileManager) prepareSunGIFHTML(gifRelName, folderPath string) string {
 		imgSrc = "/files/" + timestampDir + "/" + gifRelName
 	}
 	
-	return fmt.Sprintf(`<div class="chart-section"><div class="chart-container-integrated"><h3>Sun Images for Past 24 Hours</h3><img src="%s" alt="Sun last 24h" style="max-width:100%%;height:auto;border-radius:8px;" /><br/><i>Images copyrighted by the SDO/NASA and Helioviewer project</i></div></div>`, imgSrc)
+	return fmt.Sprintf(`<div class="chart-section"><div class="chart-container-integrated"><h3>Sun Images for Past 72 Hours</h3><img src="%s" alt="Sun last 72h" style="max-width:100%%;height:auto;border-radius:8px;" /><br/><i>Images copyrighted by the SDO/NASA and Helioviewer project</i></div></div>`, imgSrc)
 }
 
 // injectSunGIFIntoHTML replaces the {{SUN_GIF}} placeholder with the actual Sun GIF HTML.
@@ -125,6 +125,18 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 		log.Printf("Warning: Failed to copy local chart assets: %v", err)
 	}
 	
+	// Add background image to AssetFiles for GCS upload
+	backgroundFile := filepath.Join(reportDir, "background.png")
+	if _, err := os.Stat(backgroundFile); err == nil {
+		backgroundData, err := os.ReadFile(backgroundFile)
+		if err == nil {
+			files.AssetFiles["background.png"] = backgroundData
+			log.Printf("Added background.png (%d bytes) to GCS upload queue", len(backgroundData))
+		} else {
+			log.Printf("Warning: Could not read background image for GCS upload: %v", err)
+		}
+	}
+	
 	// 1. Save separate JSON files for each data source
 	if err := fm.saveSourceJSONFiles(reportDir, sourceData, files); err != nil {
 		log.Printf("Warning: Failed to save source JSON files: %v", err)
@@ -140,8 +152,8 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 		log.Printf("Warning: Failed to save LLM files: %v", err)
 	}
 	
-	// 3.5. Generate Sun GIF (last 24h) using Helioviewer and ffmpeg
-	gifRelName := "sun_24h.gif"
+	// 3.5. Generate Sun GIF (last 72h) using Helioviewer and ffmpeg
+	gifRelName := "sun_72h.gif"
 	gifPath := filepath.Join(reportDir, gifRelName)
 	if err := imagery.GenerateSunGIF(ctx, reportDir, data.Timestamp, gifPath); err != nil {
 		log.Printf("Warning: Failed to generate Sun GIF: %v", err)
@@ -291,6 +303,28 @@ func (fm *FileManager) UploadToGCS(ctx context.Context, files *ReportFiles, time
 			log.Printf("Asset file uploaded successfully: %s", filename)
 		}
 	}
+	
+	// Special handling for background image if not already in AssetFiles
+	if _, exists := files.AssetFiles["background.png"]; !exists {
+		// Try to find background image in assets directory
+		candidates := []string{
+			filepath.Join("internal", "assets", "background.png"),
+			filepath.Join("service", "internal", "assets", "background.png"),
+			filepath.Join("..", "service", "internal", "assets", "background.png"),
+		}
+		
+		for _, path := range candidates {
+			if data, err := os.ReadFile(path); err == nil {
+				log.Printf("Found background.png at %s, uploading to GCS (%d bytes)", path, len(data))
+				if err := fm.server.Storage.StoreFile(ctx, data, "background.png", timestamp); err != nil {
+					log.Printf("Failed to store background.png: %v", err)
+				} else {
+					log.Printf("Background image uploaded successfully")
+				}
+				break
+			}
+		}
+	}
 
 	// 4. Upload HTML report
 	log.Printf("Uploading HTML report (%d bytes) to GCS", len(files.HTMLContent))
@@ -312,49 +346,53 @@ func (fm *FileManager) Cleanup(files *ReportFiles) {
 }
 
 // copyLocalChartAssets copies vendored chart assets (no CDN) into the report directory if available.
-// Currently copies: echarts.min.js from service/internal/assets/
+// Currently copies: echarts.min.js and background.png from service/internal/assets/
 func (fm *FileManager) copyLocalChartAssets(reportDir string) error {
-    // Determine repository-relative asset path. The binary runs from service/, so use a relative path from there.
-    // We attempt both a path relative to the service root and an absolute path fallback using executable directory if needed in the future.
-    candidates := []string{
-        filepath.Join("internal", "assets", "echarts.min.js"),
-        filepath.Join("service", "internal", "assets", "echarts.min.js"),
-        filepath.Join("..", "service", "internal", "assets", "echarts.min.js"),
-    }
-    var src string
-    for _, c := range candidates {
-        if _, err := os.Stat(c); err == nil {
-            src = c
-            break
+    // List of assets to copy
+    assets := []string{"echarts.min.js", "background.png"}
+    
+    for _, asset := range assets {
+        // Try different possible paths for the asset
+        candidates := []string{
+            filepath.Join("internal", "assets", asset),
+            filepath.Join("service", "internal", "assets", asset),
+            filepath.Join("..", "service", "internal", "assets", asset),
         }
-    }
-    if src == "" {
-        // Asset not present; non-fatal per requirements
-        log.Printf("echarts.min.js not found in assets; skipping copy")
-        return nil
-    }
-
-    dst := filepath.Join(reportDir, "echarts.min.js")
-    in, err := os.Open(src)
-    if err != nil {
-        return fmt.Errorf("open asset %s: %w", src, err)
-    }
-    defer in.Close()
-    out, err := os.Create(dst)
-    if err != nil {
-        return fmt.Errorf("create asset %s: %w", dst, err)
-    }
-    defer func() {
-        if cerr := out.Close(); cerr != nil {
-            log.Printf("warning: closing asset file: %v", cerr)
+        
+        var src string
+        for _, c := range candidates {
+            if _, err := os.Stat(c); err == nil {
+                src = c
+                break
+            }
         }
-    }()
-    if _, err := io.Copy(out, in); err != nil {
-        return fmt.Errorf("copy asset: %w", err)
+        
+        if src == "" {
+            // Asset not present; non-fatal per requirements
+            log.Printf("%s not found in assets; skipping copy", asset)
+            continue
+        }
+        
+        // Copy the asset to the report directory
+        dst := filepath.Join(reportDir, asset)
+        in, err := os.Open(src)
+        if err != nil {
+            return fmt.Errorf("open asset %s: %w", src, err)
+        }
+        defer in.Close()
+        
+        out, err := os.Create(dst)
+        if err != nil {
+            return fmt.Errorf("create asset %s: %w", dst, err)
+        }
+        defer out.Close()
+        
+        if _, err = io.Copy(out, in); err != nil {
+            return fmt.Errorf("copy asset %s to %s: %w", src, dst, err)
+        }
+        
+        log.Printf("Copied asset %s to %s", src, dst)
     }
-    if err := out.Sync(); err != nil {
-        log.Printf("warning: fsync asset: %v", err)
-    }
-    log.Printf("Copied echarts.min.js to report dir: %s", dst)
+    
     return nil
 }
