@@ -120,27 +120,6 @@ func (m *MockService) loadSourceData() (*models.SourceData, error) {
 	return sourceData, nil
 }
 
-// loadJSONFile loads a JSON file and returns the raw data
-func (m *MockService) loadJSONFile(filename string) (interface{}, error) {
-	filePath := filepath.Join(m.mocksDir, filename)
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open file %s: %w", filename, err)
-	}
-	defer file.Close()
-
-	content, err := io.ReadAll(file)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file %s: %w", filename, err)
-	}
-
-	var data interface{}
-	if err := json.Unmarshal(content, &data); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal file %s: %w", filename, err)
-	}
-
-	return data, nil
-}
 
 // loadTypedJSONFile loads a JSON file and unmarshals it into the provided type
 func (m *MockService) loadTypedJSONFile(filename string, target interface{}) (interface{}, error) {
