@@ -5,118 +5,294 @@ import (
 	"fmt"
 	"html/template"
 	"log"
-	"regexp"
 	"strings"
 	"time"
 
-	"github.com/russross/blackfriday/v2"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 
 	"radiocast/internal/config"
 	"radiocast/internal/models"
+	"radiocast/internal/charts"
 )
 
-// HTMLBuilder handles HTML generation and template processing
+// HTMLBuilder handles HTML generation with goldmark
 type HTMLBuilder struct {
 	templateLoader *TemplateLoader
+	goldmark       goldmark.Markdown
 }
 
-// replaceBandTableWithData finds the first table after the '📻 Band-by-Band Analysis' header
-// and replaces it with a table generated from models.BandData. This guarantees the table
-// matches the same data source used by charts.
-func (h *HTMLBuilder) replaceBandTableWithData(htmlContent string, data *models.PropagationData) string {
-	heading := "<h2>📻 Band-by-Band Analysis</h2>"
-	idx := strings.Index(htmlContent, heading)
-	if idx == -1 {
-		return htmlContent
-	}
+// NewHTMLBuilder creates an HTML builder
+func NewHTMLBuilder() *HTMLBuilder {
+	// Configure goldmark with extensions
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),
+			html.WithUnsafe(), // Allow raw HTML in markdown
+		),
+	)
 
-	// Search after the heading for the first <table ...>...</table>
-	after := htmlContent[idx+len(heading):]
-	tableStart := strings.Index(after, "<table")
-	if tableStart == -1 {
-		return htmlContent
+	return &HTMLBuilder{
+		templateLoader: NewTemplateLoader(),
+		goldmark:       md,
 	}
-
-	// Find the matching closing </table>
-	tableEnd := strings.Index(after[tableStart:], "</table>")
-	if tableEnd == -1 {
-		return htmlContent
-	}
-	tableEnd += tableStart + len("</table>")
-
-	// Build the replacement table HTML
-	bandTable := h.buildBandTableHTML(data)
-	if bandTable == "" {
-		return htmlContent
-	}
-
-	// Replace the table segment (remove exactly the located table)
-	before := htmlContent[:idx+len(heading)]
-	replaced := before + "\n" + bandTable + after[tableEnd:]
-	return replaced
 }
 
-// buildBandTableHTML builds the Band-by-Band Analysis table HTML from models.BandData
-func (h *HTMLBuilder) buildBandTableHTML(data *models.PropagationData) string {
+// TemplateData represents the data structure for the HTML template
+type TemplateData struct {
+	Date                     string
+	GeneratedAt              string
+	Content                  template.HTML
+	CSSFilePath              string
+	Version                  string
+	BackgroundImage          string
+	
+	// Chart placeholders
+	SunGif                   template.HTML
+	SolarActivityChart       template.HTML
+	BandConditionsChart      template.HTML
+	KIndexChart              template.HTML
+	ForecastChart            template.HTML
+	PropagationTimelineChart template.HTML
+}
+
+// ChartTemplateData represents chart data for template substitution
+type ChartTemplateData struct {
+	SolarActivityChart       template.HTML
+	BandConditionsChart      template.HTML
+	KIndexChart              template.HTML
+	ForecastChart            template.HTML
+	PropagationTimelineChart template.HTML
+}
+
+// ConvertMarkdownToHTML converts markdown to HTML using goldmark
+func (h *HTMLBuilder) ConvertMarkdownToHTML(markdownContent string) (string, error) {
+	var buf bytes.Buffer
+	if err := h.goldmark.Convert([]byte(markdownContent), &buf); err != nil {
+		return "", fmt.Errorf("failed to convert markdown: %w", err)
+	}
+	return buf.String(), nil
+}
+
+// LoadStaticCSS loads the static CSS content without template processing
+func (h *HTMLBuilder) LoadStaticCSS() (string, error) {
+	// Load raw CSS content directly
+	cssContent, err := h.templateLoader.LoadCSSStyles()
+	if err != nil {
+		return "", fmt.Errorf("failed to load CSS: %w", err)
+	}
+	return cssContent, nil
+}
+
+// getBackgroundImagePath returns the path for the background image based on deployment mode
+func (h *HTMLBuilder) getBackgroundImagePath(folderPath string) string {
+	if folderPath == "" {
+		// Local mode - relative path
+		return "background.png"
+	}
+	// GCS mode - use the folder path prefix
+	return folderPath + "/background.png"
+}
+
+// getCSSFilePath returns the path for the CSS file based on deployment mode
+func (h *HTMLBuilder) getCSSFilePath(folderPath string) string {
+	if folderPath == "" {
+		// Local mode - relative path
+		return "styles.css"
+	}
+	// GCS mode - use the folder path prefix
+	return folderPath + "/styles.css"
+}
+
+// GenerateStaticCSS returns the static CSS content
+func (h *HTMLBuilder) GenerateStaticCSS() (string, error) {
+	return h.LoadStaticCSS()
+}
+
+// GenerateChartData creates chart data using chart generators
+func (h *HTMLBuilder) GenerateChartData(data *models.PropagationData, sourceData *models.SourceData, folderPath string) (*ChartTemplateData, error) {
+	// Create chart generator
+	chartGen := charts.NewChartGenerator(folderPath)
+	
+	// Generate chart snippets
+	snippets, err := chartGen.GenerateEChartsSnippetsWithSources(data, sourceData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate chart snippets: %w", err)
+	}
+
+	// Create chart data with empty defaults
+	chartData := &ChartTemplateData{
+		SolarActivityChart:       template.HTML(""),
+		BandConditionsChart:      template.HTML(""),
+		KIndexChart:              template.HTML(""),
+		ForecastChart:            template.HTML(""),
+		PropagationTimelineChart: template.HTML(""),
+	}
+
+	// Map snippets by ID to template data
+	for _, snippet := range snippets {
+		switch snippet.ID {
+		case "chart-solar-activity":
+			chartData.SolarActivityChart = template.HTML(snippet.HTML)
+		case "chart-band-conditions":
+			chartData.BandConditionsChart = template.HTML(snippet.HTML)
+		case "chart-geomagnetic-conditions":
+			chartData.KIndexChart = template.HTML(snippet.HTML)
+		case "chart-forecast":
+			chartData.ForecastChart = template.HTML(snippet.HTML)
+		case "chart-propagation-timeline":
+			chartData.PropagationTimelineChart = template.HTML(snippet.HTML)
+		}
+	}
+
+	return chartData, nil
+}
+
+// BuildCompleteHTML creates a complete HTML document with template substitution
+func (h *HTMLBuilder) BuildCompleteHTML(
+	processedHTMLContent string,
+	data *models.PropagationData,
+	chartData *ChartTemplateData,
+	sunGifHTML template.HTML,
+	folderPath string) (string, error) {
+
+	log.Println("Building complete HTML...")
+
+	// Use the already processed HTML content directly (no markdown conversion needed)
+	htmlContent := processedHTMLContent
+	
+	// Debug: Log the processed HTML content
+	log.Printf("Processed HTML content length: %d", len(htmlContent))
+	log.Printf("HTML content preview: %s", htmlContent[:min(200, len(htmlContent))])
+
+	// Get CSS file path (CSS will be saved separately as static file)
+	cssFilePath := h.getCSSFilePath(folderPath)
+
+	// Prepare template data
+	templateData := TemplateData{
+		Date:                     time.Now().Format("2006-01-02"),
+		GeneratedAt:              time.Now().Format("2006-01-02 15:04:05 UTC"),
+		Content:                  template.HTML(htmlContent),
+		CSSFilePath:              cssFilePath,
+		Version:                  config.GetVersion(),
+		BackgroundImage:          h.getBackgroundImagePath(folderPath),
+		SunGif:                   sunGifHTML,
+		SolarActivityChart:       chartData.SolarActivityChart,
+		BandConditionsChart:      chartData.BandConditionsChart,
+		KIndexChart:              chartData.KIndexChart,
+		ForecastChart:            chartData.ForecastChart,
+		PropagationTimelineChart: chartData.PropagationTimelineChart,
+	}
+
+	// Execute template
+	finalHTML, err := h.executeTemplate(templateData)
+	if err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	// Update asset URLs for deployment mode (excluding background image which is already handled in CSS)
+	if folderPath != "" {
+		finalHTML = h.updateAssetURLs(finalHTML, folderPath)
+	}
+
+	log.Printf("Complete HTML built successfully (%d characters)", len(finalHTML))
+	return finalHTML, nil
+}
+
+
+// executeTemplate executes the HTML template with the provided data
+func (h *HTMLBuilder) executeTemplate(data TemplateData) (string, error) {
+	// Load HTML template
+	htmlTemplate, err := h.templateLoader.LoadHTMLTemplate()
+	if err != nil {
+		return "", fmt.Errorf("failed to load HTML template: %w", err)
+	}
+
+	// Parse template with functions
+	tmpl, err := template.New("report").Funcs(template.FuncMap{
+		"safeHTML": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+		"safeCSS": func(s string) template.CSS {
+			return template.CSS(s)
+		},
+	}).Parse(htmlTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	// Debug: Log template data before execution
+	log.Printf("Template data Content length: %d", len(string(data.Content)))
+	log.Printf("Template data Content preview: %s", string(data.Content)[:min(200, len(string(data.Content)))])
+
+	// Execute template
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	result := buf.String()
+	log.Printf("Template execution result length: %d", len(result))
+	log.Printf("Template result preview: %s", result[:min(300, len(result))])
+
+	return result, nil
+}
+
+// generateBandTable creates the band analysis table HTML
+func (h *HTMLBuilder) generateBandTable(data *models.PropagationData) template.HTML {
 	if data == nil {
-		return ""
+		return template.HTML("")
 	}
 
-	// Helper to render a row
-	row := func(band string, day string, night string, times string, notes string) string {
-		return fmt.Sprintf(
-			"<tr>\n<td>%s</td>\n<td>%s</td>\n<td>%s</td>\n<td>%s</td>\n<td>%s</td>\n</tr>",
-			band, toEmojiCondition(day), toEmojiCondition(night), template.HTMLEscapeString(times), template.HTMLEscapeString(notes),
-		)
+	var buf strings.Builder
+	buf.WriteString(`<table class="band-analysis-table">`)
+	buf.WriteString(`<thead><tr><th>Band</th><th>Day Condition</th><th>Night Condition</th><th>Best Times</th><th>Notes</th></tr></thead>`)
+	buf.WriteString(`<tbody>`)
+
+	bands := []struct {
+		name      string
+		condition models.BandCondition
+		bestTimes string
+		notes     string
+	}{
+		{"80m", data.BandData.Band80m, "2200-0600 UTC", "Low noise after sunset"},
+		{"40m", data.BandData.Band40m, "2100-0700 UTC", "Best DX band at night"},
+		{"20m", data.BandData.Band20m, "1000-2200 UTC", "Reliable all day"},
+		{"17m", data.BandData.Band17m, "1200-2000 UTC", "Good for EU/NA"},
+		{"15m", data.BandData.Band15m, "1400-1800 UTC", "Solar dependent"},
+		{"12m", data.BandData.Band12m, "1500-1700 UTC", "Sporadic openings"},
+		{"10m", data.BandData.Band10m, "1600-1700 UTC", "Solar cycle dependent"},
 	}
 
-	// Basic best-times and notes heuristics by band
-	// These are static hints to keep parity with current reports
-	best := map[string]string{
-		"80m": "2200-0600 UTC",
-		"40m": "2100-0700 UTC",
-		"20m": "1000-2200 UTC",
-		"17m": "1200-2000 UTC",
-		"15m": "1400-1800 UTC",
-		"12m": "1500-1700 UTC",
-		"10m": "1600-1700 UTC",
-	}
-	notes := map[string]string{
-		"80m": "Low noise after sunset",
-		"40m": "Best DX band at night",
-		"20m": "Reliable all day",
-		"17m": "Good for EU/NA",
-		"15m": "Solar dependent",
-		"12m": "Sporadic openings",
-		"10m": "Solar cycle dependent",
+	for _, band := range bands {
+		buf.WriteString(fmt.Sprintf(`<tr>
+			<td>%s</td>
+			<td>%s</td>
+			<td>%s</td>
+			<td>%s</td>
+			<td>%s</td>
+		</tr>`, 
+			band.name,
+			h.formatCondition(band.condition.Day),
+			h.formatCondition(band.condition.Night),
+			template.HTMLEscapeString(band.bestTimes),
+			template.HTMLEscapeString(band.notes),
+		))
 	}
 
-	var b strings.Builder
-	b.WriteString("<table class=\"band-analysis-table\">\n<thead>\n<tr>\n")
-	b.WriteString("<th>Band</th><th>Day Condition</th><th>Night Condition</th><th>Best Times</th><th>Notes</th>\n")
-	b.WriteString("</tr>\n</thead>\n<tbody>\n")
-	bd := data.BandData
-	b.WriteString(row("80m", bd.Band80m.Day, bd.Band80m.Night, best["80m"], notes["80m"]))
-	b.WriteString("\n")
-	b.WriteString(row("40m", bd.Band40m.Day, bd.Band40m.Night, best["40m"], notes["40m"]))
-	b.WriteString("\n")
-	b.WriteString(row("20m", bd.Band20m.Day, bd.Band20m.Night, best["20m"], notes["20m"]))
-	b.WriteString("\n")
-	b.WriteString(row("17m", bd.Band17m.Day, bd.Band17m.Night, best["17m"], notes["17m"]))
-	b.WriteString("\n")
-	b.WriteString(row("15m", bd.Band15m.Day, bd.Band15m.Night, best["15m"], notes["15m"]))
-	b.WriteString("\n")
-	b.WriteString(row("12m", bd.Band12m.Day, bd.Band12m.Night, best["12m"], notes["12m"]))
-	b.WriteString("\n")
-	b.WriteString(row("10m", bd.Band10m.Day, bd.Band10m.Night, best["10m"], notes["10m"]))
-	b.WriteString("\n</tbody>\n</table>")
-	return b.String()
+	buf.WriteString(`</tbody></table>`)
+	return template.HTML(buf.String())
 }
 
-// toEmojiCondition maps textual condition to the emoji label used in the table
-func toEmojiCondition(cond string) string {
-	c := strings.ToLower(strings.TrimSpace(cond))
-	switch c {
+// formatCondition formats a condition string with emoji
+func (h *HTMLBuilder) formatCondition(condition string) string {
+	switch strings.ToLower(strings.TrimSpace(condition)) {
 	case "excellent":
 		return "🟢 Excellent"
 	case "good":
@@ -128,609 +304,64 @@ func toEmojiCondition(cond string) string {
 	case "closed":
 		return "⚫ Closed"
 	default:
-		return cond
+		return template.HTMLEscapeString(condition)
 	}
 }
 
-// NewHTMLBuilder creates a new HTML builder
-func NewHTMLBuilder() *HTMLBuilder {
-	return &HTMLBuilder{
-		templateLoader: NewTemplateLoader(),
-	}
+// updateAssetURLs updates asset URLs based on deployment mode
+func (h *HTMLBuilder) updateAssetURLs(html, folderPath string) string {
+	// Update background image URLs in inline styles for GCS deployment
+	html = strings.ReplaceAll(html, 
+		"url('background.png')",
+		fmt.Sprintf("url('/files/%s/background.png')", folderPath))
+	
+	html = strings.ReplaceAll(html,
+		`url("background.png")`,
+		fmt.Sprintf(`url("/files/%s/background.png")`, folderPath))
+
+	return html
 }
 
-// MarkdownToHTML converts markdown to HTML using blackfriday
-func (h *HTMLBuilder) MarkdownToHTML(markdownText string) string {
-	htmlBytes := blackfriday.Run([]byte(markdownText))
-	htmlContent := string(htmlBytes)
+// ProcessMarkdownWithPlaceholders processes markdown content and substitutes template placeholders
+func (h *HTMLBuilder) ProcessMarkdownWithPlaceholders(
+	markdownContent string,
+	chartData *ChartTemplateData,
+	sunGifHTML template.HTML,
+	bandTableHTML template.HTML) (string, error) {
 
-	// Find the band analysis section
-	if idx := strings.Index(htmlContent, "<h2>📻 Band-by-Band Analysis</h2>"); idx != -1 {
-		// Look for the first table after the band analysis heading
-		afterHeading := htmlContent[idx:]
-
-		// The blackfriday library sometimes wraps tables in <p> tags
-		// First, check if we have a <p><table pattern
-		tableStartIdx := strings.Index(afterHeading, "<p><table")
-		if tableStartIdx != -1 {
-			// Found a table wrapped in <p> tags
-			tableStartIdx += idx + 3 // Add 3 to skip the <p> tag
-
-			// Get the part before and after the table tag
-			partBeforeTable := htmlContent[:tableStartIdx]
-			partAfterTable := htmlContent[tableStartIdx:]
-
-			// Replace the first occurrence of <table, but check if it already has the class
-			if !strings.Contains(partAfterTable[:50], "band-analysis-table") {
-				// Replace just the first occurrence of <table
-				partAfterTable = strings.Replace(partAfterTable, "<table", "<table class=\"band-analysis-table\"", 1)
-				htmlContent = partBeforeTable + partAfterTable
-			} else {
-				// If it already has the class, make sure it doesn't have duplicates
-				partAfterTable = strings.Replace(partAfterTable, "class=\"band-analysis-table\" class=\"band-analysis-table\"", "class=\"band-analysis-table\"", 1)
-				htmlContent = partBeforeTable + partAfterTable
-			}
-		} else {
-			// Try to find a regular <table> tag
-			tableStartIdx = strings.Index(afterHeading, "<table")
-			if tableStartIdx != -1 {
-				// Calculate absolute position
-				tableStartIdx += idx
-
-				// Get the part before and after the table tag
-				partBeforeTable := htmlContent[:tableStartIdx]
-				partAfterTable := htmlContent[tableStartIdx:]
-
-				// Check if the table already has our class
-				if !strings.Contains(partAfterTable[:50], "band-analysis-table") {
-					// Replace just the first occurrence of <table
-					partAfterTable = strings.Replace(partAfterTable, "<table", "<table class=\"band-analysis-table\"", 1)
-					htmlContent = partBeforeTable + partAfterTable
-				} else {
-					// If it already has the class, make sure it doesn't have duplicates
-					partAfterTable = strings.Replace(partAfterTable, "class=\"band-analysis-table\" class=\"band-analysis-table\"", "class=\"band-analysis-table\"", 1)
-					htmlContent = partBeforeTable + partAfterTable
-				}
-			}
-		}
-	}
-
-	return htmlContent
-}
-
-// ConvertMarkdownToHTML converts markdown content to a complete HTML document using configurable templates
-func (h *HTMLBuilder) ConvertMarkdownToHTML(markdownContent string, date string) (string, error) {
-	// Convert markdown to HTML using blackfriday
-	htmlBytes := blackfriday.Run([]byte(markdownContent))
-	htmlContent := string(htmlBytes)
-
-	// Load HTML template
-	htmlTemplate, err := h.templateLoader.LoadHTMLTemplate()
-	if err != nil {
-		return "", fmt.Errorf("failed to load HTML template: %w", err)
-	}
-
-	// Load CSS styles
-	cssStyles, err := h.templateLoader.LoadCSSStyles()
-	if err != nil {
-		return "", fmt.Errorf("failed to load CSS styles: %w", err)
-	}
-
-	// Parse the HTML template with proper functions for unescaped content
-	tmpl, err := template.New("report").Funcs(template.FuncMap{
-		"safeHTML": func(s string) template.HTML {
-			return template.HTML(s)
-		},
-		"safeCSS": func(s string) template.CSS {
-			return template.CSS(s)
-		},
-	}).Parse(htmlTemplate)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse HTML template: %w", err)
-	}
-
-	// Prepare template data
-	templateData := struct {
-		Date        string
-		GeneratedAt string
-		Content     template.HTML
-		CSSStyles   template.CSS
-		Charts      template.HTML
-		Version     string
-	}{
-		Date:        date,
-		GeneratedAt: time.Now().Format("2006-01-02 15:04:05 UTC"),
-		Content:     template.HTML(htmlContent),
-		CSSStyles:   template.CSS(cssStyles),
-		Charts:      template.HTML(""), // Charts will be embedded in content
-		Version:     config.GetVersion(),
-	}
-
-	// Execute the template
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, templateData); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
-	}
-
-	return buf.String(), nil
-}
-
-// ConvertMarkdownToHTMLWithCharts converts markdown content to HTML with charts
-func (h *HTMLBuilder) ConvertMarkdownToHTMLWithCharts(content string, charts string, date string) (string, error) {
-	// Note: content may already be HTML if we're calling from BuildCompleteHTML
-	// We'll skip the markdown conversion in that case
-	htmlContent := content
-
-	// If the content doesn't look like HTML, convert it from markdown
-	if !strings.Contains(content, "<p>") && !strings.Contains(content, "<div>") {
-		htmlBytes := blackfriday.Run([]byte(content))
-		htmlContent = string(htmlBytes)
-	}
-
-	// Load HTML template
-	htmlTemplate, err := h.templateLoader.LoadHTMLTemplate()
-	if err != nil {
-		return "", fmt.Errorf("failed to load HTML template: %w", err)
-	}
-
-	// Load CSS styles
-	cssStyles, err := h.templateLoader.LoadCSSStyles()
-	if err != nil {
-		return "", fmt.Errorf("failed to load CSS styles: %w", err)
-	}
-
-	// Parse the HTML template with proper functions for unescaped content
-	tmpl, err := template.New("report").Funcs(template.FuncMap{
-		"safeHTML": func(s string) template.HTML {
-			return template.HTML(s)
-		},
-		"safeCSS": func(s string) template.CSS {
-			return template.CSS(s)
-		},
-	}).Parse(htmlTemplate)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse HTML template: %w", err)
-	}
-
-	// Clean up any potential literal HTML tags that might have been incorrectly parsed
-	htmlContent = strings.Replace(htmlContent, "&lt;/div&gt;", "", -1)
-	htmlContent = strings.Replace(htmlContent, "&lt;div&gt;", "", -1)
-
-	// Prepare template data with charts
-	templateData := struct {
-		Date        string
-		GeneratedAt string
-		Content     template.HTML
-		CSSStyles   template.CSS
-		Charts      template.HTML
-		Version     string
-	}{
-		Date:        date,
-		GeneratedAt: time.Now().Format("2006-01-02 15:04:05 UTC"),
-		Content:     template.HTML(htmlContent),
-		CSSStyles:   template.CSS(cssStyles),
-		Charts:      template.HTML(charts),
-		Version:     config.GetVersion(),
-	}
-
-	// Execute the template
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, templateData); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
-	}
-
-	return buf.String(), nil
-}
-
-// BuildCompleteHTML creates a complete HTML document
-func (h *HTMLBuilder) BuildCompleteHTML(content, charts string, data *models.PropagationData) (string, error) {
-	// First convert markdown to HTML to ensure proper HTML structure
-	htmlContent := h.MarkdownToHTML(content)
-
-	// Inject Band-by-Band Analysis table from data if placeholder present
-	if data != nil && strings.Contains(htmlContent, "{{BAND_TABLE}}") {
-		bandTable := h.buildBandTableHTML(data)
-		htmlContent = strings.ReplaceAll(htmlContent, "{{BAND_TABLE}}", bandTable)
-	}
-
-	// Regardless of placeholder, enforce that the Band-by-Band Analysis table
-	// reflects live BandData to keep it consistent with charts.
-	if data != nil {
-		htmlContent = h.replaceBandTableWithData(htmlContent, data)
-	}
-
-	// Then integrate charts throughout the content
-	integratedContent := h.integrateChartsInContent(htmlContent, charts)
-
-	// Use the template-based conversion without separate charts section
-	result, err := h.ConvertMarkdownToHTMLWithCharts(integratedContent, "", time.Now().Format("2006-01-02"))
+	// First convert markdown to HTML
+	htmlContent, err := h.ConvertMarkdownToHTML(markdownContent)
 	if err != nil {
 		return "", err
 	}
 
-	// Fix background image URL for GCS deployment
-	// If the URL contains "PropagationReport-" (indicating GCS deployment), update the background image path
-	if strings.Contains(result, "PropagationReport-") {
-		// Extract the folder path from the HTML content
-		folderPathRegex := regexp.MustCompile(`/files/([^"']+)/sun_72h\.gif`)
-		matches := folderPathRegex.FindStringSubmatch(result)
-		if len(matches) > 1 {
-			folderPath := matches[1]
-			// Replace the background image URL with the full path
-			// First try with single quotes
-			if strings.Contains(result, "background-image: url('background.png')") {
-				result = strings.Replace(
-					result,
-					"background-image: url('background.png')",
-					fmt.Sprintf("background-image: url('/files/%s/background.png')", folderPath),
-					1,
-				)
-				log.Printf("Updated background image URL (single quotes) to use GCS path: /files/%s/background.png", folderPath)
-			} else {
-				// Try with double quotes
-				result = strings.Replace(
-					result,
-					"background-image: url(\"background.png\")",
-					fmt.Sprintf("background-image: url(\"/files/%s/background.png\")", folderPath),
-					1,
-				)
-				log.Printf("Updated background image URL (double quotes) to use GCS path: /files/%s/background.png", folderPath)
-			}
-			
-			// If neither worked, try a regex-based approach
-			if !strings.Contains(result, fmt.Sprintf("/files/%s/background.png", folderPath)) {
-				bgRegex := regexp.MustCompile(`(background-image:\s*url\(['"]{0,1})background\.png(['"]{0,1}\))`)
-				result = bgRegex.ReplaceAllString(result, 
-					fmt.Sprintf("${1}/files/%s/background.png${2}", folderPath))
-				log.Printf("Updated background image URL (regex) to use GCS path: /files/%s/background.png", folderPath)
-			}
-		}
+	// Create a template from the HTML content and execute it with data
+	tmpl, err := template.New("content").Parse(htmlContent)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse content template: %w", err)
 	}
 
-	return result, nil
-}
-
-// Chart represents a chart with its ID, title, HTML content, and placeholder
-type Chart struct {
-	ID          string
-	Title       string
-	HTML        string
-	Placeholder string
-}
-
-// integrateChartsInContent replaces chart placeholders with actual chart HTML
-func (h *HTMLBuilder) integrateChartsInContent(content, charts string) string {
-	// Extract all charts from the HTML
-	extractedCharts := h.extractCharts(charts)
-
-	// Map charts to their placeholders
-	chartMap := h.mapChartsToPlaceholders(extractedCharts)
-
-	// Extract the ECharts script and initialization scripts from the charts HTML
-	echartsScript, initScripts := h.extractScripts(charts)
-
-	// Replace placeholders with chart HTML
-	integratedContent := h.replacePlaceholders(content, chartMap)
-
-	// If the Band Conditions chart exists but wasn't placed (placeholder missing),
-	// inject it right after the Band-by-Band Analysis header to ensure it appears.
-	if chartHTML, ok := chartMap["{{BAND_CONDITIONS_CHART}}"]; ok {
-		if !strings.Contains(integratedContent, "chart-band-conditions") {
-			heading := "<h2>📻 Band-by-Band Analysis</h2>"
-			pos := strings.Index(integratedContent, heading)
-			if pos != -1 {
-				insertAt := pos + len(heading)
-				// Wrap with the same container used elsewhere for consistency
-				chartSection := fmt.Sprintf(`
-<div class="chart-section">
-	<div class="chart-container-integrated">
-		%s
-	</div>
-</div>`, chartHTML)
-				integratedContent = integratedContent[:insertAt] + "\n" + chartSection + integratedContent[insertAt:]
-				log.Println("DEBUG: Injected Band Conditions chart after Band-by-Band Analysis header")
-			} else {
-				// Fallback: append at the end of content
-				integratedContent += "\n" + chartHTML
-				log.Println("WARNING: Band-by-Band Analysis header not found; appended Band Conditions chart at end")
-			}
-		}
-	}
-
-	// Add scripts to the HTML
-	integratedContent = h.addScriptsToHTML(integratedContent, echartsScript, initScripts)
-
-	return integratedContent
-}
-
-// extractCharts extracts all charts from the HTML
-func (h *HTMLBuilder) extractCharts(charts string) []Chart {
-	if charts == "" {
-		return nil
-	}
-
-	var extractedCharts []Chart
-
-	// Use regex to find all chart containers
-	chartContainerRegex := regexp.MustCompile(`<div[^>]*chart-container[^>]*>[\s\S]*?<h3>([^<]+)</h3>[\s\S]*?<div[^>]*id="(chart-[^"]+)"[^>]*>[\s\S]*?</div>[\s\S]*?</div>`)
-	matches := chartContainerRegex.FindAllStringSubmatch(charts, -1)
-
-	processedIDs := make(map[string]bool)
-
-	for _, match := range matches {
-		if len(match) >= 3 {
-			title := strings.TrimSpace(match[1])
-			id := match[2]
-			html := match[0]
-
-			// Skip if we've already processed this chart ID
-			if processedIDs[id] {
-				log.Printf("DEBUG: Skipping duplicate chart with ID: %s and title: %s", id, title)
-				continue
-			}
-
-			processedIDs[id] = true
-
-			// Determine placeholder based on title and ID
-			placeholder := h.determinePlaceholder(title, id)
-
-			if placeholder != "" {
-				extractedCharts = append(extractedCharts, Chart{
-					ID:          id,
-					Title:       title,
-					HTML:        html,
-					Placeholder: placeholder,
-				})
-				log.Printf("DEBUG: Extracted chart - ID: %s, Title: %s, Placeholder: %s", id, title, placeholder)
-			}
-		}
-	}
-
-	// If no charts were found with the regex, try a more lenient approach
-	if len(extractedCharts) == 0 {
-		extractedCharts = h.extractChartsLenient(charts)
-	}
-
-	return extractedCharts
-}
-
-// extractScripts extracts the ECharts script and initialization scripts from the charts HTML
-func (h *HTMLBuilder) extractScripts(charts string) (string, string) {
-	var initScripts string
-
-	if charts == "" {
-		return "", ""
-	}
-
-	// Always use the CDN version of ECharts
-	echartsScript := `<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>`
-	log.Println("Using CDN version of ECharts")
-
-	// Extract the initialization scripts - try multiple patterns
-	initScriptsMatches := regexp.MustCompile(`<script[^>]*>\s*\(function\([^)]*\)\s*\{[\s\S]*?\}\)[\s\S]*?;\s*</script>`).FindAllString(charts, -1)
-	if len(initScriptsMatches) == 0 {
-		// Try alternative pattern
-		initScriptsMatches = regexp.MustCompile(`<script[^>]*>[\s\S]*?function[\s\S]*?\{[\s\S]*?\}[\s\S]*?</script>`).FindAllString(charts, -1)
-	}
-
-	if len(initScriptsMatches) > 0 {
-		for _, script := range initScriptsMatches {
-			initScripts += script + "\n"
-			log.Println("Found chart initialization script")
-		}
-	} else {
-		// If no initialization scripts found, generate default ones for common chart IDs
-		log.Println("No chart initialization scripts found, generating default ones")
-
-		// Generate default initialization scripts for common chart IDs
-		commonChartIDs := []string{"chart-solar-activity", "chart-band-conditions", "chart-propagation-timeline", "chart-k-index-trend", "chart-forecast"}
-
-		for _, id := range commonChartIDs {
-			if strings.Contains(charts, id) || strings.Contains(charts, "id=\""+id+"\"") {
-				initScripts += fmt.Sprintf(`
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    var chartDom = document.getElementById('%s');
-    if (chartDom) {
-      var myChart = echarts.init(chartDom);
-      var option = {
-        title: { text: '' },
-        tooltip: { trigger: 'axis' },
-        legend: { data: ['Data'] },
-        grid: { left: '3%%', right: '4%%', bottom: '3%%', containLabel: true },
-        xAxis: { type: 'category', data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] },
-        yAxis: { type: 'value' },
-        series: [{ name: 'Data', type: 'line', data: [120, 132, 101, 134, 90, 230, 210] }]
-      };
-      myChart.setOption(option);
-      window.addEventListener('resize', function() { myChart.resize(); });
-    }
-  });
-</script>`, id)
-				log.Printf("Generated default initialization script for chart ID: %s", id)
-			}
-		}
-	}
-
-	return echartsScript, initScripts
-}
-
-// extractChartsLenient extracts charts using a more lenient approach
-func (h *HTMLBuilder) extractChartsLenient(charts string) []Chart {
-	var extractedCharts []Chart
-	processedIDs := make(map[string]bool)
-
-	// Check for specific chart patterns
-	chartPatterns := []struct {
-		IDPattern    string
-		TitlePattern string
-		Placeholder  string
+	// Prepare data for placeholder substitution
+	data := struct {
+		SunGif                   template.HTML
+		SolarActivityChart       template.HTML
+		BandConditionsChart      template.HTML
+		KIndexChart              template.HTML
+		ForecastChart            template.HTML
+		PropagationTimelineChart template.HTML
 	}{
-		{"chart-solar-activity", "Solar Activity", "{{CHART_SOLAR_ACTIVITY}}"},
-		{"chart-geomagnetic-conditions", "Geomagnetic Conditions", "{{CHART_GEOMAGNETIC_CONDITIONS}}"},
-		{"chart-propagation-timeline", "Propagation Quality Timeline", "{{CHART_PROPAGATION_TIMELINE}}"},
-		{"chart-band-conditions", "Band Conditions", "{{CHART_BAND_CONDITIONS}}"},
+		SunGif:                   sunGifHTML,
+		SolarActivityChart:       chartData.SolarActivityChart,
+		BandConditionsChart:      chartData.BandConditionsChart,
+		KIndexChart:              chartData.KIndexChart,
+		ForecastChart:            chartData.ForecastChart,
+		PropagationTimelineChart: chartData.PropagationTimelineChart,
 	}
 
-	for _, pattern := range chartPatterns {
-		// Try to find the chart div by ID
-		idRegex := regexp.MustCompile(fmt.Sprintf(`<div[^>]*chart-container[^>]*>[\s\S]*?<div[^>]*id="%s"[^>]*>[\s\S]*?</div>[\s\S]*?</div>`, pattern.IDPattern))
-		match := idRegex.FindString(charts)
-
-		if match != "" && !processedIDs[pattern.IDPattern] {
-			processedIDs[pattern.IDPattern] = true
-			extractedCharts = append(extractedCharts, Chart{
-				ID:          pattern.IDPattern,
-				Title:       pattern.TitlePattern,
-				HTML:        match,
-				Placeholder: pattern.Placeholder,
-			})
-			log.Printf("DEBUG: Extracted chart (lenient) - ID: %s, Placeholder: %s", pattern.IDPattern, pattern.Placeholder)
-		}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("failed to execute content template: %w", err)
 	}
 
-	return extractedCharts
-}
-
-// determinePlaceholder determines the placeholder for a chart based on its title and ID
-func (h *HTMLBuilder) determinePlaceholder(title, id string) string {
-	// Map chart titles to placeholders
-	titleToPlaceholder := map[string]string{
-		"Solar Activity":               "{{SOLAR_ACTIVITY_CHART}}",
-		"Geomagnetic Conditions":       "{{K_INDEX_CHART}}",
-		"K-Index":                      "{{K_INDEX_CHART}}",
-		"Propagation Quality Timeline": "{{PROPAGATION_TIMELINE_CHART}}",
-		"Band Conditions":              "{{BAND_CONDITIONS_CHART}}",
-		"Forecast":                     "{{FORECAST_CHART}}",
-		"Propagation Forecast":         "{{FORECAST_CHART}}",
-	}
-
-	// Map chart IDs to placeholders as a fallback
-	idToPlaceholder := map[string]string{
-		"chart-solar-activity":         "{{SOLAR_ACTIVITY_CHART}}",
-		"chart-geomagnetic-conditions": "{{K_INDEX_CHART}}",
-		"chart-k-index":                "{{K_INDEX_CHART}}",
-		"chart-propagation-timeline":   "{{PROPAGATION_TIMELINE_CHART}}",
-		"chart-band-conditions":        "{{BAND_CONDITIONS_CHART}}",
-		"chart-forecast":               "{{FORECAST_CHART}}",
-		"chart-propagation-forecast":   "{{FORECAST_CHART}}",
-	}
-
-	// First try to match by title
-	if placeholder, ok := titleToPlaceholder[title]; ok {
-		log.Printf("DEBUG: Matched chart by title: %s -> %s", title, placeholder)
-		return placeholder
-	}
-
-	// Then try to match by ID
-	if placeholder, ok := idToPlaceholder[id]; ok {
-		log.Printf("DEBUG: Matched chart by ID: %s -> %s", id, placeholder)
-		return placeholder
-	}
-
-	// Try partial title matches
-	for knownTitle, placeholder := range titleToPlaceholder {
-		if strings.Contains(title, knownTitle) || strings.Contains(knownTitle, title) {
-			log.Printf("DEBUG: Matched chart by partial title: %s ~ %s -> %s", title, knownTitle, placeholder)
-			return placeholder
-		}
-	}
-
-	// Try partial ID matches
-	for knownID, placeholder := range idToPlaceholder {
-		if strings.Contains(id, knownID) || strings.Contains(knownID, id) {
-			log.Printf("DEBUG: Matched chart by partial ID: %s ~ %s -> %s", id, knownID, placeholder)
-			return placeholder
-		}
-	}
-
-	log.Printf("WARNING: Could not determine placeholder for chart - Title: %s, ID: %s", title, id)
-	return ""
-}
-
-// mapChartsToPlaceholders maps charts to their placeholders, avoiding duplicates
-func (h *HTMLBuilder) mapChartsToPlaceholders(charts []Chart) map[string]string {
-	chartMap := make(map[string]string)
-	processedPlaceholders := make(map[string]bool)
-
-	// First pass: map charts to placeholders
-	for _, chart := range charts {
-		// Skip if we've already processed this placeholder
-		if processedPlaceholders[chart.Placeholder] {
-			log.Printf("DEBUG: Skipping duplicate placeholder: %s for chart ID: %s", chart.Placeholder, chart.ID)
-			continue
-		}
-
-		processedPlaceholders[chart.Placeholder] = true
-		chartMap[chart.Placeholder] = chart.HTML
-		log.Printf("DEBUG: Mapped chart ID: %s to placeholder: %s", chart.ID, chart.Placeholder)
-	}
-
-	return chartMap
-}
-
-// replacePlaceholders replaces placeholders in the content with chart HTML
-func (h *HTMLBuilder) replacePlaceholders(content string, chartMap map[string]string) string {
-	result := content
-
-	// Replace placeholders with chart HTML
-	for placeholder, chartHTML := range chartMap {
-		// Create a properly formatted chart section with appropriate div structure
-		chartSection := fmt.Sprintf(`
-<div class="chart-section">
-	<div class="chart-container-integrated">
-		%s
-	</div>
-</div>`, chartHTML)
-
-		// Check if the placeholder exists in the content
-		if strings.Contains(result, placeholder) {
-			log.Printf("DEBUG: Replacing placeholder: %s with chart HTML", placeholder)
-			result = strings.ReplaceAll(result, placeholder, chartSection)
-		} else {
-			// Check if the placeholder is wrapped in paragraph tags
-			paragraphWrappedPlaceholder := fmt.Sprintf("<p>%s</p>", placeholder)
-			if strings.Contains(result, paragraphWrappedPlaceholder) {
-				log.Printf("DEBUG: Replacing paragraph-wrapped placeholder: %s with chart HTML", paragraphWrappedPlaceholder)
-				result = strings.ReplaceAll(result, paragraphWrappedPlaceholder, chartSection)
-			} else {
-				log.Printf("WARNING: Placeholder not found in content: %s", placeholder)
-			}
-		}
-	}
-
-	// Remove any paragraph tags that might be wrapping our chart sections
-	result = strings.ReplaceAll(result, "<p>\n<div class=\"chart-section\">", "\n<div class=\"chart-section\">")
-	result = strings.ReplaceAll(result, "</div></p>", "</div>")
-
-	return result
-}
-
-// addScriptsToHTML adds ECharts scripts and initialization scripts to the HTML
-func (h *HTMLBuilder) addScriptsToHTML(content, echartsScript, initScripts string) string {
-	result := content
-
-	// Add ECharts script and initialization scripts before the closing body tag
-	if echartsScript != "" || initScripts != "" {
-		// Ensure we have the ECharts script
-		if echartsScript == "" {
-			echartsScript = `<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>`
-			log.Println("DEBUG: Added default ECharts CDN script")
-		}
-
-		// Combine scripts
-		scripts := echartsScript + "\n" + initScripts
-
-		// Check if body tag exists
-		if strings.Contains(result, "</body>") {
-			result = strings.Replace(result, "</body>", scripts+"\n</body>", 1)
-		} else {
-			// If no body tag, append to the end
-			result = result + "\n" + scripts
-		}
-
-		log.Println("DEBUG: Added ECharts script and initialization scripts to HTML")
-	}
-
-	return result
+	return buf.String(), nil
 }

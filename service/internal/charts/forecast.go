@@ -103,11 +103,20 @@ window.addEventListener('resize', function(){ c.resize(); });
 })();</script>
 `, id, string(optJSON))
 
+	// Create complete HTML snippet with div and script
+	completeHTML := fmt.Sprintf(`<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<div class="chart-container">
+	<h3>3-Day K-index Forecast</h3>
+	%s
+</div>
+%s`, div, script)
+
 	return ChartSnippet{
 		ID:     id,
 		Title:  "3-Day K-index Forecast",
 		Div:    div,
 		Script: script,
+		HTML:   completeHTML,
 	}, nil
 }
 
