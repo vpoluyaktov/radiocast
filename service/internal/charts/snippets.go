@@ -3,11 +3,13 @@ package charts
 // ChartSnippet represents an embeddable go-echarts chart fragment.
 // Div should contain a single root <div id="..." style="..."></div>
 // Script should contain the <script>...</script> block that initializes the chart in that div.
+// HTML contains the complete snippet with div + script combined for template substitution.
 type ChartSnippet struct {
     ID     string
     Title  string
     Div    string
     Script string
+    HTML   string
 }
 
 // parseKIndexForecast attempts to extract a numeric K-index value from a freeform forecast string.

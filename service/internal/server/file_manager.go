@@ -167,18 +167,36 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 		}
 	}
 
-	// 4. Generate HTML report using ECharts snippets only
+	// 4. Generate CSS file with processed templates
+	var cssContent string
+	var cssErr error
+	// Generate static CSS content (no longer needs folderPath since background is in HTML)
+	cssContent, cssErr = fm.server.Generator.GenerateStaticCSS()
+	if cssErr != nil {
+		log.Printf("Warning: Failed to generate CSS: %v", cssErr)
+	} else {
+		// Save CSS file
+		cssPath := filepath.Join(reportDir, "styles.css")
+		if writeErr := os.WriteFile(cssPath, []byte(cssContent), 0644); writeErr != nil {
+			log.Printf("Warning: Failed to save CSS file: %v", writeErr)
+		} else {
+			files.AssetFiles["styles.css"] = []byte(cssContent)
+			log.Printf("Generated CSS file: %s (%d bytes)", cssPath, len(cssContent))
+		}
+	}
+
+	// 5. Generate HTML report using ECharts snippets only
 	var html string
-	var err error
+	var htmlErr error
 	if fm.server.Storage != nil {
 		// GCS mode - provide folderPath so /files route can resolve local echarts.min.js
-		html, err = fm.server.Generator.GenerateHTMLWithSourcesAndFolderPath(markdown, data, sourceData, files.FolderPath)
+		html, htmlErr = fm.server.Generator.GenerateHTMLWithSourcesAndFolderPath(markdown, data, sourceData, files.FolderPath)
 	} else {
 		// Local mode
-		html, err = fm.server.Generator.GenerateHTMLWithSources(markdown, data, sourceData)
+		html, htmlErr = fm.server.Generator.GenerateHTMLWithSources(markdown, data, sourceData)
 	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate HTML: %w", err)
+	if htmlErr != nil {
+		return nil, fmt.Errorf("failed to generate HTML: %w", htmlErr)
 	}
 	// Inject Sun GIF section into HTML if generated
 	files.HTMLContent = fm.injectSunGIFIntoHTML(html, gifRelName, files.FolderPath)

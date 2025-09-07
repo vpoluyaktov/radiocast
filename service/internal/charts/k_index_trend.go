@@ -65,7 +65,15 @@ func (cg *ChartGenerator) generateKIndexTrendSnippet(data *models.PropagationDat
 	div := fmt.Sprintf("<div id=\"%s\" style=\"width:100%%;height:420px;\"></div>", id)
 	script := fmt.Sprintf(`<script>(function(){var el=document.getElementById('%s');if(!el)return;var c=echarts.init(el);var option=%s;c.setOption(option);window.addEventListener('resize',function(){c.resize();});})();</script>`, id, string(optJSON))
 
-	return ChartSnippet{ID: id, Title: "K-index Trend (72 Hours)", Div: div, Script: script}, nil
+	// Create complete HTML snippet with div and script
+	completeHTML := fmt.Sprintf(`<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<div class="chart-container">
+	<h3>K-index Trend (72 Hours)</h3>
+	%s
+</div>
+%s`, div, script)
+
+	return ChartSnippet{ID: id, Title: "K-index Trend (72 Hours)", Div: div, Script: script, HTML: completeHTML}, nil
 }
 
 func emaSeries(vals []float64, period int) []float64 {

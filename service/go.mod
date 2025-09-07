@@ -6,9 +6,9 @@ require (
 	cloud.google.com/go/storage v1.35.1
 	github.com/go-resty/resty/v2 v2.10.0
 	github.com/mmcdole/gofeed v1.2.1
-	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sashabaranov/go-openai v1.17.9
 	github.com/sethvargo/go-envconfig v0.9.0
+	github.com/yuin/goldmark v1.6.0
 	google.golang.org/api v0.152.0
 )
 
