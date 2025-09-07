@@ -229,7 +229,6 @@ func (h *HTMLBuilder) executeTemplate(data TemplateData) (string, error) {
 
 	// Debug: Log template data before execution
 	log.Printf("Template data Content length: %d", len(string(data.Content)))
-	log.Printf("Template data Content preview: %s", string(data.Content)[:min(200, len(string(data.Content)))])
 
 	// Execute template
 	var buf bytes.Buffer
@@ -238,75 +237,10 @@ func (h *HTMLBuilder) executeTemplate(data TemplateData) (string, error) {
 	}
 
 	result := buf.String()
-	log.Printf("Template execution result length: %d", len(result))
-	log.Printf("Template result preview: %s", result[:min(300, len(result))])
 
 	return result, nil
 }
 
-// generateBandTable creates the band analysis table HTML
-func (h *HTMLBuilder) generateBandTable(data *models.PropagationData) template.HTML {
-	if data == nil {
-		return template.HTML("")
-	}
-
-	var buf strings.Builder
-	buf.WriteString(`<table class="band-analysis-table">`)
-	buf.WriteString(`<thead><tr><th>Band</th><th>Day Condition</th><th>Night Condition</th><th>Best Times</th><th>Notes</th></tr></thead>`)
-	buf.WriteString(`<tbody>`)
-
-	bands := []struct {
-		name      string
-		condition models.BandCondition
-		bestTimes string
-		notes     string
-	}{
-		{"80m", data.BandData.Band80m, "2200-0600 UTC", "Low noise after sunset"},
-		{"40m", data.BandData.Band40m, "2100-0700 UTC", "Best DX band at night"},
-		{"20m", data.BandData.Band20m, "1000-2200 UTC", "Reliable all day"},
-		{"17m", data.BandData.Band17m, "1200-2000 UTC", "Good for EU/NA"},
-		{"15m", data.BandData.Band15m, "1400-1800 UTC", "Solar dependent"},
-		{"12m", data.BandData.Band12m, "1500-1700 UTC", "Sporadic openings"},
-		{"10m", data.BandData.Band10m, "1600-1700 UTC", "Solar cycle dependent"},
-	}
-
-	for _, band := range bands {
-		buf.WriteString(fmt.Sprintf(`<tr>
-			<td>%s</td>
-			<td>%s</td>
-			<td>%s</td>
-			<td>%s</td>
-			<td>%s</td>
-		</tr>`, 
-			band.name,
-			h.formatCondition(band.condition.Day),
-			h.formatCondition(band.condition.Night),
-			template.HTMLEscapeString(band.bestTimes),
-			template.HTMLEscapeString(band.notes),
-		))
-	}
-
-	buf.WriteString(`</tbody></table>`)
-	return template.HTML(buf.String())
-}
-
-// formatCondition formats a condition string with emoji
-func (h *HTMLBuilder) formatCondition(condition string) string {
-	switch strings.ToLower(strings.TrimSpace(condition)) {
-	case "excellent":
-		return "🟢 Excellent"
-	case "good":
-		return "🟡 Good"
-	case "fair":
-		return "🟠 Fair"
-	case "poor":
-		return "🔴 Poor"
-	case "closed":
-		return "⚫ Closed"
-	default:
-		return template.HTMLEscapeString(condition)
-	}
-}
 
 // updateAssetURLs updates asset URLs based on deployment mode
 func (h *HTMLBuilder) updateAssetURLs(html, folderPath string) string {
@@ -326,8 +260,7 @@ func (h *HTMLBuilder) updateAssetURLs(html, folderPath string) string {
 func (h *HTMLBuilder) ProcessMarkdownWithPlaceholders(
 	markdownContent string,
 	chartData *ChartTemplateData,
-	sunGifHTML template.HTML,
-	bandTableHTML template.HTML) (string, error) {
+	sunGifHTML template.HTML) (string, error) {
 
 	// First convert markdown to HTML
 	htmlContent, err := h.ConvertMarkdownToHTML(markdownContent)

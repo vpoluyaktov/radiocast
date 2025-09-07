@@ -97,9 +97,10 @@ func (f *N0NBHFetcher) Fetch(ctx context.Context, url string) (*models.N0NBHResp
 		key := band.Name
 		if existing, ok := bandConditions[key]; ok {
 			// Update existing entry
-			if band.Time == "day" {
+			switch band.Time {
+			case "day":
 				existing.Day = band.Condition
-			} else if band.Time == "night" {
+			case "night":
 				existing.Night = band.Condition
 			}
 			bandConditions[key] = existing
@@ -109,9 +110,10 @@ func (f *N0NBHFetcher) Fetch(ctx context.Context, url string) (*models.N0NBHResp
 				Name: band.Name,
 				Time: band.Time,
 			}
-			if band.Time == "day" {
+			switch band.Time {
+			case "day":
 				newBand.Day = band.Condition
-			} else if band.Time == "night" {
+			case "night":
 				newBand.Night = band.Condition
 			}
 			bandConditions[key] = newBand

@@ -44,7 +44,7 @@ func (rs *ReportService) GenerateReport(ctx context.Context,
 
 	// Generate Sun GIF
 	log.Println("Generating Sun GIF...")
-	sunGifHTML, err := rs.generateSunGif(ctx, folderPath)
+	sunGifHTML, err := rs.generateSunImageSnippet(ctx, folderPath)
 	if err != nil {
 		log.Printf("Warning: Failed to generate Sun GIF: %v", err)
 		sunGifHTML = template.HTML(`<div class="sun-placeholder">Sun imagery unavailable</div>`)
@@ -52,9 +52,8 @@ func (rs *ReportService) GenerateReport(ctx context.Context,
 
 	// Process markdown with template placeholders
 	log.Println("Processing markdown with placeholders...")
-	bandTableHTML := rs.htmlBuilder.generateBandTable(propagationData)
 	processedContent, err := rs.htmlBuilder.ProcessMarkdownWithPlaceholders(
-		markdownContent, chartData, sunGifHTML, bandTableHTML)
+		markdownContent, chartData, sunGifHTML)
 	if err != nil {
 		return "", fmt.Errorf("failed to process markdown: %w", err)
 	}
@@ -84,23 +83,6 @@ func (rs *ReportService) generateCharts(data *models.PropagationData, sourceData
 }
 
 
-// generateSunGif creates the Sun GIF HTML
-func (rs *ReportService) generateSunGif(_ context.Context, folderPath string) (template.HTML, error) {
-	// Generate Sun GIF path
-	gifPath := "sun_72h.gif"
-	if folderPath != "" {
-		gifPath = fmt.Sprintf("/files/%s/sun_72h.gif", folderPath)
-	}
-
-	// Create HTML for Sun GIF
-	sunHTML := fmt.Sprintf(`
-<div class="sun-gif-container">
-	<img src="%s" alt="72-hour Sun Animation" class="sun-gif" />
-	<p class="sun-caption">72-hour solar activity animation from Helioviewer</p>
-</div>`, gifPath)
-
-	return template.HTML(sunHTML), nil
-}
 
 // GenerateHTMLWithSources generates HTML with source data
 func (rs *ReportService) GenerateHTMLWithSources(markdownReport string, data *models.PropagationData, sourceData *models.SourceData) (string, error) {

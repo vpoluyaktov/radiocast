@@ -10,42 +10,10 @@ type ChartSnippet struct {
     Div    string
     Script string
     HTML   string
+    Width  string
+    Height string
 }
 
-// parseKIndexForecast attempts to extract a numeric K-index value from a freeform forecast string.
-// Examples it can handle: "Kp=3", "K-index: 4", "3 (quiet)", "around 2-3" -> returns first number found.
-func (cg *ChartGenerator) parseKIndexForecast(s string) float64 {
-    // simple scan: capture first integer or float number in the string
-    var val float64
-    has := false
-    num := 0.0
-    frac := 0.0
-    fracDiv := 1.0
-    seenDot := false
-    for i := 0; i < len(s); i++ {
-        ch := s[i]
-        if ch >= '0' && ch <= '9' {
-            d := float64(ch - '0')
-            if !seenDot {
-                num = num*10 + d
-            } else {
-                fracDiv *= 10
-                frac = frac + d/fracDiv
-            }
-            has = true
-        } else if ch == '.' && !seenDot && has {
-            seenDot = true
-        } else if has {
-            // end of first number
-            break
-        }
-    }
-    if has {
-        val = num + frac
-        return val
-    }
-    return 0
-}
 
 // conditionToValue maps band condition text to a numeric bucket for heatmap coloring.
 // Returns: 0 Closed, 1 Poor, 2 Fair, 3 Good, 4 Excellent.

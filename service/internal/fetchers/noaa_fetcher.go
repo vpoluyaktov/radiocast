@@ -37,17 +37,17 @@ func NewNOAAFetcher(client *resty.Client) *NOAAFetcher {
 // FetchKIndex fetches K-index data from NOAA for the last 72 hours
 func (f *NOAAFetcher) FetchKIndex(ctx context.Context, url string) ([]models.NOAAKIndexResponse, error) {
 	// Always use the provided URL - this is critical for tests
-	kIndexUrl := url
+	kIndexURL := url
 	// Only use default if URL is empty
-	if kIndexUrl == "" {
-		kIndexUrl = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
+	if kIndexURL == "" {
+		kIndexURL = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
 	}
 	
 	// Fetch data from the endpoint
 	resp, err := f.client.R().
 		SetContext(ctx).
 		SetHeader("Accept", "application/json").
-		Get(kIndexUrl)
+		Get(kIndexURL)
 	
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch NOAA K-index: %w", err)
@@ -107,15 +107,15 @@ func (f *NOAAFetcher) FetchKIndex(ctx context.Context, url string) ([]models.NOA
 // FetchSolar fetches solar data from NOAA for the last 6 months
 func (f *NOAAFetcher) FetchSolar(ctx context.Context, url string) ([]models.NOAASolarResponse, error) {
 	// Use the provided URL or fall back to standard endpoint for solar data
-	solarUrl := url
-	if solarUrl == "" {
-		solarUrl = "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json"
+	solarURL := url
+	if solarURL == "" {
+		solarURL = "https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json"
 	}
 	
 	resp, err := f.client.R().
 		SetContext(ctx).
 		SetHeader("Accept", "application/json").
-		Get(solarUrl)
+		Get(solarURL)
 	
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch NOAA solar data: %w", err)

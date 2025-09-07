@@ -220,7 +220,7 @@ func (g *GCSClient) GetFile(ctx context.Context, filePath string) ([]byte, error
 }
 
 // GetLatestReport gets the most recent report from GCS
-func (c *GCSClient) GetLatestReport() (string, error) {
+func (g *GCSClient) GetLatestReport() (string, error) {
 	// This is a simplified implementation - in practice you'd want to
 	// list objects and find the most recent one
 	return "", fmt.Errorf("GetLatestReport not implemented for GCS yet")
