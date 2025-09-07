@@ -16,8 +16,7 @@ func NewChartGenerator(outputDir string) *ChartGenerator {
 	}
 }
 
-// GenerateEChartsSnippetsWithSources builds embeddable go-echarts charts. For now returns empty
-// to preserve current PNG-based rendering until individual charts are migrated.
+// GenerateEChartsSnippetsWithSources builds embeddable go-echarts charts
 func (cg *ChartGenerator) GenerateEChartsSnippetsWithSources(data *models.PropagationData, sourceData *models.SourceData) ([]ChartSnippet, error) {
     var snippets []ChartSnippet
     // Solar Activity (Bar)
