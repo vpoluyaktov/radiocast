@@ -49,13 +49,8 @@ func main() {
 	}
 	defer srv.Close()
 	
-	// Set up HTTP routes
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", srv.HandleRoot)
-	mux.HandleFunc("/health", srv.HandleHealth)
-	mux.HandleFunc("/generate", srv.HandleGenerate)
-	mux.HandleFunc("/reports", srv.HandleListReports)
-	mux.HandleFunc("/files/", srv.HandleFileProxy)
+	// Set up HTTP routes using server's routing configuration
+	mux := srv.SetupRoutes()
 	
 	// Create HTTP server
 	httpServer := &http.Server{

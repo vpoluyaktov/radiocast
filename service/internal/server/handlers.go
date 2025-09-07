@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"radiocast/internal/models"
 )
 
 // HandleRoot serves the main page with redirect to latest report
@@ -38,7 +40,7 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 // autoGenerateReport automatically generates a report when none exists
-func (s *Server) autoGenerateReport(w http.ResponseWriter, r *http.Request) {
+func (s *Server) autoGenerateReport(w http.ResponseWriter, _ *http.Request) {
 	log.Println("No reports found - automatically generating first report...")
 	
 	// Show loading page while generating
@@ -48,20 +50,42 @@ func (s *Server) autoGenerateReport(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		ctx := context.Background()
 		
-		// Fetch data from all sources
-		log.Println("Auto-generation: Fetching data from all sources...")
-		data, sourceData, err := s.Fetcher.FetchAllDataWithSources(ctx, s.Config.NOAAKIndexURL, s.Config.NOAASolarURL, s.Config.N0NBHSolarURL, s.Config.SIDCRSSURL)
-		if err != nil {
-			log.Printf("Auto-generation: Data fetching failed: %v", err)
-			return
-		}
+		var data *models.PropagationData
+		var sourceData *models.SourceData
+		var markdownReport string
+		var err error
 		
-		// Generate LLM report
-		log.Println("Auto-generation: Generating LLM report...")
-		markdownReport, err := s.LLMClient.GenerateReportWithSources(data, sourceData)
-		if err != nil {
-			log.Printf("Auto-generation: LLM report generation failed: %v", err)
-			return
+		if s.Config.MockupMode && s.MockService != nil {
+			// Use mock data
+			log.Println("Auto-generation: Loading mock data...")
+			data, sourceData, err = s.MockService.LoadMockData()
+			if err != nil {
+				log.Printf("Auto-generation: Mock data loading failed: %v", err)
+				return
+			}
+			
+			log.Println("Auto-generation: Loading mock LLM response...")
+			markdownReport, err = s.MockService.LoadMockLLMResponse()
+			if err != nil {
+				log.Printf("Auto-generation: Mock LLM response loading failed: %v", err)
+				return
+			}
+		} else {
+			// Fetch data from all sources
+			log.Println("Auto-generation: Fetching data from all sources...")
+			data, sourceData, err = s.Fetcher.FetchAllDataWithSources(ctx, s.Config.NOAAKIndexURL, s.Config.NOAASolarURL, s.Config.N0NBHSolarURL, s.Config.SIDCRSSURL)
+			if err != nil {
+				log.Printf("Auto-generation: Data fetching failed: %v", err)
+				return
+			}
+			
+			// Generate LLM report
+			log.Println("Auto-generation: Generating LLM report...")
+			markdownReport, err = s.LLMClient.GenerateReportWithSources(data, sourceData)
+			if err != nil {
+				log.Printf("Auto-generation: LLM report generation failed: %v", err)
+				return
+			}
 		}
 		
 		// Generate all files
@@ -122,48 +146,6 @@ func (s *Server) serveLoadingPage(w http.ResponseWriter) {
 </html>`)
 }
 
-// serveMainPage serves the main service information page
-func (s *Server) serveMainPage(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprintf(w, `<!DOCTYPE html>
-<html>
-<head>
-    <title>Radio Propagation Service</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; text-align: center; }
-        .status { background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .endpoints { background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
-        .endpoint { margin: 10px 0; }
-        a { color: #007bff; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-        .note { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>📡 Radio Propagation Service</h1>
-        <div class="note">
-            <strong>Note:</strong> No propagation reports have been generated yet. Generate your first report using the /generate endpoint.
-        </div>
-        <div class="status">
-            <strong>Status:</strong> Service is running and ready to generate propagation reports.
-        </div>
-        <div class="endpoints">
-            <h3>Available Endpoints:</h3>
-            <div class="endpoint"><strong>GET /health</strong> - Service health check</div>
-            <div class="endpoint"><strong>POST /generate</strong> - Generate new propagation report</div>
-            <div class="endpoint"><strong>GET /reports</strong> - List recent reports</div>
-        </div>
-        <p style="text-align: center; color: #666; margin-top: 30px;">
-            For amateur radio operators worldwide | 73!
-        </p>
-    </div>
-</body>
-</html>`)
-}
-
 // HandleHealth provides health check endpoint
 func (s *Server) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -194,27 +176,54 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log.Println("Starting report generation...")
 
-	// Fetch data from all sources
-	log.Println("Fetching data from all sources...")
-	data, sourceData, err := s.Fetcher.FetchAllDataWithSources(ctx, s.Config.NOAAKIndexURL, s.Config.NOAASolarURL, s.Config.N0NBHSolarURL, s.Config.SIDCRSSURL)
-	if err != nil {
-		log.Printf("Data fetching failed: %v", err)
-		http.Error(w, "Data fetching failed: "+err.Error(), http.StatusInternalServerError)
-		return
+	var data *models.PropagationData
+	var sourceData *models.SourceData
+	var markdownReport string
+	var err error
+
+	if s.Config.MockupMode && s.MockService != nil {
+		// Use mock data
+		log.Println("Using mock data for report generation...")
+		data, sourceData, err = s.MockService.LoadMockData()
+		if err != nil {
+			log.Printf("Mock data loading failed: %v", err)
+			http.Error(w, "Mock data loading failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Println("Loading mock LLM response...")
+		markdownReport, err = s.MockService.LoadMockLLMResponse()
+		if err != nil {
+			log.Printf("Mock LLM response loading failed: %v", err)
+			http.Error(w, "Mock LLM response loading failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		
+		log.Printf("Mock data loaded successfully for timestamp: %s", data.Timestamp.Format(time.RFC3339))
+		log.Printf("Mock LLM report loaded successfully (length: %d characters)", len(markdownReport))
+	} else {
+		// Fetch data from all sources
+		log.Println("Fetching data from all sources...")
+		data, sourceData, err = s.Fetcher.FetchAllDataWithSources(ctx, s.Config.NOAAKIndexURL, s.Config.NOAASolarURL, s.Config.N0NBHSolarURL, s.Config.SIDCRSSURL)
+		if err != nil {
+			log.Printf("Data fetching failed: %v", err)
+			http.Error(w, "Data fetching failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("Data fetched successfully for timestamp: %s", data.Timestamp.Format(time.RFC3339))
+
+		// Generate LLM report with raw source data
+		log.Println("Generating LLM report with raw source data...")
+		markdownReport, err = s.LLMClient.GenerateReportWithSources(data, sourceData)
+		if err != nil {
+			log.Printf("LLM report generation failed: %v", err)
+			http.Error(w, "LLM report generation failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("LLM report generated successfully (length: %d characters)", len(markdownReport))
 	}
-
-	log.Printf("Data fetched successfully for timestamp: %s", data.Timestamp.Format(time.RFC3339))
-
-	// Generate LLM report with raw source data
-	log.Println("Generating LLM report with raw source data...")
-	markdownReport, err := s.LLMClient.GenerateReportWithSources(data, sourceData)
-	if err != nil {
-		log.Printf("LLM report generation failed: %v", err)
-		http.Error(w, "LLM report generation failed: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("LLM report generated successfully (length: %d characters)", len(markdownReport))
 
 	// Use unified file manager to generate all files
 	fileManager := NewFileManager(s)

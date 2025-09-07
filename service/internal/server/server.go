@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"path/filepath"
 
 	"radiocast/internal/config"
 	"radiocast/internal/fetchers"
 	"radiocast/internal/llm"
+	"radiocast/internal/mocks"
 	"radiocast/internal/reports"
 	"radiocast/internal/storage"
 )
@@ -27,6 +30,7 @@ type Server struct {
 	LLMClient      *llm.OpenAIClient
 	Generator      *reports.Generator
 	Storage        *storage.GCSClient
+	MockService    *mocks.MockService
 	DeploymentMode DeploymentMode
 	ReportsDir     string
 }
@@ -52,6 +56,13 @@ func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, erro
 		ReportsDir:     reportsDir,
 	}
 	
+	// Initialize mock service if mockup mode is enabled
+	if cfg.MockupMode {
+		mocksDir := filepath.Join("internal", "mocks")
+		server.MockService = mocks.NewMockService(mocksDir)
+		log.Printf("Mockup mode enabled - using mock data from %s", mocksDir)
+	}
+	
 	// Initialize components based on deployment mode
 	if deploymentMode == DeploymentLocal {
 		log.Printf("Local deployment mode - reports will be saved to: %s", reportsDir)
@@ -68,6 +79,32 @@ func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, erro
 	}
 	
 	return server, nil
+}
+
+// SetupRoutes configures HTTP routes for the server
+func (s *Server) SetupRoutes() *http.ServeMux {
+	mux := http.NewServeMux()
+	
+	// Serve static report files from reports directory
+	reportsDir := "./reports/"
+	if s.DeploymentMode == DeploymentGCS {
+		reportsDir = "/tmp/reports/"
+	}
+	fileServer := http.FileServer(http.Dir(reportsDir))
+	
+	// Handle specific API routes first
+	mux.HandleFunc("/health", s.HandleHealth)
+	mux.HandleFunc("/generate", s.HandleGenerate)
+	mux.HandleFunc("/reports", s.HandleListReports)
+	mux.HandleFunc("/files/", s.HandleFileProxy)
+	
+	// Handle report directory paths (dates like 2025-09-07_15-11-33)
+	mux.Handle("/2", http.StripPrefix("/", fileServer))
+	
+	// Handle root path last (catch-all)
+	mux.HandleFunc("/", s.HandleRoot)
+	
+	return mux
 }
 
 // Close cleans up server resources
