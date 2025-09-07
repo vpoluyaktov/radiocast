@@ -10,7 +10,7 @@ import (
 // Config holds all configuration for the radio propagation service
 type Config struct {
 	// Server configuration
-	Port string `env:"PORT,default=8080"`
+	Port string `env:"PORT,default=8981"`
 	
 	// OpenAI configuration
 	OpenAIAPIKey string `env:"OPENAI_API_KEY,required"`
@@ -22,6 +22,7 @@ type Config struct {
 	
 	// Local testing configuration
 	LocalReportsDir string `env:"LOCAL_REPORTS_DIR,default=./reports"`
+	MockupMode      bool   `env:"MOCKUP_MODE,default=false"`
 	
 	// Data source URLs
 	NOAAKIndexURL string `env:"NOAA_K_INDEX_URL,default=https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"`

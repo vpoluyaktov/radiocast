@@ -152,18 +152,37 @@ func (fm *FileManager) GenerateAllFiles(ctx context.Context, data *models.Propag
 		log.Printf("Warning: Failed to save LLM files: %v", err)
 	}
 	
-	// 3.5. Generate Sun GIF (last 72h) using Helioviewer and ffmpeg
+	// 3.5. Generate Sun GIF (last 72h) using Helioviewer and ffmpeg or mock data
 	gifRelName := "sun_72h.gif"
 	gifPath := filepath.Join(reportDir, gifRelName)
-	if err := imagery.GenerateSunGIF(ctx, reportDir, data.Timestamp, gifPath); err != nil {
-		log.Printf("Warning: Failed to generate Sun GIF: %v", err)
-	} else {
-		// Read the GIF into memory for potential GCS upload
-		if b, rerr := os.ReadFile(gifPath); rerr == nil {
-			files.AssetFiles[gifRelName] = b
-			log.Printf("Generated Sun GIF: %s (%d bytes)", gifPath, len(b))
+	
+	if fm.server.Config.MockupMode && fm.server.MockService != nil {
+		// Use mock Sun GIF
+		log.Println("Using mock Sun GIF data...")
+		mockGifData, err := fm.server.MockService.LoadMockSunGif()
+		if err != nil {
+			log.Printf("Warning: Failed to load mock Sun GIF: %v", err)
 		} else {
-			log.Printf("Warning: Could not read generated GIF %s: %v", gifPath, rerr)
+			// Save mock GIF to file
+			if err := os.WriteFile(gifPath, mockGifData, 0644); err != nil {
+				log.Printf("Warning: Failed to save mock Sun GIF: %v", err)
+			} else {
+				files.AssetFiles[gifRelName] = mockGifData
+				log.Printf("Used mock Sun GIF: %s (%d bytes)", gifPath, len(mockGifData))
+			}
+		}
+	} else {
+		// Generate Sun GIF using Helioviewer and ffmpeg
+		if err := imagery.GenerateSunGIF(ctx, reportDir, data.Timestamp, gifPath); err != nil {
+			log.Printf("Warning: Failed to generate Sun GIF: %v", err)
+		} else {
+			// Read the GIF into memory for potential GCS upload
+			if b, rerr := os.ReadFile(gifPath); rerr == nil {
+				files.AssetFiles[gifRelName] = b
+				log.Printf("Generated Sun GIF: %s (%d bytes)", gifPath, len(b))
+			} else {
+				log.Printf("Warning: Could not read generated GIF %s: %v", gifPath, rerr)
+			}
 		}
 	}
 

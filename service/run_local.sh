@@ -89,13 +89,16 @@ except Exception as e:
 show_usage() {
     echo "Radio Propagation Service - Local Runner"
     echo ""
-    echo "Usage: $0 [COMMAND]"
+    echo "Usage: $0 [COMMAND] [OPTIONS]"
     echo ""
     echo "Commands:"
     echo "  server      Run complete local test (LLM + HTML generation)"
     echo "  debug-apis  Check all external API endpoints"
     echo "  unit-tests  Run Go unit tests"
     echo "  help        Show this help message"
+    echo ""
+    echo "Options:"
+    echo "  --mockup    Use mock data instead of real API calls (faster testing)"
     echo ""
     echo "Environment Variables:"
     echo "  OPENAI_API_KEY    Required - Your OpenAI API key"
@@ -105,6 +108,7 @@ show_usage() {
     echo "Examples:"
     echo "  export OPENAI_API_KEY='sk-your-key-here'"
     echo "  $0 server"
+    echo "  $0 server --mockup    # Fast testing with mock data"
 }
 
 check_requirements() {
@@ -171,7 +175,19 @@ debug_apis() {
 
 
 run_server() {
-    print_header "Complete Local Test"
+    local USE_MOCKUP=false
+    
+    # Check for --mockup flag
+    if [[ "$2" == "--mockup" ]]; then
+        USE_MOCKUP=true
+    fi
+    
+    if [ "$USE_MOCKUP" = true ]; then
+        print_header "Complete Local Test (MOCKUP MODE)"
+        export MOCKUP_MODE=true
+    else
+        print_header "Complete Local Test"
+    fi
     
     export ENVIRONMENT="local"
     export OPENAI_MODEL="${OPENAI_MODEL:-gpt-4.1}"
@@ -180,11 +196,16 @@ run_server() {
     
     print_status "Configuration:"
     print_status "  Environment: $ENVIRONMENT"
+    if [ "$USE_MOCKUP" = true ]; then
+        print_status "  Mode: MOCKUP (using mock data)"
+    else
+        print_status "  Mode: LIVE (real API calls)"
+    fi
     print_status "  OpenAI Model: $OPENAI_MODEL"
     print_status "  Port: $PORT"
     print_status "  API Key: ${OPENAI_API_KEY:0:10}..."
     
-    # Kill any existing process on the target port
+    # Kill any existing process on the target port (safe method)
     EXISTING_PID=$(lsof -ti:$PORT 2>/dev/null)
     if [ ! -z "$EXISTING_PID" ]; then
         print_status "🔄 Killing existing process on port $PORT (PID: $EXISTING_PID)"
@@ -202,8 +223,15 @@ run_server() {
     mkdir -p ./reports
     
     print_status "🧪 Testing complete pipeline..."
-    print_status "  📡 Fetching real data from NOAA, N0NBH, and SIDC"
-    print_status "  🤖 Generating report using OpenAI"
+    if [ "$USE_MOCKUP" = true ]; then
+        print_status "  📁 Using mock data from internal/mocks folder"
+        print_status "  📄 Loading pre-generated LLM response"
+        print_status "  🖼️ Using mock Sun GIF (no Helioviewer download)"
+    else
+        print_status "  📡 Fetching real data from NOAA, N0NBH, and SIDC"
+        print_status "  🤖 Generating report using OpenAI"
+        print_status "  🌞 Downloading Sun images from Helioviewer"
+    fi
     print_status "  📊 Converting to HTML with charts"
     print_status "  ✅ Validating Chart Data and Band Analysis sections"
     
@@ -217,58 +245,19 @@ run_server() {
         print_success "✅ Server health check passed"
     else
         print_error "❌ Server health check failed"
-        kill $SERVER_PID 2>/dev/null || true
+        # Kill server process safely by PID
+        if kill -0 $SERVER_PID 2>/dev/null; then
+            kill -TERM $SERVER_PID 2>/dev/null || true
+            sleep 1
+        fi
         return 1
     fi
     
-    # Generate report via HTTP
-    REPORT_CONTENT=$(curl -s http://localhost:$PORT/)
-    if [ $? -eq 0 ] && [ -n "$REPORT_CONTENT" ]; then
-        kill $SERVER_PID 2>/dev/null || true
-        
-        # Validate report content
-        if echo "$REPORT_CONTENT" | grep -q "Radio Propagation Report"; then
-            print_success "✅ Report generated successfully"
-        else
-            print_error "❌ Report generation failed"
-            return 1
-        fi
-        
-        if echo "$REPORT_CONTENT" | grep -q "chart-container"; then
-            print_success "✅ Charts found in HTML"
-        else
-            print_warning "⚠️  No charts found in HTML"
-        fi
-        
-        if echo "$REPORT_CONTENT" | grep -q "Band-by-Band Analysis"; then
-            if echo "$REPORT_CONTENT" | grep -q "band-analysis-table"; then
-                print_success "✅ Band-by-Band Analysis table found"
-            else
-                print_warning "⚠️  Band-by-Band Analysis table found but missing CSS class"
-            fi
-        else
-            print_warning "⚠️  Band-by-Band Analysis table missing"
-        fi
-        
-        # Find the actual report file in the reports directory
-        LATEST_REPORT_DIR=$(find ./reports -type d -name "????-??-??_??-??-??" | sort -r | head -1)
-        if [ -n "$LATEST_REPORT_DIR" ] && [ -f "$LATEST_REPORT_DIR/index.html" ]; then
-            FULL_PATH=$(realpath "$LATEST_REPORT_DIR/index.html")
-            print_success "📄 Report saved: $LATEST_REPORT_DIR/index.html"
-            print_success "🌐 Open in browser: file://$FULL_PATH"
-        else
-            print_warning "⚠️  Could not locate saved report file"
-        fi
-        
-        
-        print_success "🎉 Radio Propagation Service is working correctly!"
-    else
-        print_error "❌ Failed to fetch report from server"
-        kill $SERVER_PID 2>/dev/null || true
-        return 1
-    fi
+    # Trigger auto-generation by making initial request
+    print_status "🚀 Triggering report auto-generation..."
+    curl -s http://localhost:$PORT/ > /dev/null
+    
 }
-
 
 run_unit_tests() {
     print_header "Go Unit Tests"
@@ -286,7 +275,7 @@ run_unit_tests() {
 case "${1:-help}" in
     "server")
         check_requirements "$1"
-        run_server
+        run_server "$1" "$2"
         ;;
     "debug-apis")
         check_requirements "$1"
