@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -31,48 +30,21 @@ func (fm *FileManager) prepareSunGIFHTML(gifRelName, folderPath string) string {
 		if !strings.HasSuffix(folderPath, "/") { folderPath += "/" }
 		imgSrc = "/files/" + folderPath + gifRelName
 	} else {
-		// Local mode - use the timestamp directory name from reportDir
-		// For local mode, we need to extract the timestamp directory from the ReportDir
-		timestampDir := filepath.Base(filepath.Dir(filepath.Join(fm.server.ReportsDir, gifRelName)))
-		
-		// In GenerateAllFiles, we can get the timestamp directory directly from the ReportFiles.ReportDir
-		if reportDir := filepath.Base(filepath.Dir(gifRelName)); reportDir != "" && reportDir != "." {
-			timestampDir = reportDir
-		}
-		
-		// Use the timestamp directory in the URL path
-		imgSrc = "/files/" + timestampDir + "/" + gifRelName
+		// Local mode - use relative path within the report folder
+		imgSrc = gifRelName
 	}
 	
 	return fmt.Sprintf(`<div class="chart-section"><div class="chart-container-integrated"><h3>Sun Images for Past 72 Hours</h3><img src="%s" alt="Sun last 72h" style="max-width:100%%;height:auto;border-radius:8px;" /><br/><i>Images copyrighted by the SDO/NASA and Helioviewer project</i></div></div>`, imgSrc)
 }
 
-// injectSunGIFIntoHTML replaces the {{SUN_GIF}} placeholder with the actual Sun GIF HTML.
-// If the placeholder is not found, it inserts after the Current Solar Activity header.
+// injectSunGIFIntoHTML replaces the {{.SunGif}} placeholder with the actual Sun GIF HTML.
 func (fm *FileManager) injectSunGIFIntoHTML(html, gifRelName, folderPath string) string {
 	// Generate the HTML for the Sun GIF
 	sunGifHTML := fm.prepareSunGIFHTML(gifRelName, folderPath)
 	
-	// First try to replace the placeholder if it exists
-	const placeholder = "{{SUN_GIF}}"
-	if strings.Contains(html, placeholder) {
-		return strings.Replace(html, placeholder, sunGifHTML, 1)
-	}
-	
-	// If no placeholder, insert after the Current Solar Activity header
-	if strings.Contains(html, "<h2>📊 Current Solar Activity</h2>") {
-		return strings.Replace(html, "<h2>📊 Current Solar Activity</h2>", "<h2>📊 Current Solar Activity</h2>\n"+sunGifHTML, 1)
-	} else if strings.Contains(html, "Current Solar Activity") {
-		// Try a more generic match if the exact header isn't found
-		regex := regexp.MustCompile(`(<h2[^>]*>.*Current Solar Activity.*</h2>)`)
-		return regex.ReplaceAllString(html, "${1}\n"+sunGifHTML)
-	} else {
-		// Fallback: Insert right after opening <body> if section header not found
-		if strings.Contains(html, "<body>") {
-			return strings.Replace(html, "<body>", "<body>\n"+sunGifHTML, 1)
-		}
-		return html + sunGifHTML
-	}
+	// Replace the placeholder
+	const placeholder = "{{.SunGif}}"
+	return strings.Replace(html, placeholder, sunGifHTML, 1)
 }
 
 // NewFileManager creates a new file manager

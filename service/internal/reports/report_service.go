@@ -42,13 +42,8 @@ func (rs *ReportService) GenerateReport(ctx context.Context,
 		return "", fmt.Errorf("failed to generate charts: %w", err)
 	}
 
-	// Generate Sun GIF
-	log.Println("Generating Sun GIF...")
-	sunGifHTML, err := rs.generateSunImageSnippet(ctx, folderPath)
-	if err != nil {
-		log.Printf("Warning: Failed to generate Sun GIF: %v", err)
-		sunGifHTML = template.HTML(`<div class="sun-placeholder">Sun imagery unavailable</div>`)
-	}
+	// Use placeholder for Sun GIF (will be replaced by file manager)
+	sunGifHTML := template.HTML("{{.SunGif}}")
 
 	// Process markdown with template placeholders
 	log.Println("Processing markdown with placeholders...")
