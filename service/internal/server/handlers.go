@@ -275,8 +275,8 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Extract file path from URL (e.g., /2025-09-05_23-40-58/index.html)
-	filePath := strings.TrimPrefix(r.URL.Path, "/")
+	// Extract file path from URL (e.g., /files/2025-09-05_23-40-58/index.html)
+	filePath := strings.TrimPrefix(r.URL.Path, "/files/")
 	if filePath == "" {
 		http.Error(w, "File path required", http.StatusBadRequest)
 		return
