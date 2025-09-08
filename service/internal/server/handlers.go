@@ -360,7 +360,7 @@ func (s *Server) findLatestReportURL(ctx context.Context) (string, error) {
 		if err != nil || len(reports) == 0 {
 			return "", fmt.Errorf("no reports available")
 		}
-		return fmt.Sprintf("/files/%s/index.html", reports[0]), nil
+		return fmt.Sprintf("/files/%sindex.html", reports[0]), nil
 	}
 	
 	// Local mode - find latest timestamped directory
