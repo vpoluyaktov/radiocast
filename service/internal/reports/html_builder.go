@@ -96,8 +96,8 @@ func (h *HTMLBuilder) getBackgroundImagePath(folderPath string) string {
 		// Local mode - relative path
 		return "background.png"
 	}
-	// GCS mode - use the folder path prefix
-	return folderPath + "/background.png"
+	// GCS mode - use relative path (folderPath already contains the full path)
+	return "background.png"
 }
 
 // getCSSFilePath returns the path for the CSS file based on deployment mode
@@ -106,8 +106,8 @@ func (h *HTMLBuilder) getCSSFilePath(folderPath string) string {
 		// Local mode - relative path
 		return "styles.css"
 	}
-	// GCS mode - use the folder path prefix
-	return folderPath + "/styles.css"
+	// GCS mode - use relative path (folderPath already contains the full path)
+	return "styles.css"
 }
 
 // GenerateStaticCSS returns the static CSS content
