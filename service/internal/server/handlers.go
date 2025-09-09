@@ -28,8 +28,8 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	latestReportURL, err := s.findLatestReportURL(ctx)
 	if err != nil {
 		log.Printf("No reports available: %v", err)
-		// Auto-generate first report if none exists
-		s.autoGenerateReport(w, r)
+		// show initial page
+		s.serveInitialPage(w)
 		return
 	}
 	
@@ -39,86 +39,14 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusFound) // 302 redirect
 }
 
-// autoGenerateReport automatically generates a report when none exists
-func (s *Server) autoGenerateReport(w http.ResponseWriter, _ *http.Request) {
-	log.Println("No reports found - automatically generating first report...")
-	
-	// Show loading page while generating
-	s.serveLoadingPage(w)
-	
-	// Generate report in background
-	go func() {
-		ctx := context.Background()
-		
-		var data *models.PropagationData
-		var sourceData *models.SourceData
-		var markdownReport string
-		var err error
-		
-		if s.Config.MockupMode && s.MockService != nil {
-			// Use mock data
-			log.Println("Auto-generation: Loading mock data...")
-			data, sourceData, err = s.MockService.LoadMockData()
-			if err != nil {
-				log.Printf("Auto-generation: Mock data loading failed: %v", err)
-				return
-			}
-			
-			log.Println("Auto-generation: Loading mock LLM response...")
-			markdownReport, err = s.MockService.LoadMockLLMResponse()
-			if err != nil {
-				log.Printf("Auto-generation: Mock LLM response loading failed: %v", err)
-				return
-			}
-		} else {
-			// Fetch data from all sources
-			log.Println("Auto-generation: Fetching data from all sources...")
-			data, sourceData, err = s.Fetcher.FetchAllDataWithSources(ctx, s.Config.NOAAKIndexURL, s.Config.NOAASolarURL, s.Config.N0NBHSolarURL, s.Config.SIDCRSSURL)
-			if err != nil {
-				log.Printf("Auto-generation: Data fetching failed: %v", err)
-				return
-			}
-			
-			// Generate LLM report
-			log.Println("Auto-generation: Generating LLM report...")
-			markdownReport, err = s.LLMClient.GenerateReportWithSources(data, sourceData)
-			if err != nil {
-				log.Printf("Auto-generation: LLM report generation failed: %v", err)
-				return
-			}
-		}
-		
-		// Generate all files
-		fileManager := NewFileManager(s)
-		files, err := fileManager.GenerateAllFiles(ctx, data, sourceData, markdownReport)
-		if err != nil {
-			log.Printf("Auto-generation: File generation failed: %v", err)
-			return
-		}
-		
-		// Handle storage
-		if s.DeploymentMode == DeploymentGCS && s.Storage != nil {
-			_, err = fileManager.UploadToGCS(ctx, files, data.Timestamp)
-			if err != nil {
-				log.Printf("Auto-generation: GCS upload failed: %v", err)
-				fileManager.Cleanup(files)
-				return
-			}
-			fileManager.Cleanup(files)
-		}
-		
-		log.Println("Auto-generation: Report generated successfully")
-	}()
-}
-
-// serveLoadingPage shows a loading page while report is being generated
-func (s *Server) serveLoadingPage(w http.ResponseWriter) {
+// serveInitialPage shows a loading page while report is being generated
+func (s *Server) serveInitialPage(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprintf(w, `<!DOCTYPE html>
 <html>
 <head>
-    <title>Radio Propagation Service - Generating Report</title>
-    <meta http-equiv="refresh" content="10">
+    <title>Radio Propagation Service</title>
+	<meta http-equiv="refresh" content="60">
     <style>
         body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; text-align: center; }
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -130,13 +58,11 @@ func (s *Server) serveLoadingPage(w http.ResponseWriter) {
 </head>
 <body>
     <div class="container">
-        <h1>📡 Radio Propagation Service</h1>
+        <h1>Radio Propagation Service</h1>
         <div class="spinner"></div>
         <div class="status">
-            <h3>Generating Your First Report...</h3>
-            <p>Please wait while we fetch the latest propagation data and generate your report.</p>
-            <p>This page will automatically refresh in 10 seconds.</p>
-            <p><strong>Status:</strong> Fetching data from NOAA, N0NBH, and SIDC...</p>
+            <h3>No reports available yet...</h3>
+            <p>Please come back later.</p>
         </div>
         <p style="color: #666; margin-top: 30px;">
             For amateur radio operators worldwide | 73!
