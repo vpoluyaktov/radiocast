@@ -67,5 +67,4 @@ build/
 # Service-specific
 service/radiocast
 service/tmp/
-service/test_report_*.html
-# service/reports/
+service/reports/

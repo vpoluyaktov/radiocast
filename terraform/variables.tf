@@ -25,11 +25,6 @@ variable "openai_api_key" {
   sensitive   = true
 }
 
-variable "reports_bucket_name" {
-  description = "Name of the GCS bucket for reports"
-  type        = string
-}
-
 variable "tfstate_bucket_name" {
   description = "Name of the GCS bucket for Terraform state"
   type        = string
@@ -71,14 +66,20 @@ variable "timeout" {
   default     = "300s"
 }
 
-variable "reports_retention_days" {
-  description = "Number of days to retain reports in GCS"
-  type        = number
-  default     = 90
-}
 
 variable "enable_monitoring" {
   description = "Enable monitoring and alerting"
   type        = bool
   default     = false
+}
+
+variable "radiocast_bucket_name" {
+  description = "Name of the GCS bucket for radiocast application (no public access)"
+  type        = string
+}
+
+variable "radiocast_retention_days" {
+  description = "Number of days to retain radiocast bucket objects in GCS"
+  type        = number
+  default     = 180
 }

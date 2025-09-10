@@ -23,16 +23,16 @@ const (
 	DeploymentGCS   DeploymentMode = "gcs"
 )
 
-// Server represents the main application server
+// Server represents the HTTP server with all its dependencies
 type Server struct {
-	Config         *config.Config
-	Fetcher        *fetchers.DataFetcher
-	LLMClient      *llm.OpenAIClient
-	Generator      *reports.Generator
-	Storage        *storage.GCSClient
-	MockService    *mocks.MockService
-	DeploymentMode DeploymentMode
-	ReportsDir     string
+	Config          *config.Config
+	Fetcher         *fetchers.DataFetcher
+	LLMClient       *llm.OpenAIClient
+	MockService     *mocks.MockService
+	ReportGenerator *reports.ReportGenerator
+	Storage         storage.StorageClient
+	DeploymentMode  DeploymentMode
+	ReportsDir      string
 }
 
 // NewServer creates a new server instance
@@ -66,17 +66,22 @@ func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, erro
 	// Initialize components based on deployment mode
 	if deploymentMode == DeploymentLocal {
 		log.Printf("Local deployment mode - reports will be saved to: %s", reportsDir)
-		server.Generator = reports.NewGenerator(reportsDir)
-		server.Storage = nil
+		server.ReportGenerator = reports.NewReportGenerator(reportsDir)
+		localClient, err := storage.NewLocalStorageClient(reportsDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize local storage client: %w", err)
+		}
+		server.Storage = localClient
 	} else {
 		log.Printf("GCS deployment mode - reports will be saved to GCS bucket: %s", cfg.GCSBucket)
 		gcsClient, err := storage.NewGCSClient(ctx, cfg.GCSBucket)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize GCS client: %w", err)
 		}
-		server.Generator = reports.NewGenerator("") // Empty for GCS mode
+		server.ReportGenerator = reports.NewReportGenerator("") // Empty for GCS mode
 		server.Storage = gcsClient
 	}
+	
 	
 	return server, nil
 }
