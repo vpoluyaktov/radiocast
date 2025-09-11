@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"sync"
 
 	"radiocast/internal/config"
 	"radiocast/internal/fetchers"
@@ -33,6 +34,9 @@ type Server struct {
 	Storage         storage.StorageClient
 	DeploymentMode  DeploymentMode
 	ReportsDir      string
+	
+	// Mutex to prevent concurrent report generation
+	generateMutex   sync.Mutex
 }
 
 // NewServer creates a new server instance
