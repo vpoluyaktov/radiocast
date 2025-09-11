@@ -100,7 +100,26 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	// Try to acquire the mutex - if already locked, return error immediately
+	if !s.generateMutex.TryLock() {
+		log.Printf("Report generation already in progress, rejecting new request")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		response := map[string]interface{}{
+			"error":   "Report generation already in progress",
+			"message": "Another report generation is currently running. Please wait for it to complete before starting a new one.",
+			"status":  "conflict",
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+	
+	// Ensure mutex is released when function exits
+	defer s.generateMutex.Unlock()
+	
 	ctx := r.Context()
+	
+	log.Printf("Starting report generation...")
 	
 	// Generate new report
 	result, err := s.generateReport(ctx)
@@ -109,6 +128,8 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Report generation failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	
+	log.Printf("Report generation completed successfully")
 	
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
