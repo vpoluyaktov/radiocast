@@ -1,6 +1,7 @@
-# GCS bucket for reports
-resource "google_storage_bucket" "reports" {
-  name     = var.reports_bucket_name
+
+# GCS bucket for radiocast application (no public access)
+resource "google_storage_bucket" "radiocast" {
+  name     = var.radiocast_bucket_name
   location = var.region
   project  = var.project_id
 
@@ -12,7 +13,7 @@ resource "google_storage_bucket" "reports" {
 
   lifecycle_rule {
     condition {
-      age = var.reports_retention_days
+      age = var.radiocast_retention_days
     }
     action {
       type = "Delete"
@@ -36,9 +37,9 @@ resource "google_storage_bucket" "reports" {
   depends_on = [google_project_service.apis]
 }
 
-# Make reports bucket publicly readable
-resource "google_storage_bucket_iam_member" "reports_public" {
-  bucket = google_storage_bucket.reports.name
-  role   = "roles/storage.objectViewer"
-  member = "allUsers"
+# Grant Cloud Run service account access to radiocast bucket
+resource "google_storage_bucket_iam_member" "radiocast_service_access" {
+  bucket = google_storage_bucket.radiocast.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.radiocast.email}"
 }

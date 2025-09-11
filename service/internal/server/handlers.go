@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"radiocast/internal/models"
+	"radiocast/internal/reports"
 )
 
 // HandleRoot serves the main page with redirect to latest report
@@ -28,8 +29,8 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	latestReportURL, err := s.findLatestReportURL(ctx)
 	if err != nil {
 		log.Printf("No reports available: %v", err)
-		// Auto-generate first report if none exists
-		s.autoGenerateReport(w, r)
+		// show initial page
+		s.serveInitialPage(w)
 		return
 	}
 	
@@ -39,86 +40,14 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusFound) // 302 redirect
 }
 
-// autoGenerateReport automatically generates a report when none exists
-func (s *Server) autoGenerateReport(w http.ResponseWriter, _ *http.Request) {
-	log.Println("No reports found - automatically generating first report...")
-	
-	// Show loading page while generating
-	s.serveLoadingPage(w)
-	
-	// Generate report in background
-	go func() {
-		ctx := context.Background()
-		
-		var data *models.PropagationData
-		var sourceData *models.SourceData
-		var markdownReport string
-		var err error
-		
-		if s.Config.MockupMode && s.MockService != nil {
-			// Use mock data
-			log.Println("Auto-generation: Loading mock data...")
-			data, sourceData, err = s.MockService.LoadMockData()
-			if err != nil {
-				log.Printf("Auto-generation: Mock data loading failed: %v", err)
-				return
-			}
-			
-			log.Println("Auto-generation: Loading mock LLM response...")
-			markdownReport, err = s.MockService.LoadMockLLMResponse()
-			if err != nil {
-				log.Printf("Auto-generation: Mock LLM response loading failed: %v", err)
-				return
-			}
-		} else {
-			// Fetch data from all sources
-			log.Println("Auto-generation: Fetching data from all sources...")
-			data, sourceData, err = s.Fetcher.FetchAllDataWithSources(ctx, s.Config.NOAAKIndexURL, s.Config.NOAASolarURL, s.Config.N0NBHSolarURL, s.Config.SIDCRSSURL)
-			if err != nil {
-				log.Printf("Auto-generation: Data fetching failed: %v", err)
-				return
-			}
-			
-			// Generate LLM report
-			log.Println("Auto-generation: Generating LLM report...")
-			markdownReport, err = s.LLMClient.GenerateReportWithSources(data, sourceData)
-			if err != nil {
-				log.Printf("Auto-generation: LLM report generation failed: %v", err)
-				return
-			}
-		}
-		
-		// Generate all files
-		fileManager := NewFileManager(s)
-		files, err := fileManager.GenerateAllFiles(ctx, data, sourceData, markdownReport)
-		if err != nil {
-			log.Printf("Auto-generation: File generation failed: %v", err)
-			return
-		}
-		
-		// Handle storage
-		if s.DeploymentMode == DeploymentGCS && s.Storage != nil {
-			_, err = fileManager.UploadToGCS(ctx, files, data.Timestamp)
-			if err != nil {
-				log.Printf("Auto-generation: GCS upload failed: %v", err)
-				fileManager.Cleanup(files)
-				return
-			}
-			fileManager.Cleanup(files)
-		}
-		
-		log.Println("Auto-generation: Report generated successfully")
-	}()
-}
-
-// serveLoadingPage shows a loading page while report is being generated
-func (s *Server) serveLoadingPage(w http.ResponseWriter) {
+// serveInitialPage shows a loading page while report is being generated
+func (s *Server) serveInitialPage(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprintf(w, `<!DOCTYPE html>
 <html>
 <head>
-    <title>Radio Propagation Service - Generating Report</title>
-    <meta http-equiv="refresh" content="10">
+    <title>Radio Propagation Service</title>
+	<meta http-equiv="refresh" content="60">
     <style>
         body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; text-align: center; }
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -130,13 +59,11 @@ func (s *Server) serveLoadingPage(w http.ResponseWriter) {
 </head>
 <body>
     <div class="container">
-        <h1>📡 Radio Propagation Service</h1>
+        <h1>Radio Propagation Service</h1>
         <div class="spinner"></div>
         <div class="status">
-            <h3>Generating Your First Report...</h3>
-            <p>Please wait while we fetch the latest propagation data and generate your report.</p>
-            <p>This page will automatically refresh in 10 seconds.</p>
-            <p><strong>Status:</strong> Fetching data from NOAA, N0NBH, and SIDC...</p>
+            <h3>No reports available yet...</h3>
+            <p>Please come back later.</p>
         </div>
         <p style="color: #666; margin-top: 30px;">
             For amateur radio operators worldwide | 73!
@@ -166,7 +93,7 @@ func (s *Server) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(health)
 }
 
-// HandleGenerate generates a new propagation report
+// HandleGenerate generates a new propagation report (HTTP handler)
 func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -174,98 +101,53 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	ctx := r.Context()
-	log.Println("Starting report generation...")
-
-	var data *models.PropagationData
-	var sourceData *models.SourceData
-	var markdownReport string
-	var err error
-
-	if s.Config.MockupMode && s.MockService != nil {
-		// Use mock data
-		log.Println("Using mock data for report generation...")
-		data, sourceData, err = s.MockService.LoadMockData()
-		if err != nil {
-			log.Printf("Mock data loading failed: %v", err)
-			http.Error(w, "Mock data loading failed: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		log.Println("Loading mock LLM response...")
-		markdownReport, err = s.MockService.LoadMockLLMResponse()
-		if err != nil {
-			log.Printf("Mock LLM response loading failed: %v", err)
-			http.Error(w, "Mock LLM response loading failed: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		
-		log.Printf("Mock data loaded successfully for timestamp: %s", data.Timestamp.Format(time.RFC3339))
-		log.Printf("Mock LLM report loaded successfully (length: %d characters)", len(markdownReport))
-	} else {
-		// Fetch data from all sources
-		log.Println("Fetching data from all sources...")
-		data, sourceData, err = s.Fetcher.FetchAllDataWithSources(ctx, s.Config.NOAAKIndexURL, s.Config.NOAASolarURL, s.Config.N0NBHSolarURL, s.Config.SIDCRSSURL)
-		if err != nil {
-			log.Printf("Data fetching failed: %v", err)
-			http.Error(w, "Data fetching failed: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		log.Printf("Data fetched successfully for timestamp: %s", data.Timestamp.Format(time.RFC3339))
-
-		// Generate LLM report with raw source data
-		log.Println("Generating LLM report with raw source data...")
-		markdownReport, err = s.LLMClient.GenerateReportWithSources(data, sourceData)
-		if err != nil {
-			log.Printf("LLM report generation failed: %v", err)
-			http.Error(w, "LLM report generation failed: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		log.Printf("LLM report generated successfully (length: %d characters)", len(markdownReport))
-	}
-
-	// Use unified file manager to generate all files
-	fileManager := NewFileManager(s)
-	files, err := fileManager.GenerateAllFiles(ctx, data, sourceData, markdownReport)
+	
+	// Generate new report
+	result, err := s.generateReport(ctx)
 	if err != nil {
-		log.Printf("File generation failed: %v", err)
-		http.Error(w, "File generation failed: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("Report generation failed: %v", err)
+		http.Error(w, "Report generation failed: "+err.Error(), http.StatusInternalServerError)
 		return
-	}
-
-	// Handle storage based on deployment mode
-	var reportURL string
-	if s.DeploymentMode == DeploymentGCS && s.Storage != nil {
-		// Upload all files to GCS
-		log.Println("Uploading all files to GCS...")
-		reportURL, err = fileManager.UploadToGCS(ctx, files, data.Timestamp)
-		if err != nil {
-			log.Printf("Storage failed: %v", err)
-			http.Error(w, "Failed to upload files to GCS: "+err.Error(), http.StatusInternalServerError)
-			fileManager.Cleanup(files)
-			return
-		}
-		log.Printf("All files uploaded to GCS successfully: %s", reportURL)
-		// Clean up temporary files
-		fileManager.Cleanup(files)
-	} else {
-		// Local mode - files are already saved
-		reportURL = "/files/index.html"
-		log.Printf("Report stored locally in: %s", files.ReportDir)
 	}
 	
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"status":     "success",
-		"message":    "Report generated successfully",
-		"reportURL":  reportURL,
-		"timestamp":  data.Timestamp.Format(time.RFC3339),
-		"dataPoints": len(data.SourceEvents),
-		"folderPath": files.FolderPath,
-	})
+	json.NewEncoder(w).Encode(result)
+}
+
+// generateReport delegates to ReportGenerator for business logic
+func (s *Server) generateReport(ctx context.Context) (map[string]interface{}, error) {
+	// Create file manager function to pass to ReportGenerator
+	fileManagerFunc := func(ctx context.Context, data *models.PropagationData, sourceData *models.SourceData, markdownReport string) (interface{}, error) {
+		// Generate files using FileGenerator
+		fileGenerator := reports.NewFileGenerator(s.ReportGenerator, s.MockService)
+		files, err := fileGenerator.GenerateAllFiles(ctx, data, sourceData, markdownReport, s.Config.MockupMode)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate files: %w", err)
+		}
+		
+		// Store files using FileManager
+		fileManager := NewFileManager(s)
+		if err := fileManager.StoreAllFiles(ctx, files, data); err != nil {
+			return nil, fmt.Errorf("failed to store files: %w", err)
+		}
+		
+		return files, nil
+	}
+
+	// Delegate to ReportGenerator
+	deploymentModeStr := string(s.DeploymentMode)
+	return s.ReportGenerator.GenerateCompleteReport(
+		ctx,
+		s.Config,
+		s.Fetcher,
+		s.LLMClient,
+		s.MockService,
+		s.Storage,
+		deploymentModeStr,
+		fileManagerFunc,
+	)
 }
 
 // HandleFileProxy serves files from local storage or GCS
@@ -284,35 +166,44 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 	
 	ctx := r.Context()
 	
-	// Try to serve from GCS first if available
-	if s.Storage != nil {
-		fileData, err := s.Storage.GetFile(ctx, filePath)
-		if err == nil {
-			// Set appropriate content type based on file extension
-			contentType := s.getContentType(filePath)
-			w.Header().Set("Content-Type", contentType)
-			w.Header().Set("Cache-Control", "public, max-age=3600")
-			w.Write(fileData)
+	// In local mode, serve from local storage directly
+	if s.DeploymentMode == "local" {
+		// Security check: prevent directory traversal
+		if strings.Contains(filePath, "..") {
+			http.Error(w, "Invalid file path", http.StatusBadRequest)
 			return
 		}
-		log.Printf("Failed to get file from GCS: %v", err)
-	}
-	
-	// Fall back to local file serving
-	// Security check: prevent directory traversal
-	if strings.Contains(filePath, "..") {
-		http.Error(w, "Invalid file path", http.StatusBadRequest)
+		
+		// Serve from local reports directory
+		localPath := filepath.Join(s.ReportsDir, filePath)
+		if _, err := os.Stat(localPath); os.IsNotExist(err) {
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+		
+		http.ServeFile(w, r, localPath)
 		return
 	}
 	
-	// Serve from local reports directory
-	localPath := filepath.Join(s.ReportsDir, filePath)
-	if _, err := os.Stat(localPath); os.IsNotExist(err) {
-		http.Error(w, "File not found", http.StatusNotFound)
+	// GCS mode - serve from GCS storage
+	if s.DeploymentMode == "gcs" && s.Storage != nil {
+		fileData, err := s.Storage.GetFile(ctx, filePath)
+		if err != nil {
+			log.Printf("Failed to get file from GCS: %v", err)
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+		
+		// Set appropriate content type based on file extension
+		contentType := s.getContentType(filePath)
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+		w.Write(fileData)
 		return
 	}
 	
-	http.ServeFile(w, r, localPath)
+	// If no storage is configured, return error
+	http.Error(w, "Storage not configured", http.StatusInternalServerError)
 }
 
 // HandleListReports lists recent reports
@@ -360,7 +251,7 @@ func (s *Server) findLatestReportURL(ctx context.Context) (string, error) {
 		if err != nil || len(reports) == 0 {
 			return "", fmt.Errorf("no reports available")
 		}
-		return fmt.Sprintf("/files/%sindex.html", reports[0]), nil
+		return fmt.Sprintf("/files/%s", reports[0]), nil
 	}
 	
 	// Local mode - find latest timestamped directory

@@ -252,11 +252,6 @@ run_server() {
         fi
         return 1
     fi
-    
-    # Trigger auto-generation by making initial request
-    print_status "🚀 Triggering report auto-generation..."
-    curl -s http://localhost:$PORT/ > /dev/null
-    
 }
 
 run_unit_tests() {

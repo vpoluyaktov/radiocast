@@ -3,10 +3,6 @@ output "service_url" {
   value       = google_cloud_run_v2_service.radiocast.uri
 }
 
-output "reports_bucket" {
-  description = "Name of the reports storage bucket"
-  value       = google_storage_bucket.reports.name
-}
 
 output "service_account_email" {
   description = "Email of the service account"

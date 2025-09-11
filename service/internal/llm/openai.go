@@ -71,7 +71,7 @@ func (c *OpenAIClient) GenerateReportWithSources(data *models.PropagationData, s
 					Content: prompt,
 				},
 			},
-			MaxTokens:   16000,
+			MaxTokens:   32000,
 			Temperature: 0.3,
 		},
 	)

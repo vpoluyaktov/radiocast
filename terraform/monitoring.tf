@@ -6,20 +6,20 @@ resource "google_monitoring_alert_policy" "report_generation_failures" {
 
   conditions {
     display_name = "Cloud Run service error rate"
-    
+
     condition_threshold {
-      filter         = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${var.service_name}\" AND metric.type=\"run.googleapis.com/request_count\""
-      duration       = "300s"
-      comparison     = "COMPARISON_GT"
+      filter          = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${var.service_name}\" AND metric.type=\"run.googleapis.com/request_count\""
+      duration        = "300s"
+      comparison      = "COMPARISON_GT"
       threshold_value = 0.1
-      
+
       aggregations {
         alignment_period   = "300s"
         per_series_aligner = "ALIGN_RATE"
       }
     }
   }
-  
+
   combiner = "OR"
 
   notification_channels = []

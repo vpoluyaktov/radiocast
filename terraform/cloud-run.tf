@@ -27,7 +27,7 @@ resource "google_cloud_run_v2_service" "radiocast" {
 
       env {
         name  = "GCS_BUCKET"
-        value = google_storage_bucket.reports.name
+        value = google_storage_bucket.radiocast.name
       }
 
       env {
