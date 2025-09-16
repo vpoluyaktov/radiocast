@@ -119,7 +119,18 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Starting report generation...")
 	
 	// Generate new report
-	result, err := s.generateReport(ctx)
+	fileManager := NewFileManager(s)
+	deploymentModeStr := string(s.DeploymentMode)
+	result, err := s.ReportGenerator.GenerateCompleteReport(
+		ctx,
+		s.Config,
+		s.Fetcher,
+		s.LLMClient,
+		s.MockService,
+		s.Storage,
+		deploymentModeStr,
+		fileManager,
+	)
 	if err != nil {
 		log.Printf("Report generation failed: %v", err)
 		http.Error(w, "Report generation failed: "+err.Error(), http.StatusInternalServerError)
@@ -132,25 +143,6 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(result)
-}
-
-// generateReport delegates to ReportGenerator for business logic
-func (s *Server) generateReport(ctx context.Context) (map[string]interface{}, error) {
-	// Create file manager
-	fileManager := NewFileManager(s)
-	
-	// Delegate to ReportGenerator
-	deploymentModeStr := string(s.DeploymentMode)
-	return s.ReportGenerator.GenerateCompleteReport(
-		ctx,
-		s.Config,
-		s.Fetcher,
-		s.LLMClient,
-		s.MockService,
-		s.Storage,
-		deploymentModeStr,
-		fileManager,
-	)
 }
 
 // HandleFileProxy serves files from local storage or GCS
