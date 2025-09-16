@@ -129,18 +129,9 @@ func (rg *ReportGenerator) GenerateCompleteReport(ctx context.Context,
 		return nil, fmt.Errorf("failed to store files: %w", err)
 	}
 
-	// Step 4: Determine report URL based on deployment mode
-	var reportURL string
-	if deploymentMode == "gcs" && storage != nil {
-		reportURL = "/files/" + data.Timestamp.Format("2006-01-02_15-04-05") + "/index.html"
-	} else {
-		reportURL = "/files/index.html"
-	}
-
 	return map[string]interface{}{
 		"status":     "success",
 		"message":    "Report generated successfully",
-		"reportURL":  reportURL,
 		"timestamp":  data.Timestamp.Format(time.RFC3339),
 		"dataPoints": len(data.SourceEvents),
 		"folderPath": data.Timestamp.Format("2006-01-02_15-04-05"),

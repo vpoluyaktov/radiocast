@@ -54,9 +54,10 @@ func (l *LocalStorageClient) StoreFile(ctx context.Context, fileData []byte, fil
 
 // GetFile retrieves any file from local storage
 func (l *LocalStorageClient) GetFile(ctx context.Context, filePath string) ([]byte, error) {
-	data, err := os.ReadFile(filePath)
+	fullPath := filepath.Join(l.baseDir, filePath)
+	data, err := os.ReadFile(fullPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
+		return nil, fmt.Errorf("failed to read file %s: %w", fullPath, err)
 	}
 	return data, nil
 }
@@ -79,7 +80,7 @@ func (l *LocalStorageClient) GetLatestReport() (string, error) {
 
 // ListReports lists recent reports from local storage, sorted by creation time (newest first)
 func (l *LocalStorageClient) ListReports(ctx context.Context, limit int) ([]string, error) {
-	reportsPath := filepath.Join(l.baseDir, "reports")
+	reportsPath := l.baseDir
 	
 	var reportPaths []string
 	

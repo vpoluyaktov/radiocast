@@ -208,7 +208,7 @@ func (fg *FileGenerator) prepareSunGIFHTML(gifRelName, folderPath string) string
 		if !strings.HasSuffix(folderPath, "/") {
 			folderPath += "/"
 		}
-		imgSrc = "/files/" + folderPath + gifRelName
+		imgSrc = "/reports/" + folderPath + gifRelName
 	} else {
 		// Local mode - use relative path
 		imgSrc = gifRelName

@@ -92,7 +92,7 @@ func (s *Server) SetupRoutes() *http.ServeMux {
 	mux.HandleFunc("/health", s.HandleHealth)
 	mux.HandleFunc("/generate", s.HandleGenerate)
 	mux.HandleFunc("/reports", s.HandleListReports)
-	mux.HandleFunc("/files/", s.HandleFileProxy)
+	mux.HandleFunc("/reports/", s.HandleFileProxy)
 	
 	// Handle report directory paths (dates like 2025-09-07_15-11-33)
 	mux.Handle("/2", http.StripPrefix("/", fileServer))

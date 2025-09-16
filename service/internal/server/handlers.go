@@ -138,8 +138,8 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Extract file path from URL (e.g., /files/2025-09-05_23-40-58/index.html)
-	filePath := strings.TrimPrefix(r.URL.Path, "/files/")
+	// Extract file path from URL (e.g., /reports/2025-09-05_23-40-58/index.html)
+	filePath := strings.TrimPrefix(r.URL.Path, "/reports/")
 	if filePath == "" {
 		http.Error(w, "File path required", http.StatusBadRequest)
 		return
@@ -213,6 +213,6 @@ func (s *Server) findLatestReportURL(ctx context.Context) (string, error) {
 	if err != nil || len(reports) == 0 {
 		return "", fmt.Errorf("no reports available")
 	}
-	return fmt.Sprintf("/files/%s", reports[0]), nil
+	return fmt.Sprintf("/reports/%s", reports[0]), nil
 }
 

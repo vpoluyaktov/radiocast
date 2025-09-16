@@ -42,7 +42,7 @@ func (g *GCSClient) Close() error {
 // StoreFile stores any file (JSON, text, etc.) in GCS in the same folder as the report
 func (g *GCSClient) StoreFile(ctx context.Context, fileData []byte, filename string, timestamp time.Time) error {
 	// Generate the object path for this file
-	objectPath := GenerateReportFolderPath(timestamp) + "/" + filename
+	objectPath := "reports/" + GenerateReportFolderPath(timestamp) + "/" + filename
 	
 	log.Printf("Storing file to GCS: gs://%s/%s", g.bucket, objectPath)
 	

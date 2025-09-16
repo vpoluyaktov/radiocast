@@ -234,11 +234,11 @@ func (h *HTMLBuilder) updateAssetURLs(html, folderPath string) string {
 	// Update background image URLs in inline styles for GCS deployment
 	html = strings.ReplaceAll(html, 
 		"url('background.png')",
-		fmt.Sprintf("url('/files/%s/background.png')", folderPath))
+		fmt.Sprintf("url('/reports/%s/background.png')", folderPath))
 	
 	html = strings.ReplaceAll(html,
 		`url("background.png")`,
-		fmt.Sprintf(`url("/files/%s/background.png")`, folderPath))
+		fmt.Sprintf(`url("/reports/%s/background.png")`, folderPath))
 
 	return html
 }
