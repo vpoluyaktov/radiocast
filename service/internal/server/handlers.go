@@ -10,9 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"radiocast/internal/models"
-	"radiocast/internal/reports"
 )
 
 // HandleRoot serves the main page with redirect to latest report
@@ -139,24 +136,9 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 
 // generateReport delegates to ReportGenerator for business logic
 func (s *Server) generateReport(ctx context.Context) (map[string]interface{}, error) {
-	// Create file manager function to pass to ReportGenerator
-	fileManagerFunc := func(ctx context.Context, data *models.PropagationData, sourceData *models.SourceData, markdownReport string) (interface{}, error) {
-		// Generate files using FileGenerator
-		fileGenerator := reports.NewFileGenerator(s.ReportGenerator, s.MockService)
-		files, err := fileGenerator.GenerateAllFiles(ctx, data, sourceData, markdownReport, s.Config.MockupMode)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate files: %w", err)
-		}
-		
-		// Store files using FileManager
-		fileManager := NewFileManager(s)
-		if err := fileManager.StoreAllFiles(ctx, files, data); err != nil {
-			return nil, fmt.Errorf("failed to store files: %w", err)
-		}
-		
-		return files, nil
-	}
-
+	// Create file manager
+	fileManager := NewFileManager(s)
+	
 	// Delegate to ReportGenerator
 	deploymentModeStr := string(s.DeploymentMode)
 	return s.ReportGenerator.GenerateCompleteReport(
@@ -167,7 +149,7 @@ func (s *Server) generateReport(ctx context.Context) (map[string]interface{}, er
 		s.MockService,
 		s.Storage,
 		deploymentModeStr,
-		fileManagerFunc,
+		fileManager,
 	)
 }
 

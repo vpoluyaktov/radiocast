@@ -16,6 +16,11 @@ import (
 	"radiocast/internal/storage"
 )
 
+// FileManagerInterface defines the interface for file management operations
+type FileManagerInterface interface {
+	StoreAllFiles(ctx context.Context, files *GeneratedFiles, data *models.PropagationData) error
+}
+
 // ReportGenerator handles report generation and HTML conversion
 type ReportGenerator struct {
 	outputDir   string
@@ -137,7 +142,7 @@ func (rg *ReportGenerator) GenerateCompleteReport(ctx context.Context,
 	mockService *mocks.MockService,
 	storage storage.StorageClient,
 	deploymentMode string,
-	fileManagerFunc func(ctx context.Context, data *models.PropagationData, sourceData *models.SourceData, markdownReport string) (interface{}, error)) (map[string]interface{}, error) {
+	fileManager FileManagerInterface) (map[string]interface{}, error) {
 
 	log.Println("Starting report generation...")
 
@@ -147,13 +152,19 @@ func (rg *ReportGenerator) GenerateCompleteReport(ctx context.Context,
 		return nil, err
 	}
 
-	// Step 2: Generate files using provided function
-	_, err = fileManagerFunc(ctx, data, sourceData, markdownReport)
+	// Step 2: Generate files using FileGenerator
+	fileGenerator := NewFileGenerator(rg, mockService)
+	files, err := fileGenerator.GenerateAllFiles(ctx, data, sourceData, markdownReport, cfg.MockupMode)
 	if err != nil {
-		return nil, fmt.Errorf("file generation failed: %w", err)
+		return nil, fmt.Errorf("failed to generate files: %w", err)
 	}
 
-	// Step 3: Determine report URL based on deployment mode
+	// Step 3: Store files using FileManager
+	if err := fileManager.StoreAllFiles(ctx, files, data); err != nil {
+		return nil, fmt.Errorf("failed to store files: %w", err)
+	}
+
+	// Step 4: Determine report URL based on deployment mode
 	var reportURL string
 	if deploymentMode == "gcs" && storage != nil {
 		reportURL = "/files/" + data.Timestamp.Format("2006-01-02_15-04-05") + "/index.html"
