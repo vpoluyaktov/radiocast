@@ -121,7 +121,7 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Starting report generation...")
 	
 	// Generate new report
-	storageOrchestrator := reports.NewStorageOrchestrator(s.ReportsDir, s.Storage, string(s.DeploymentMode))
+	storageOrchestrator := reports.NewStorageOrchestrator(s.Storage, string(s.DeploymentMode))
 	deploymentModeStr := string(s.DeploymentMode)
 	result, err := s.ReportGenerator.GenerateCompleteReport(
 		ctx,
