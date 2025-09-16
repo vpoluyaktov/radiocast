@@ -46,7 +46,7 @@ func (rg *ReportGenerator) GenerateReport(ctx context.Context,
 
 	// Generate charts
 	log.Println("Generating charts...")
-	chartData, err := rg.generateCharts(propagationData, sourceData, folderPath)
+	chartData, err := rg.htmlBuilder.GenerateChartData(propagationData, sourceData, folderPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate charts: %w", err)
 	}
@@ -77,42 +77,9 @@ func (rg *ReportGenerator) GenerateReport(ctx context.Context,
 }
 
 // GenerateHTML converts markdown report to HTML with embedded charts
-func (rg *ReportGenerator) GenerateHTML(markdownReport string, data *models.PropagationData) (string, error) {
-	return rg.GenerateHTMLWithSources(markdownReport, data, nil)
-}
-
-// GenerateHTMLWithSources converts markdown report to HTML with embedded charts using source data
-func (rg *ReportGenerator) GenerateHTMLWithSources(markdownReport string, data *models.PropagationData, sourceData *models.SourceData) (string, error) {
-	return rg.GenerateHTMLWithSourcesAndFolderPath(markdownReport, data, sourceData, "")
-}
-
-// GenerateHTMLWithSourcesAndFolderPath converts markdown to HTML with ECharts snippets
-// and allows specifying folderPath for asset path resolution.
-func (rg *ReportGenerator) GenerateHTMLWithSourcesAndFolderPath(markdownReport string, data *models.PropagationData, sourceData *models.SourceData, folderPath string) (string, error) {
-	log.Println("Generating report...")
-	
-	// Use main report generation method
-	fullHTML, err := rg.GenerateReport(context.Background(), data, sourceData, markdownReport, folderPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate report: %w", err)
-	}
-	
-	log.Printf("Generated complete HTML report (%d characters)", len(fullHTML))
-	return fullHTML, nil
-}
-
-// GenerateHTMLWithChartURLs converts markdown report to HTML using provided chart URLs
-func (rg *ReportGenerator) GenerateHTMLWithChartURLs(markdownReport string, data *models.PropagationData, chartURLs []string) (string, error) {
-	log.Printf("Converting markdown to HTML with %d provided chart URLs...", len(chartURLs))
-	
-	// Use main report generation method
-	fullHTML, err := rg.GenerateReport(context.Background(), data, nil, markdownReport, "")
-	if err != nil {
-		return "", fmt.Errorf("failed to build complete HTML: %w", err)
-	}
-	
-	log.Printf("Generated complete HTML report with %d characters and %d chart URLs", len(fullHTML), len(chartURLs))
-	return fullHTML, nil
+// This is the main public method - all other HTML generation methods are deprecated
+func (rg *ReportGenerator) GenerateHTML(markdownReport string, data *models.PropagationData, sourceData *models.SourceData, folderPath string) (string, error) {
+	return rg.GenerateReport(context.Background(), data, sourceData, markdownReport, folderPath)
 }
 
 // MarkdownToHTML converts markdown to HTML
@@ -127,7 +94,7 @@ func (rg *ReportGenerator) MarkdownToHTML(markdownText string) string {
 
 // GenerateStaticCSS generates static CSS content for saving to the report folder
 func (rg *ReportGenerator) GenerateStaticCSS() (string, error) {
-	return rg.htmlBuilder.GenerateStaticCSS()
+	return rg.htmlBuilder.LoadStaticCSS()
 }
 
 
@@ -231,7 +198,3 @@ func (rg *ReportGenerator) fetchDataAndGenerateReport(ctx context.Context,
 	return data, sourceData, markdownReport, nil
 }
 
-// generateCharts creates charts and returns template data
-func (rg *ReportGenerator) generateCharts(data *models.PropagationData, sourceData *models.SourceData, folderPath string) (*ChartTemplateData, error) {
-	return rg.htmlBuilder.GenerateChartData(data, sourceData, folderPath)
-}

@@ -62,15 +62,6 @@ type TemplateData struct {
 	PropagationTimelineChart template.HTML
 }
 
-// ChartTemplateData represents chart data for template substitution
-type ChartTemplateData struct {
-	SolarActivityChart       template.HTML
-	BandConditionsChart      template.HTML
-	KIndexChart              template.HTML
-	ForecastChart            template.HTML
-	PropagationTimelineChart template.HTML
-}
-
 // ConvertMarkdownToHTML converts markdown to HTML using goldmark
 func (h *HTMLBuilder) ConvertMarkdownToHTML(markdownContent string) (string, error) {
 	var buf bytes.Buffer
@@ -110,13 +101,9 @@ func (h *HTMLBuilder) getCSSFilePath(folderPath string) string {
 	return "styles.css"
 }
 
-// GenerateStaticCSS returns the static CSS content
-func (h *HTMLBuilder) GenerateStaticCSS() (string, error) {
-	return h.LoadStaticCSS()
-}
 
 // GenerateChartData creates chart data using chart generators
-func (h *HTMLBuilder) GenerateChartData(data *models.PropagationData, sourceData *models.SourceData, folderPath string) (*ChartTemplateData, error) {
+func (h *HTMLBuilder) GenerateChartData(data *models.PropagationData, sourceData *models.SourceData, folderPath string) (*TemplateData, error) {
 	// Create chart generator
 	chartGen := charts.NewChartGenerator(folderPath)
 	
@@ -127,7 +114,7 @@ func (h *HTMLBuilder) GenerateChartData(data *models.PropagationData, sourceData
 	}
 
 	// Create chart data with empty defaults
-	chartData := &ChartTemplateData{
+	chartData := &TemplateData{
 		SolarActivityChart:       template.HTML(""),
 		BandConditionsChart:      template.HTML(""),
 		KIndexChart:              template.HTML(""),
@@ -158,7 +145,7 @@ func (h *HTMLBuilder) GenerateChartData(data *models.PropagationData, sourceData
 func (h *HTMLBuilder) BuildCompleteHTML(
 	processedHTMLContent string,
 	data *models.PropagationData,
-	chartData *ChartTemplateData,
+	chartData *TemplateData,
 	sunGifHTML template.HTML,
 	folderPath string) (string, error) {
 
@@ -259,7 +246,7 @@ func (h *HTMLBuilder) updateAssetURLs(html, folderPath string) string {
 // ProcessMarkdownWithPlaceholders processes markdown content and substitutes template placeholders
 func (h *HTMLBuilder) ProcessMarkdownWithPlaceholders(
 	markdownContent string,
-	chartData *ChartTemplateData,
+	chartData *TemplateData,
 	sunGifHTML template.HTML) (string, error) {
 
 	// First convert markdown to HTML

@@ -12,6 +12,7 @@ import (
 
 	"radiocast/internal/imagery"
 	"radiocast/internal/models"
+	"radiocast/internal/storage"
 )
 
 // FileGenerator handles generation of all report files
@@ -51,11 +52,8 @@ func (fg *FileGenerator) GenerateAllFiles(ctx context.Context, data *models.Prop
 		AssetFiles: make(map[string][]byte),
 	}
 	
-	// Generate unified folder path for both local and GCS modes
-	files.FolderPath = fmt.Sprintf("reports/%04d/%02d/%02d/PropagationReport-%04d-%02d-%02d-%02d-%02d-%02d",
-		timestamp.Year(), timestamp.Month(), timestamp.Day(),
-		timestamp.Year(), timestamp.Month(), timestamp.Day(),
-		timestamp.Hour(), timestamp.Minute(), timestamp.Second())
+	// Generate unified folder path using storage utility
+	files.FolderPath = storage.GenerateReportFolderPath(timestamp)
 	
 	// 1. Generate JSON files for each data source
 	if err := fg.generateSourceJSONFiles(sourceData, files); err != nil {
@@ -190,7 +188,7 @@ func (fg *FileGenerator) generateCSS(files *GeneratedFiles) error {
 // generateHTML generates HTML report
 func (fg *FileGenerator) generateHTML(markdown string, data *models.PropagationData, sourceData *models.SourceData, gifRelName string, files *GeneratedFiles) error {
 	// Generate HTML with folder path for GCS compatibility
-	html, err := fg.reportGenerator.GenerateHTMLWithSourcesAndFolderPath(markdown, data, sourceData, files.FolderPath)
+	html, err := fg.reportGenerator.GenerateHTML(markdown, data, sourceData, files.FolderPath)
 	if err != nil {
 		return fmt.Errorf("failed to generate HTML: %w", err)
 	}
