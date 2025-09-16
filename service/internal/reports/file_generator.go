@@ -68,7 +68,7 @@ func (fg *FileGenerator) GenerateAllFiles(ctx context.Context, data *models.Prop
 	}
 	
 	// 3. Generate LLM-related files
-	if err := fg.generateLLMFiles(data, sourceData, markdown, files); err != nil {
+	if err := fg.generateLLMFiles(markdown, files); err != nil {
 		log.Printf("Warning: Failed to generate LLM files: %v", err)
 	}
 	
@@ -88,10 +88,6 @@ func (fg *FileGenerator) GenerateAllFiles(ctx context.Context, data *models.Prop
 		return nil, fmt.Errorf("failed to generate HTML: %w", err)
 	}
 	
-	// 7. Generate static assets (background image, echarts.js)
-	if err := fg.generateStaticAssets(files); err != nil {
-		log.Printf("Warning: Failed to generate static assets: %v", err)
-	}
 	
 	return files, nil
 }
@@ -134,7 +130,7 @@ func (fg *FileGenerator) generateNormalizedDataJSON(data *models.PropagationData
 }
 
 // generateLLMFiles generates LLM-related files (prompts, responses)
-func (fg *FileGenerator) generateLLMFiles(data *models.PropagationData, sourceData *models.SourceData, markdown string, files *GeneratedFiles) error {
+func (fg *FileGenerator) generateLLMFiles(markdown string, files *GeneratedFiles) error {
 	// Note: This requires access to LLMClient which should be passed in
 	// For now, we'll store the markdown response
 	files.JSONFiles["llm_response.md"] = []byte(markdown)
@@ -205,35 +201,6 @@ func (fg *FileGenerator) generateHTML(markdown string, data *models.PropagationD
 	return nil
 }
 
-// generateStaticAssets generates static assets like background image and echarts.js
-func (fg *FileGenerator) generateStaticAssets(files *GeneratedFiles) error {
-	// Try to find and include background image
-	candidates := []string{
-		filepath.Join("internal", "assets", "background.png"),
-		filepath.Join("service", "internal", "assets", "background.png"),
-		filepath.Join("..", "service", "internal", "assets", "background.png"),
-	}
-	
-	for _, path := range candidates {
-		if data, err := os.ReadFile(path); err == nil {
-			files.AssetFiles["background.png"] = data
-			log.Printf("Generated background.png asset (%d bytes)", len(data))
-			break
-		}
-	}
-	
-	// Try to find and include echarts.min.js
-	for _, path := range candidates {
-		jsPath := strings.Replace(path, "background.png", "echarts.min.js", 1)
-		if data, err := os.ReadFile(jsPath); err == nil {
-			files.AssetFiles["echarts.min.js"] = data
-			log.Printf("Generated echarts.min.js asset (%d bytes)", len(data))
-			break
-		}
-	}
-	
-	return nil
-}
 
 // prepareSunGIFHTML generates the HTML section for the Sun GIF with the correct path
 func (fg *FileGenerator) prepareSunGIFHTML(gifRelName, folderPath string) string {

@@ -84,7 +84,35 @@ func (fm *FileManager) writeFilesToTemp(tempDir string, files *reports.Generated
 		}
 	}
 	
+	// Copy background image from assets directory
+	if err := fm.copyBackgroundImage(tempDir); err != nil {
+		log.Printf("Warning: Failed to copy background image: %v", err)
+	}
+	
 	return nil
+}
+
+// copyBackgroundImage copies background.png from assets directory to temp directory
+func (fm *FileManager) copyBackgroundImage(tempDir string) error {
+	// Try to find background image in various locations
+	candidates := []string{
+		filepath.Join("internal", "assets", "background.png"),
+		filepath.Join("service", "internal", "assets", "background.png"),
+		filepath.Join("..", "service", "internal", "assets", "background.png"),
+	}
+	
+	for _, path := range candidates {
+		if data, err := os.ReadFile(path); err == nil {
+			bgPath := filepath.Join(tempDir, "background.png")
+			if err := os.WriteFile(bgPath, data, 0644); err != nil {
+				return fmt.Errorf("failed to write background image: %w", err)
+			}
+			log.Printf("Copied background.png (%d bytes)", len(data))
+			return nil
+		}
+	}
+	
+	return fmt.Errorf("background.png not found in any candidate location")
 }
 
 // copyTempToLocal copies files from temp directory to local reports directory
@@ -141,6 +169,17 @@ func (fm *FileManager) uploadTempToRemote(ctx context.Context, tempDir string, f
 		if err := fm.server.Storage.StoreFile(ctx, data, filename, timestamp); err != nil {
 			return fmt.Errorf("failed to store asset file %s: %w", filename, err)
 		}
+	}
+	
+	// Upload background image from temp directory
+	bgPath := filepath.Join(tempDir, "background.png")
+	if bgData, err := os.ReadFile(bgPath); err == nil {
+		if err := fm.server.Storage.StoreFile(ctx, bgData, "background.png", timestamp); err != nil {
+			return fmt.Errorf("failed to store background image: %w", err)
+		}
+		log.Printf("Uploaded background.png (%d bytes)", len(bgData))
+	} else {
+		log.Printf("Warning: Failed to read background image for upload: %v", err)
 	}
 	
 	return nil
