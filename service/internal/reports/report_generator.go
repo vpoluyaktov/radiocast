@@ -23,16 +23,14 @@ type StorageInterface interface {
 
 // ReportGenerator handles report generation and HTML conversion
 type ReportGenerator struct {
-	outputDir   string
 	chartGen    *charts.ChartGenerator
 	htmlBuilder *HTMLBuilder
 }
 
 // NewReportGenerator creates a new report generator
-func NewReportGenerator(outputDir string) *ReportGenerator {
+func NewReportGenerator() *ReportGenerator {
 	return &ReportGenerator{
-		outputDir:   outputDir,
-		chartGen:    charts.NewChartGenerator(outputDir),
+		chartGen:    charts.NewChartGenerator(""), // Empty outputDir since charts don't need it
 		htmlBuilder: NewHTMLBuilder(),
 	}
 }

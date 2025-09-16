@@ -67,23 +67,21 @@ func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, erro
 		log.Printf("Mockup mode enabled - using mock data from %s", mocksDir)
 	}
 	
-	// Initialize components based on deployment mode
+	// Initialize storage client using factory
+	storageClient, err := storage.NewStorageClient(ctx, storage.DeploymentMode(deploymentMode), cfg, reportsDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize storage client: %w", err)
+	}
+	server.Storage = storageClient
+	
+	// Initialize report generator (no longer needs outputDir)
+	server.ReportGenerator = reports.NewReportGenerator()
+	
+	// Log deployment mode
 	if deploymentMode == DeploymentLocal {
 		log.Printf("Local deployment mode - reports will be saved to: %s", reportsDir)
-		server.ReportGenerator = reports.NewReportGenerator(reportsDir)
-		localClient, err := storage.NewLocalStorageClient(reportsDir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize local storage client: %w", err)
-		}
-		server.Storage = localClient
 	} else {
 		log.Printf("GCS deployment mode - reports will be saved to GCS bucket: %s", cfg.GCSBucket)
-		gcsClient, err := storage.NewGCSClient(ctx, cfg.GCSBucket)
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize GCS client: %w", err)
-		}
-		server.ReportGenerator = reports.NewReportGenerator("") // Empty for GCS mode
-		server.Storage = gcsClient
 	}
 	
 	
