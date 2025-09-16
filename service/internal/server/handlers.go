@@ -190,7 +190,7 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 		}
 		
 		// Set appropriate content type based on file extension
-		contentType := s.getContentType(filePath)
+		contentType := GetContentType(filePath)
 		w.Header().Set("Content-Type", contentType)
 		w.Header().Set("Cache-Control", "public, max-age=3600")
 		w.Write(fileData)
@@ -270,24 +270,3 @@ func (s *Server) findLatestReportURL(ctx context.Context) (string, error) {
 	return fmt.Sprintf("/%s/index.html", latestDir), nil
 }
 
-// getContentType returns the appropriate content type for a file
-func (s *Server) getContentType(filePath string) string {
-	if strings.HasSuffix(filePath, ".html") {
-		return "text/html"
-	} else if strings.HasSuffix(filePath, ".png") {
-		return "image/png"
-	} else if strings.HasSuffix(filePath, ".gif") {
-		return "image/gif"
-	} else if strings.HasSuffix(filePath, ".json") {
-		return "application/json"
-	} else if strings.HasSuffix(filePath, ".txt") {
-		return "text/plain"
-	} else if strings.HasSuffix(filePath, ".md") {
-		return "text/markdown"
-	} else if strings.HasSuffix(filePath, ".css") {
-		return "text/css"
-	} else if strings.HasSuffix(filePath, ".js") {
-		return "application/javascript"
-	}
-	return "application/octet-stream"
-}
