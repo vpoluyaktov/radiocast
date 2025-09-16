@@ -85,7 +85,9 @@ jobs:
       run: |
         BASE_VERSION=$(cat VERSION)
         COMMIT_COUNT=$(git rev-list --all --count HEAD)
-        VERSION="$BASE_VERSION.$COMMIT_COUNT-rc.$(date +%s | tail -c 4)"
+        # Extract MAJOR.MINOR from base version and use commit count as PATCH
+        MAJOR_MINOR=$(echo $BASE_VERSION | cut -d. -f1,2)
+        VERSION="$MAJOR_MINOR.$COMMIT_COUNT-rc.$(date +%s | tail -c 4)"
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
         
