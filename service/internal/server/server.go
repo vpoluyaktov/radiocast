@@ -62,7 +62,10 @@ func NewServer(cfg *config.Config, deploymentMode storage.DeploymentMode) (*Serv
 	
 	// Initialize static assets
 	if err := server.initializeStaticAssets(ctx); err != nil {
-		log.Printf("Warning: Failed to initialize static assets: %v", err)
+		log.Printf("ERROR: Failed to initialize static assets: %v", err)
+		log.Printf("Static pages (/history, /theory, /static/*) may not work correctly")
+	} else {
+		log.Printf("Static assets initialized successfully")
 	}
 	
 	// Log deployment mode
