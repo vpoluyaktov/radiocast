@@ -213,6 +213,14 @@ func (s *Server) findLatestReportURL(ctx context.Context) (string, error) {
 	if err != nil || len(reports) == 0 {
 		return "", fmt.Errorf("no reports available")
 	}
-	return fmt.Sprintf("/reports/%s", reports[0]), nil
+	
+	reportPath := reports[0]
+	// For GCS, paths already include "reports/" prefix, so just add leading slash
+	// For local, paths don't include "reports/" prefix, so add "/reports/"
+	if strings.HasPrefix(reportPath, "reports/") {
+		return "/" + reportPath, nil
+	} else {
+		return "/reports/" + reportPath, nil
+	}
 }
 
