@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -59,6 +60,11 @@ func NewServer(cfg *config.Config, deploymentMode storage.DeploymentMode) (*Serv
 	// Initialize report generator
 	server.ReportGenerator = reports.NewReportGenerator()
 	
+	// Initialize static assets
+	if err := server.initializeStaticAssets(ctx); err != nil {
+		log.Printf("Warning: Failed to initialize static assets: %v", err)
+	}
+	
 	// Log deployment mode
 	if deploymentMode == storage.DeploymentLocal {
 		log.Printf("Local deployment mode - reports directory determined by storage client")
@@ -81,11 +87,79 @@ func (s *Server) SetupRoutes() *http.ServeMux {
 	mux.HandleFunc("/reports", s.HandleListReports)
 	mux.HandleFunc("/reports/", s.HandleFileProxy)
 	
+	// Handle static pages
+	mux.HandleFunc("/history", s.HandleHistory)
+	mux.HandleFunc("/theory", s.HandleTheory)
+	mux.HandleFunc("/static/styles.css", s.HandleStaticCSS)
+	mux.HandleFunc("/static/background.png", s.HandleStaticBackground)
 	
 	// Handle root path last (catch-all)
 	mux.HandleFunc("/", s.HandleRoot)
 	
 	return mux
+}
+
+// initializeStaticAssets uploads static assets and HTML pages to storage
+func (s *Server) initializeStaticAssets(ctx context.Context) error {
+	staticDir := filepath.Join("internal", "static")
+	templatesDir := filepath.Join("internal", "templates")
+	
+	// Store CSS file
+	cssPath := filepath.Join(staticDir, "styles.css")
+	cssData, err := os.ReadFile(cssPath)
+	if err != nil {
+		return fmt.Errorf("failed to read CSS file: %w", err)
+	}
+	if err := s.Storage.StoreFile(ctx, "static/styles.css", cssData); err != nil {
+		return fmt.Errorf("failed to store CSS file: %w", err)
+	}
+	log.Printf("Static CSS file uploaded successfully")
+	
+	// Store background image
+	bgPath := filepath.Join(staticDir, "background.png")
+	bgData, err := os.ReadFile(bgPath)
+	if err != nil {
+		return fmt.Errorf("failed to read background image: %w", err)
+	}
+	if err := s.Storage.StoreFile(ctx, "static/background.png", bgData); err != nil {
+		return fmt.Errorf("failed to store background image: %w", err)
+	}
+	log.Printf("Static background image uploaded successfully")
+	
+	// Store history page
+	historyPath := filepath.Join(templatesDir, "history_template.html")
+	historyData, err := os.ReadFile(historyPath)
+	if err != nil {
+		return fmt.Errorf("failed to read history template: %w", err)
+	}
+	// Store as a regular file in history folder
+	if err := s.storeHTMLPage(ctx, historyData, "history/index.html"); err != nil {
+		return fmt.Errorf("failed to store history page: %w", err)
+	}
+	log.Printf("History page uploaded successfully")
+	
+	// Store theory page
+	theoryPath := filepath.Join(templatesDir, "theory_template.html")
+	theoryData, err := os.ReadFile(theoryPath)
+	if err != nil {
+		return fmt.Errorf("failed to read theory template: %w", err)
+	}
+	// Store as a regular file in theory folder
+	if err := s.storeHTMLPage(ctx, theoryData, "theory/index.html"); err != nil {
+		return fmt.Errorf("failed to store theory page: %w", err)
+	}
+	log.Printf("Theory page uploaded successfully")
+	
+	return nil
+}
+
+// storeHTMLPage stores an HTML page directly to storage
+func (s *Server) storeHTMLPage(ctx context.Context, htmlData []byte, filePath string) error {
+	// Use the unified storage interface for both local and GCS
+	if err := s.Storage.StoreFile(ctx, filePath, htmlData); err != nil {
+		return fmt.Errorf("failed to store HTML file %s: %w", filePath, err)
+	}
+	return nil
 }
 
 // Close cleans up server resources

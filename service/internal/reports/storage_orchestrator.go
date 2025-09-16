@@ -41,27 +41,33 @@ func (so *StorageOrchestrator) StoreAllFiles(ctx context.Context, files *Generat
 
 // storeFilesViaStorage stores files using the StorageClient interface
 func (so *StorageOrchestrator) storeFilesViaStorage(ctx context.Context, files *GeneratedFiles, timestamp time.Time) error {
+	// Build report folder path
+	reportFolderPath := "reports/" + storage.GenerateReportFolderPath(timestamp)
+	
 	// Store HTML file
-	if err := so.storage.StoreFile(ctx, []byte(files.HTMLContent), "index.html", timestamp); err != nil {
+	htmlPath := reportFolderPath + "/index.html"
+	if err := so.storage.StoreFile(ctx, htmlPath, []byte(files.HTMLContent)); err != nil {
 		return fmt.Errorf("failed to store HTML file: %w", err)
 	}
 	
 	// Store JSON files
 	for filename, data := range files.JSONFiles {
-		if err := so.storage.StoreFile(ctx, data, filename, timestamp); err != nil {
+		jsonPath := reportFolderPath + "/" + filename
+		if err := so.storage.StoreFile(ctx, jsonPath, data); err != nil {
 			return fmt.Errorf("failed to store JSON file %s: %w", filename, err)
 		}
 	}
 	
 	// Store asset files
 	for filename, data := range files.AssetFiles {
-		if err := so.storage.StoreFile(ctx, data, filename, timestamp); err != nil {
+		assetPath := reportFolderPath + "/" + filename
+		if err := so.storage.StoreFile(ctx, assetPath, data); err != nil {
 			return fmt.Errorf("failed to store asset file %s: %w", filename, err)
 		}
 	}
 	
 	// Store background image
-	if err := so.storeBackgroundImage(ctx, timestamp); err != nil {
+	if err := so.storeBackgroundImage(ctx, reportFolderPath); err != nil {
 		log.Printf("Warning: Failed to store background image: %v", err)
 	}
 	
@@ -69,7 +75,7 @@ func (so *StorageOrchestrator) storeFilesViaStorage(ctx context.Context, files *
 }
 
 // storeBackgroundImage stores background.png using StorageClient
-func (so *StorageOrchestrator) storeBackgroundImage(ctx context.Context, timestamp time.Time) error {
+func (so *StorageOrchestrator) storeBackgroundImage(ctx context.Context, reportFolderPath string) error {
 	// Try to find background image in various locations
 	candidates := []string{
 		filepath.Join("internal", "assets", "background.png"),
@@ -79,7 +85,8 @@ func (so *StorageOrchestrator) storeBackgroundImage(ctx context.Context, timesta
 	
 	for _, path := range candidates {
 		if data, err := os.ReadFile(path); err == nil {
-			if err := so.storage.StoreFile(ctx, data, "background.png", timestamp); err != nil {
+			backgroundPath := reportFolderPath + "/background.png"
+			if err := so.storage.StoreFile(ctx, backgroundPath, data); err != nil {
 				return fmt.Errorf("failed to store background image: %w", err)
 			}
 			log.Printf("Stored background.png (%d bytes)", len(data))

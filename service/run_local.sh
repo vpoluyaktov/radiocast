@@ -219,8 +219,8 @@ run_server() {
     fi
     
     # Clean up any existing reports
-    rm -rf ./reports
-    mkdir -p ./reports
+    rm -rf ./local_gcs
+    mkdir -p ./local_gcs
     
     print_status "🧪 Testing complete pipeline..."
     if [ "$USE_MOCKUP" = true ]; then

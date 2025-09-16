@@ -2,23 +2,25 @@ package storage
 
 import (
 	"context"
-	"time"
 )
 
-// StorageClient defines the interface for storage operations
+// StorageClient defines the interface for basic storage operations
 type StorageClient interface {
 	// Close closes the storage client
 	Close() error
 	
-	// StoreFile stores any file (JSON, text, HTML, images, etc.) in the report folder
-	StoreFile(ctx context.Context, fileData []byte, filename string, timestamp time.Time) error
+	// CreateDir creates a directory (and any necessary parent directories)
+	CreateDir(ctx context.Context, dirPath string) error
 	
-	// GetFile retrieves any file
+	// StoreFile stores a file at the specified path
+	StoreFile(ctx context.Context, filePath string, fileData []byte) error
+	
+	// GetFile retrieves a file from the specified path
 	GetFile(ctx context.Context, filePath string) ([]byte, error)
 	
-	// GetLatestReport gets the most recent report
-	GetLatestReport() (string, error)
+	// ListDir lists contents of a directory
+	ListDir(ctx context.Context, dirPath string, recursive bool) ([]string, error)
 	
-	// ListReports lists recent reports, sorted by creation time (newest first)
-	ListReports(ctx context.Context, limit int) ([]string, error)
+	// FileExists checks if a file exists at the specified path
+	FileExists(ctx context.Context, filePath string) (bool, error)
 }

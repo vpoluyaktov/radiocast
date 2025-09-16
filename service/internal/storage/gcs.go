@@ -5,20 +5,18 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"sort"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
 )
 
 // GCSClient handles Google Cloud Storage operations
+// Uses bucketName as the root for all operations
 type GCSClient struct {
 	client *storage.Client
 	bucket string
 }
-
 
 // NewGCSClient creates a new GCS client
 func NewGCSClient(ctx context.Context, bucketName string) (*GCSClient, error) {
@@ -38,33 +36,29 @@ func (g *GCSClient) Close() error {
 	return g.client.Close()
 }
 
+// CreateDir creates a directory (no-op for GCS as directories are implicit)
+func (g *GCSClient) CreateDir(ctx context.Context, dirPath string) error {
+	// GCS doesn't have explicit directories, they're created implicitly when files are stored
+	return nil
+}
 
-// StoreFile stores any file (JSON, text, etc.) in GCS in the same folder as the report
-func (g *GCSClient) StoreFile(ctx context.Context, fileData []byte, filename string, timestamp time.Time) error {
-	// Generate the object path for this file
-	objectPath := "reports/" + GenerateReportFolderPath(timestamp) + "/" + filename
-	
-	log.Printf("Storing file to GCS: gs://%s/%s", g.bucket, objectPath)
+// StoreFile stores a file at the specified path
+func (g *GCSClient) StoreFile(ctx context.Context, filePath string, fileData []byte) error {
+	log.Printf("Storing file to GCS: gs://%s/%s", g.bucket, filePath)
 	
 	// Get bucket handle
 	bucket := g.client.Bucket(g.bucket)
 	
 	// Create object handle
-	obj := bucket.Object(objectPath)
+	obj := bucket.Object(filePath)
 	
 	// Create writer
 	writer := obj.NewWriter(ctx)
 	
 	// Set content type based on file extension
-	writer.ContentType = GetContentType(filename)
+	writer.ContentType = GetContentType(filePath)
 	
 	writer.CacheControl = "public, max-age=3600" // Cache for 1 hour
-	
-	// Set metadata
-	writer.Metadata = map[string]string{
-		"generated-at": timestamp.Format(time.RFC3339),
-		"filename":     filename,
-	}
 	
 	// Write file data
 	if _, err := writer.Write(fileData); err != nil {
@@ -77,13 +71,11 @@ func (g *GCSClient) StoreFile(ctx context.Context, fileData []byte, filename str
 		return fmt.Errorf("failed to finalize GCS file upload: %w", err)
 	}
 	
-	log.Printf("File successfully stored: %s", filename)
+	log.Printf("File successfully stored: %s", filePath)
 	return nil
 }
 
-
-
-// GetFile retrieves any file from GCS
+// GetFile retrieves a file from the specified path
 func (g *GCSClient) GetFile(ctx context.Context, filePath string) ([]byte, error) {
 	bucket := g.client.Bucket(g.bucket)
 	obj := bucket.Object(filePath)
@@ -102,33 +94,28 @@ func (g *GCSClient) GetFile(ctx context.Context, filePath string) ([]byte, error
 	return fileData, nil
 }
 
-// GetLatestReport gets the most recent report from GCS
-func (g *GCSClient) GetLatestReport() (string, error) {
-	ctx := context.Background()
-	reports, err := g.ListReports(ctx, 1)
-	if err != nil {
-		return "", err
-	}
-	
-	if len(reports) == 0 {
-		return "", fmt.Errorf("no reports found")
-	}
-	
-	return reports[0], nil
-}
-
-
-// ListReports lists recent reports from GCS, sorted by creation time (newest first)
-func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]string, error) {
+// ListDir lists contents of a directory
+func (g *GCSClient) ListDir(ctx context.Context, dirPath string, recursive bool) ([]string, error) {
 	bucket := g.client.Bucket(g.bucket)
 	
+	// Ensure dirPath ends with / for prefix matching
+	prefix := dirPath
+	if prefix != "" && !strings.HasSuffix(prefix, "/") {
+		prefix += "/"
+	}
+	
 	query := &storage.Query{
-		Prefix: "reports/",
+		Prefix: prefix,
+	}
+	
+	// If not recursive, set delimiter to get only immediate children
+	if !recursive {
+		query.Delimiter = "/"
 	}
 	
 	it := bucket.Objects(ctx, query)
 	
-	var reportPaths []string
+	var files []string
 	
 	for {
 		attrs, err := it.Next()
@@ -139,33 +126,27 @@ func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]string, error
 			return nil, fmt.Errorf("failed to list objects: %w", err)
 		}
 		
-		// Look for index.html files
-		if strings.HasSuffix(attrs.Name, "/index.html") {
-			reportPaths = append(reportPaths, attrs.Name)
+		// Remove the prefix to get relative path
+		relativePath := strings.TrimPrefix(attrs.Name, prefix)
+		if relativePath != "" {
+			files = append(files, relativePath)
 		}
 	}
 	
-	// Sort alphabetically, then reverse for newest first
-	sort.Strings(reportPaths)
-	for i, j := 0, len(reportPaths)-1; i < j; i, j = i+1, j-1 {
-		reportPaths[i], reportPaths[j] = reportPaths[j], reportPaths[i]
-	}
-	
-	// Apply limit
-	if limit > 0 && limit < len(reportPaths) {
-		reportPaths = reportPaths[:limit]
-	}
-	
-	return reportPaths, nil
+	return files, nil
 }
 
-
-
-// ReportInfo contains information about a stored report
-type ReportInfo struct {
-	Name    string    `json:"name"`
-	URL     string    `json:"url"`
-	Size    int64     `json:"size"`
-	Created time.Time `json:"created"`
-	Updated time.Time `json:"updated"`
+// FileExists checks if a file exists at the specified path
+func (g *GCSClient) FileExists(ctx context.Context, filePath string) (bool, error) {
+	bucket := g.client.Bucket(g.bucket)
+	obj := bucket.Object(filePath)
+	
+	_, err := obj.Attrs(ctx)
+	if err != nil {
+		if err == storage.ErrObjectNotExist {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to check file existence %s: %w", filePath, err)
+	}
+	return true, nil
 }

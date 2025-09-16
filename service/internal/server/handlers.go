@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -16,7 +17,6 @@ import (
 
 // HandleRoot serves the main page with redirect to latest report
 func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
-	log.Printf("DEBUG: handleRoot called - method: %s, URL: %s", r.Method, r.URL.Path)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -154,11 +154,8 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Use storage client to get file (works for both local and remote storage)
-	// For GCS deployment, we need to add "reports/" prefix back since files are stored with that prefix
-	actualFilePath := filePath
-	if s.DeploymentMode == "gcs" {
-		actualFilePath = "reports/" + filePath
-	}
+	// Both local and GCS store files with "reports/" prefix in the unified structure
+	actualFilePath := "reports/" + filePath
 	
 	fileData, err := s.Storage.GetFile(ctx, actualFilePath)
 	if err != nil {
@@ -195,11 +192,29 @@ func (s *Server) HandleListReports(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	reports, err := s.Storage.ListReports(ctx, limit)
+	// List all files in reports directory recursively
+	allFiles, err := s.Storage.ListDir(ctx, "reports", true)
 	if err != nil {
 		log.Printf("Failed to list reports: %v", err)
 		http.Error(w, "Failed to list reports: "+err.Error(), http.StatusInternalServerError)
 		return
+	}
+	
+	// Filter for index.html files and extract report paths
+	var reports []string
+	for _, file := range allFiles {
+		if strings.HasSuffix(file, "/index.html") {
+			reports = append(reports, file)
+		}
+	}
+	
+	// Sort and limit results (newest first - reverse alphabetical)
+	sort.Strings(reports)
+	for i, j := 0, len(reports)-1; i < j; i, j = i+1, j-1 {
+		reports[i], reports[j] = reports[j], reports[i]
+	}
+	if limit > 0 && limit < len(reports) {
+		reports = reports[:limit]
 	}
 	
 	response := map[string]interface{}{
@@ -214,19 +229,123 @@ func (s *Server) HandleListReports(w http.ResponseWriter, r *http.Request) {
 
 // findLatestReportURL finds the URL of the latest report
 func (s *Server) findLatestReportURL(ctx context.Context) (string, error) {
-	// Use storage client to get latest report (works for both local and remote)
-	reports, err := s.Storage.ListReports(ctx, 1)
-	if err != nil || len(reports) == 0 {
+	// List all files in reports directory recursively
+	allFiles, err := s.Storage.ListDir(ctx, "reports", true)
+	if err != nil {
+		return "", fmt.Errorf("failed to list reports: %w", err)
+	}
+	
+	// Filter for index.html files
+	var reports []string
+	for _, file := range allFiles {
+		if strings.HasSuffix(file, "/index.html") {
+			reports = append(reports, file)
+		}
+	}
+	
+	if len(reports) == 0 {
 		return "", fmt.Errorf("no reports available")
 	}
 	
-	reportPath := reports[0]
-	// For GCS, paths already include "reports/" prefix, so just add leading slash
-	// For local, paths don't include "reports/" prefix, so add "/reports/"
-	if strings.HasPrefix(reportPath, "reports/") {
-		return "/" + reportPath, nil
-	} else {
-		return "/reports/" + reportPath, nil
+	// Sort and get the latest (newest first - reverse alphabetical)
+	sort.Strings(reports)
+	for i, j := 0, len(reports)-1; i < j; i, j = i+1, j-1 {
+		reports[i], reports[j] = reports[j], reports[i]
 	}
+	
+	reportPath := reports[0]
+	// Add leading slash (reportPath already includes "reports/" prefix)
+	return "/" + reportPath, nil
 }
+
+// HandleHistory serves the history page
+func (s *Server) HandleHistory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "text/html")
+	
+	ctx := r.Context()
+	
+	// Load history page from storage
+	historyContent, err := s.Storage.GetFile(ctx, "history/index.html")
+	if err != nil {
+		log.Printf("Failed to load history page: %v", err)
+		http.Error(w, "History page not found", http.StatusInternalServerError)
+		return
+	}
+	
+	w.Write(historyContent)
+}
+
+// HandleTheory serves the theory page
+func (s *Server) HandleTheory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "text/html")
+	
+	ctx := r.Context()
+	
+	// Load theory page from storage
+	theoryContent, err := s.Storage.GetFile(ctx, "theory/index.html")
+	if err != nil {
+		log.Printf("Failed to load theory page: %v", err)
+		http.Error(w, "Theory page not found", http.StatusInternalServerError)
+		return
+	}
+	
+	w.Write(theoryContent)
+}
+
+// HandleStaticCSS serves the static CSS file for History and Theory pages
+func (s *Server) HandleStaticCSS(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "text/css")
+	
+	ctx := r.Context()
+	
+	// Try to get CSS from static assets storage path
+	cssPath := "static/styles.css"
+	cssContent, err := s.Storage.GetFile(ctx, cssPath)
+	if err != nil {
+		log.Printf("Failed to load CSS from storage: %v", err)
+		http.Error(w, "CSS not found", http.StatusInternalServerError)
+		return
+	}
+	
+	w.Write(cssContent)
+}
+
+// HandleStaticBackground serves the background image for History and Theory pages
+func (s *Server) HandleStaticBackground(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "image/png")
+	
+	ctx := r.Context()
+	
+	// Try to get background image from static assets storage path
+	imagePath := "static/background.png"
+	imageContent, err := s.Storage.GetFile(ctx, imagePath)
+	if err != nil {
+		log.Printf("Failed to load background image from storage: %v", err)
+		http.Error(w, "Background image not found", http.StatusInternalServerError)
+		return
+	}
+	
+	w.Write(imageContent)
+}
+
 
