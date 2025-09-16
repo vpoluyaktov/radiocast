@@ -154,7 +154,13 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Use storage client to get file (works for both local and remote storage)
-	fileData, err := s.Storage.GetFile(ctx, filePath)
+	// For GCS deployment, we need to add "reports/" prefix back since files are stored with that prefix
+	actualFilePath := filePath
+	if s.DeploymentMode == "gcs" {
+		actualFilePath = "reports/" + filePath
+	}
+	
+	fileData, err := s.Storage.GetFile(ctx, actualFilePath)
 	if err != nil {
 		log.Printf("Failed to get file from storage: %v", err)
 		http.Error(w, "File not found", http.StatusNotFound)
