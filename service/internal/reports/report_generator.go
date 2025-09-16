@@ -16,8 +16,8 @@ import (
 	"radiocast/internal/storage"
 )
 
-// FileManagerInterface defines the interface for file management operations
-type FileManagerInterface interface {
+// StorageInterface defines the interface for storage operations
+type StorageInterface interface {
 	StoreAllFiles(ctx context.Context, files *GeneratedFiles, data *models.PropagationData) error
 }
 
@@ -142,7 +142,7 @@ func (rg *ReportGenerator) GenerateCompleteReport(ctx context.Context,
 	mockService *mocks.MockService,
 	storage storage.StorageClient,
 	deploymentMode string,
-	fileManager FileManagerInterface) (map[string]interface{}, error) {
+	storageOrchestrator StorageInterface) (map[string]interface{}, error) {
 
 	log.Println("Starting report generation...")
 
@@ -159,8 +159,8 @@ func (rg *ReportGenerator) GenerateCompleteReport(ctx context.Context,
 		return nil, fmt.Errorf("failed to generate files: %w", err)
 	}
 
-	// Step 3: Store files using FileManager
-	if err := fileManager.StoreAllFiles(ctx, files, data); err != nil {
+	// Step 3: Store files using StorageOrchestrator
+	if err := storageOrchestrator.StoreAllFiles(ctx, files, data); err != nil {
 		return nil, fmt.Errorf("failed to store files: %w", err)
 	}
 

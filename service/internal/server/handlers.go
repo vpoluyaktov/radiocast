@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"radiocast/internal/reports"
 )
 
 // HandleRoot serves the main page with redirect to latest report
@@ -119,7 +121,7 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Starting report generation...")
 	
 	// Generate new report
-	fileManager := NewFileManager(s)
+	storageOrchestrator := reports.NewStorageOrchestrator(s.ReportsDir, s.Storage, string(s.DeploymentMode))
 	deploymentModeStr := string(s.DeploymentMode)
 	result, err := s.ReportGenerator.GenerateCompleteReport(
 		ctx,
@@ -129,7 +131,7 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 		s.MockService,
 		s.Storage,
 		deploymentModeStr,
-		fileManager,
+		storageOrchestrator,
 	)
 	if err != nil {
 		log.Printf("Report generation failed: %v", err)
