@@ -141,7 +141,9 @@ func (g *GCSClient) ListReports(ctx context.Context, limit int) ([]string, error
 		
 		// Look for index.html files
 		if strings.HasSuffix(attrs.Name, "/index.html") {
-			reportPaths = append(reportPaths, attrs.Name)
+			// Remove "reports/" prefix to match local storage behavior
+			path := strings.TrimPrefix(attrs.Name, "reports/")
+			reportPaths = append(reportPaths, path)
 		}
 	}
 	

@@ -16,13 +16,6 @@ import (
 	"radiocast/internal/storage"
 )
 
-// DeploymentMode represents the deployment mode
-type DeploymentMode string
-
-const (
-	DeploymentLocal DeploymentMode = "local"
-	DeploymentGCS   DeploymentMode = "gcs"
-)
 
 // Server represents the HTTP server with all its dependencies
 type Server struct {
@@ -32,14 +25,14 @@ type Server struct {
 	MockService     *mocks.MockService
 	ReportGenerator *reports.ReportGenerator
 	Storage         storage.StorageClient
-	DeploymentMode  DeploymentMode
+	DeploymentMode  storage.DeploymentMode
 	
 	// Mutex to prevent concurrent report generation
 	generateMutex   sync.Mutex
 }
 
 // NewServer creates a new server instance
-func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, error) {
+func NewServer(cfg *config.Config, deploymentMode storage.DeploymentMode) (*Server, error) {
 	ctx := context.Background()
 	
 	server := &Server{
@@ -57,17 +50,17 @@ func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, erro
 	}
 	
 	// Initialize storage client using factory
-	storageClient, err := storage.NewStorageClient(ctx, storage.DeploymentMode(deploymentMode), cfg)
+	storageClient, err := storage.NewStorageClient(ctx, deploymentMode, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize storage client: %w", err)
 	}
 	server.Storage = storageClient
 	
-	// Initialize report generator (no longer needs outputDir)
+	// Initialize report generator
 	server.ReportGenerator = reports.NewReportGenerator()
 	
 	// Log deployment mode
-	if deploymentMode == DeploymentLocal {
+	if deploymentMode == storage.DeploymentLocal {
 		log.Printf("Local deployment mode - reports directory determined by storage client")
 	} else {
 		log.Printf("GCS deployment mode - reports will be saved to GCS bucket: %s", cfg.GCSBucket)
@@ -81,12 +74,6 @@ func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, erro
 func (s *Server) SetupRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
 	
-	// Serve static report files from reports directory
-	reportsDir := "./reports/"
-	if s.DeploymentMode == DeploymentGCS {
-		reportsDir = "/tmp/reports/"
-	}
-	fileServer := http.FileServer(http.Dir(reportsDir))
 	
 	// Handle specific API routes first
 	mux.HandleFunc("/health", s.HandleHealth)
@@ -94,8 +81,6 @@ func (s *Server) SetupRoutes() *http.ServeMux {
 	mux.HandleFunc("/reports", s.HandleListReports)
 	mux.HandleFunc("/reports/", s.HandleFileProxy)
 	
-	// Handle report directory paths (dates like 2025-09-07_15-11-33)
-	mux.Handle("/2", http.StripPrefix("/", fileServer))
 	
 	// Handle root path last (catch-all)
 	mux.HandleFunc("/", s.HandleRoot)
