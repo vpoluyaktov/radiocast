@@ -126,10 +126,9 @@ func (g *GCSClient) ListDir(ctx context.Context, dirPath string, recursive bool)
 			return nil, fmt.Errorf("failed to list objects: %w", err)
 		}
 		
-		// Remove the prefix to get relative path
-		relativePath := strings.TrimPrefix(attrs.Name, prefix)
-		if relativePath != "" {
-			files = append(files, relativePath)
+		// Keep the full path to maintain consistency with local storage
+		if attrs.Name != prefix { // Skip the directory itself
+			files = append(files, attrs.Name)
 		}
 	}
 	
