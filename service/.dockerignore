@@ -37,3 +37,12 @@ Thumbs.db
 # Go workspace
 go.work
 go.work.sum
+
+# Reports directory (generated at runtime)
+reports/
+
+# Local development scripts
+run_local.sh
+
+# Compiled binaries
+radiocast
