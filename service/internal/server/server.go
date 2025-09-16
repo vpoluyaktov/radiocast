@@ -33,7 +33,6 @@ type Server struct {
 	ReportGenerator *reports.ReportGenerator
 	Storage         storage.StorageClient
 	DeploymentMode  DeploymentMode
-	ReportsDir      string
 	
 	// Mutex to prevent concurrent report generation
 	generateMutex   sync.Mutex
@@ -43,21 +42,11 @@ type Server struct {
 func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, error) {
 	ctx := context.Background()
 	
-	// Determine reports directory
-	reportsDir := "reports" // Default to service/reports
-	if deploymentMode == DeploymentLocal {
-		reportsDir = cfg.LocalReportsDir
-		if reportsDir == "" {
-			reportsDir = "reports" // Fallback to service/reports
-		}
-	}
-	
 	server := &Server{
 		Config:         cfg,
 		Fetcher:        fetchers.NewDataFetcher(),
 		LLMClient:      llm.NewOpenAIClient(cfg.OpenAIAPIKey, cfg.OpenAIModel),
 		DeploymentMode: deploymentMode,
-		ReportsDir:     reportsDir,
 	}
 	
 	// Initialize mock service if mockup mode is enabled
@@ -68,7 +57,7 @@ func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, erro
 	}
 	
 	// Initialize storage client using factory
-	storageClient, err := storage.NewStorageClient(ctx, storage.DeploymentMode(deploymentMode), cfg, reportsDir)
+	storageClient, err := storage.NewStorageClient(ctx, storage.DeploymentMode(deploymentMode), cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize storage client: %w", err)
 	}
@@ -79,7 +68,7 @@ func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, erro
 	
 	// Log deployment mode
 	if deploymentMode == DeploymentLocal {
-		log.Printf("Local deployment mode - reports will be saved to: %s", reportsDir)
+		log.Printf("Local deployment mode - reports directory determined by storage client")
 	} else {
 		log.Printf("GCS deployment mode - reports will be saved to GCS bucket: %s", cfg.GCSBucket)
 	}

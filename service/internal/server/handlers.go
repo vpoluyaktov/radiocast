@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -163,44 +161,26 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 	
 	ctx := r.Context()
 	
-	// In local mode, serve from local storage directly
-	if s.DeploymentMode == "local" {
-		// Security check: prevent directory traversal
-		if strings.Contains(filePath, "..") {
-			http.Error(w, "Invalid file path", http.StatusBadRequest)
-			return
-		}
-		
-		// Serve from local reports directory
-		localPath := filepath.Join(s.ReportsDir, filePath)
-		if _, err := os.Stat(localPath); os.IsNotExist(err) {
-			http.Error(w, "File not found", http.StatusNotFound)
-			return
-		}
-		
-		http.ServeFile(w, r, localPath)
+	// Security check: prevent directory traversal
+	if strings.Contains(filePath, "..") {
+		http.Error(w, "Invalid file path", http.StatusBadRequest)
 		return
 	}
 	
-	// GCS mode - serve from GCS storage
-	if s.DeploymentMode == "gcs" && s.Storage != nil {
-		fileData, err := s.Storage.GetFile(ctx, filePath)
-		if err != nil {
-			log.Printf("Failed to get file from GCS: %v", err)
-			http.Error(w, "File not found", http.StatusNotFound)
-			return
-		}
-		
-		// Set appropriate content type based on file extension
-		contentType := GetContentType(filePath)
-		w.Header().Set("Content-Type", contentType)
-		w.Header().Set("Cache-Control", "public, max-age=3600")
-		w.Write(fileData)
+	// Use storage client to get file (works for both local and remote storage)
+	fileData, err := s.Storage.GetFile(ctx, filePath)
+	if err != nil {
+		log.Printf("Failed to get file from storage: %v", err)
+		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
 	
-	// If no storage is configured, return error
-	http.Error(w, "Storage not configured", http.StatusInternalServerError)
+	// Set appropriate content type
+	contentType := GetContentType(filePath)
+	w.Header().Set("Content-Type", contentType)
+	
+	// Write file data to response
+	w.Write(fileData)
 }
 
 // HandleListReports lists recent reports
@@ -242,33 +222,11 @@ func (s *Server) HandleListReports(w http.ResponseWriter, r *http.Request) {
 
 // findLatestReportURL finds the URL of the latest report
 func (s *Server) findLatestReportURL(ctx context.Context) (string, error) {
-	if s.Storage != nil {
-		// GCS mode - get latest report from storage
-		reports, err := s.Storage.ListReports(ctx, 1)
-		if err != nil || len(reports) == 0 {
-			return "", fmt.Errorf("no reports available")
-		}
-		return fmt.Sprintf("/files/%s", reports[0]), nil
+	// Use storage client to get latest report (works for both local and remote)
+	reports, err := s.Storage.ListReports(ctx, 1)
+	if err != nil || len(reports) == 0 {
+		return "", fmt.Errorf("no reports available")
 	}
-	
-	// Local mode - find latest timestamped directory
-	entries, err := os.ReadDir(s.ReportsDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to read reports directory: %w", err)
-	}
-	
-	// Find the most recent directory (sorted by name which includes timestamp)
-	var latestDir string
-	for _, entry := range entries {
-		if entry.IsDir() && entry.Name() > latestDir {
-			latestDir = entry.Name()
-		}
-	}
-	
-	if latestDir == "" {
-		return "", fmt.Errorf("no report directories found")
-	}
-	
-	return fmt.Sprintf("/%s/index.html", latestDir), nil
+	return fmt.Sprintf("/files/%s", reports[0]), nil
 }
 

@@ -16,9 +16,15 @@ const (
 )
 
 // NewStorageClient creates a storage client based on deployment mode and configuration
-func NewStorageClient(ctx context.Context, deploymentMode DeploymentMode, cfg *config.Config, reportsDir string) (StorageClient, error) {
+func NewStorageClient(ctx context.Context, deploymentMode DeploymentMode, cfg *config.Config) (StorageClient, error) {
 	switch deploymentMode {
 	case DeploymentLocal:
+		// Determine reports directory for local storage
+		reportsDir := cfg.LocalReportsDir
+		if reportsDir == "" {
+			reportsDir = "reports" // Default fallback
+		}
+		
 		localClient, err := NewLocalStorageClient(reportsDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize local storage client: %w", err)
