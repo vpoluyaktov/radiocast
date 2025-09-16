@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -37,37 +39,21 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusFound) // 302 redirect
 }
 
-// serveInitialPage shows a loading page while report is being generated
+// serveInitialPage shows an initial page if no reports are available
 func (s *Server) serveInitialPage(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprintf(w, `<!DOCTYPE html>
-<html>
-<head>
-    <title>Radio Propagation Service</title>
-	<meta http-equiv="refresh" content="60">
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; text-align: center; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0%% { transform: rotate(0deg); } 100%% { transform: rotate(360deg); } }
-        .status { background: #e3f2fd; padding: 20px; border-radius: 5px; margin: 20px 0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Radio Propagation Service</h1>
-        <div class="spinner"></div>
-        <div class="status">
-            <h3>No reports available yet...</h3>
-            <p>Please come back later.</p>
-        </div>
-        <p style="color: #666; margin-top: 30px;">
-            For amateur radio operators worldwide | 73!
-        </p>
-    </div>
-</body>
-</html>`)
+	
+	// Load template from file
+	templatePath := filepath.Join("internal", "templates", "initial_page.html")
+	templateContent, err := os.ReadFile(templatePath)
+	if err != nil {
+		log.Printf("Failed to load initial page template: %v", err)
+		// Fallback to simple error message
+		fmt.Fprintf(w, "<html><body><h1>Service Unavailable</h1><p>Please try again later.</p></body></html>")
+		return
+	}
+	
+	w.Write(templateContent)
 }
 
 // HandleHealth provides health check endpoint
