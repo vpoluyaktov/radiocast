@@ -9,6 +9,10 @@ import (
 
 // generateSolarActivitySnippet builds an ECharts bar chart for current solar activity
 func (cg *ChartGenerator) generateSolarActivitySnippet(data *models.PropagationData) (ChartSnippet, error) {
+	if data == nil {
+		return ChartSnippet{}, fmt.Errorf("data cannot be nil")
+	}
+	
 	id := "chart-solar-activity"
 
 	labels := []string{"Solar Flux", "Sunspots", "K-index"}

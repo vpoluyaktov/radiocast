@@ -105,6 +105,7 @@ jobs:
     - name: Deploy with Terraform
       env:
         TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+        TF_VAR_radiocast_api_key: ${{ secrets.RADIOCAST_API_KEY_PROD }}
         TF_VAR_image_tag: v${{ steps.version.outputs.VERSION }}
       run: |
         cd terraform
@@ -130,7 +131,8 @@ jobs:
     - name: Generate new report with updated version
       run: |
         echo "Generating new report with version v${{ steps.version.outputs.VERSION }}..."
-        RESPONSE=$(curl -s -X POST ${{ steps.get-url.outputs.SERVICE_URL }}/generate)
+        RESPONSE=$(curl -s -X POST ${{ steps.get-url.outputs.SERVICE_URL }}/generate \
+          -H "Authorization: Bearer ${{ secrets.RADIOCAST_API_KEY_PROD }}")
         echo "Report generation response: $RESPONSE"
         
         # Extract report URL from response

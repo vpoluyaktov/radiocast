@@ -68,15 +68,6 @@ func (h *HTMLBuilder) ConvertMarkdownToHTML(markdownContent string) (string, err
 	return buf.String(), nil
 }
 
-// LoadStaticCSS loads the static CSS content without template processing
-func (h *HTMLBuilder) LoadStaticCSS() (string, error) {
-	// Load raw CSS content directly
-	cssContent, err := h.templateLoader.LoadCSSStyles()
-	if err != nil {
-		return "", fmt.Errorf("failed to load CSS: %w", err)
-	}
-	return cssContent, nil
-}
 
 
 

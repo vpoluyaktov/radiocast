@@ -9,6 +9,10 @@ import (
 
 // generateBandConditionsSnippet builds an ECharts heatmap-like dot matrix for 24h x bands
 func (cg *ChartGenerator) generateBandConditionsSnippet(data *models.PropagationData) (ChartSnippet, error) {
+	if data == nil {
+		return ChartSnippet{}, fmt.Errorf("data cannot be nil")
+	}
+	
 	// No debug needed
 	id := "chart-band-conditions"
 

@@ -17,6 +17,10 @@ const (
 
 // NewStorageClient creates a storage client based on deployment mode and configuration
 func NewStorageClient(ctx context.Context, deploymentMode DeploymentMode, cfg *config.Config) (StorageClient, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("config cannot be nil")
+	}
+	
 	switch deploymentMode {
 	case DeploymentLocal:
 		// Determine reports directory for local storage

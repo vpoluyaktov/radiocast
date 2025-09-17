@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "dfh-prod-tfstate"
+    bucket = "dfh-stage-tfstate"
     prefix = "radiocast/state"
   }
 }
