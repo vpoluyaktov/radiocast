@@ -10,6 +10,10 @@ import (
 
 // generateKIndexTrendSnippet builds an ECharts line chart for K-index over last ~72h with EMA(5) and guide lines
 func (cg *ChartGenerator) generateKIndexTrendSnippet(data *models.PropagationData, sourceData *models.SourceData) (ChartSnippet, error) {
+	if data == nil {
+		return ChartSnippet{}, fmt.Errorf("data cannot be nil")
+	}
+	
 	id := "chart-k-index-trend"
 
 	// extract points from source data (prefer NOAA K-index)

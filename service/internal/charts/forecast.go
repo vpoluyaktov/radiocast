@@ -10,6 +10,10 @@ import (
 
 // generateForecastSnippet builds an ECharts bar chart snippet for the 3-day K-index forecast
 func (cg *ChartGenerator) generateForecastSnippet(data *models.PropagationData) (ChartSnippet, error) {
+	if data == nil {
+		return ChartSnippet{}, fmt.Errorf("data cannot be nil")
+	}
+	
 	id := "chart-forecast"
 
 	// Extract K-index forecasts using existing parser
