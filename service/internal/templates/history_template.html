@@ -277,9 +277,9 @@
                     }
                 });
                 
-                // Sort reports by timestamp for each date
+                // Sort reports by timestamp for each date (chronological order - oldest first)
                 this.reportsByDate.forEach(reports => {
-                    reports.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+                    reports.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
                 });
             }
             
