@@ -23,11 +23,11 @@ resource "google_cloud_scheduler_job" "daily_report" {
   }
 
   retry_config {
-    retry_count          = var.environment == "production" ? 5 : 3
-    max_retry_duration   = "300s"
-    min_backoff_duration = "5s"
-    max_backoff_duration = "60s"
-    max_doublings        = 3
+    retry_count          = 1  # Only retry once since concurrent requests will fail anyway
+    max_retry_duration   = "600s"  # 10 minutes to account for long report generation
+    min_backoff_duration = "300s"  # Wait 5 minutes before retry to avoid concurrent generation
+    max_backoff_duration = "300s"  # Keep backoff consistent
+    max_doublings        = 0  # No exponential backoff needed
   }
 
   depends_on = [google_project_service.apis]
