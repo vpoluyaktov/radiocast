@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"time"
 
 	"radiocast/internal/models"
@@ -58,41 +56,9 @@ func (so *StorageOrchestrator) storeFilesViaStorage(ctx context.Context, files *
 		}
 	}
 	
-	// Store asset files
-	for filename, data := range files.AssetFiles {
-		assetPath := reportFolderPath + "/" + filename
-		if err := so.storage.StoreFile(ctx, assetPath, data); err != nil {
-			return fmt.Errorf("failed to store asset file %s: %w", filename, err)
-		}
-	}
-	
-	// Store background image
-	if err := so.storeBackgroundImage(ctx, reportFolderPath); err != nil {
-		log.Printf("Warning: Failed to store background image: %v", err)
-	}
+	// Note: Asset files (CSS, background image) are now served from /static/ folder
+	// No need to store them in each report folder
 	
 	return nil
 }
 
-// storeBackgroundImage stores background.png using StorageClient
-func (so *StorageOrchestrator) storeBackgroundImage(ctx context.Context, reportFolderPath string) error {
-	// Try to find background image in various locations
-	candidates := []string{
-		filepath.Join("internal", "assets", "background.png"),
-		filepath.Join("service", "internal", "assets", "background.png"),
-		filepath.Join("..", "service", "internal", "assets", "background.png"),
-	}
-	
-	for _, path := range candidates {
-		if data, err := os.ReadFile(path); err == nil {
-			backgroundPath := reportFolderPath + "/background.png"
-			if err := so.storage.StoreFile(ctx, backgroundPath, data); err != nil {
-				return fmt.Errorf("failed to store background image: %w", err)
-			}
-			log.Printf("Stored background.png (%d bytes)", len(data))
-			return nil
-		}
-	}
-	
-	return fmt.Errorf("background.png not found in any candidate location")
-}

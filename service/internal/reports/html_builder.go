@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/yuin/goldmark"
@@ -49,9 +48,7 @@ type TemplateData struct {
 	Date                     string
 	GeneratedAt              string
 	Content                  template.HTML
-	CSSFilePath              string
 	Version                  string
-	BackgroundImage          string
 	
 	// Chart placeholders
 	SunGif                   template.HTML
@@ -81,25 +78,6 @@ func (h *HTMLBuilder) LoadStaticCSS() (string, error) {
 	return cssContent, nil
 }
 
-// getBackgroundImagePath returns the path for the background image based on deployment mode
-func (h *HTMLBuilder) getBackgroundImagePath(folderPath string) string {
-	if folderPath == "" {
-		// Local mode - relative path
-		return "background.png"
-	}
-	// GCS mode - use relative path (folderPath already contains the full path)
-	return "background.png"
-}
-
-// getCSSFilePath returns the path for the CSS file based on deployment mode
-func (h *HTMLBuilder) getCSSFilePath(folderPath string) string {
-	if folderPath == "" {
-		// Local mode - relative path
-		return "styles.css"
-	}
-	// GCS mode - use relative path (folderPath already contains the full path)
-	return "styles.css"
-}
 
 
 // GenerateChartData creates chart data using chart generators
@@ -158,17 +136,12 @@ func (h *HTMLBuilder) BuildCompleteHTML(
 	log.Printf("Processed HTML content length: %d", len(htmlContent))
 	log.Printf("HTML content preview: %s", htmlContent[:min(200, len(htmlContent))])
 
-	// Get CSS file path (CSS will be saved separately as static file)
-	cssFilePath := h.getCSSFilePath(folderPath)
-
 	// Prepare template data
 	templateData := TemplateData{
 		Date:                     time.Now().Format("2006-01-02"),
 		GeneratedAt:              time.Now().Format("2006-01-02 15:04:05 UTC"),
 		Content:                  template.HTML(htmlContent),
-		CSSFilePath:              cssFilePath,
 		Version:                  config.GetVersion(),
-		BackgroundImage:          h.getBackgroundImagePath(folderPath),
 		SunGif:                   sunGifHTML,
 		SolarActivityChart:       chartData.SolarActivityChart,
 		BandConditionsChart:      chartData.BandConditionsChart,
@@ -183,10 +156,6 @@ func (h *HTMLBuilder) BuildCompleteHTML(
 		return "", fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	// Update asset URLs for deployment mode (excluding background image which is already handled in CSS)
-	if folderPath != "" {
-		finalHTML = h.updateAssetURLs(finalHTML, folderPath)
-	}
 
 	log.Printf("Complete HTML built successfully (%d characters)", len(finalHTML))
 	return finalHTML, nil
@@ -205,9 +174,6 @@ func (h *HTMLBuilder) executeTemplate(data TemplateData) (string, error) {
 	tmpl, err := template.New("report").Funcs(template.FuncMap{
 		"safeHTML": func(s string) template.HTML {
 			return template.HTML(s)
-		},
-		"safeCSS": func(s string) template.CSS {
-			return template.CSS(s)
 		},
 	}).Parse(htmlTemplate)
 	if err != nil {
@@ -229,19 +195,6 @@ func (h *HTMLBuilder) executeTemplate(data TemplateData) (string, error) {
 }
 
 
-// updateAssetURLs updates asset URLs based on deployment mode
-func (h *HTMLBuilder) updateAssetURLs(html, folderPath string) string {
-	// Update background image URLs in inline styles for GCS deployment
-	html = strings.ReplaceAll(html, 
-		"url('background.png')",
-		fmt.Sprintf("url('/reports/%s/background.png')", folderPath))
-	
-	html = strings.ReplaceAll(html,
-		`url("background.png")`,
-		fmt.Sprintf(`url("/reports/%s/background.png")`, folderPath))
-
-	return html
-}
 
 // ProcessMarkdownWithPlaceholders processes markdown content and substitutes template placeholders
 func (h *HTMLBuilder) ProcessMarkdownWithPlaceholders(
