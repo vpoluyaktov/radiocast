@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radio Propagation Report - {{.Date}}</title>
+    <title>Report History - Radiocast</title>
     <link rel="stylesheet" href="/static/styles.css" type="text/css">
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -35,21 +35,46 @@
             </svg>
         </button>
         <div class="nav-dropdown" id="navDropdown">
-            <a href="/" class="nav-dropdown-item active">📡 Latest Report</a>
-            <a href="/history" class="nav-dropdown-item">📅 History</a>
+            <a href="/" class="nav-dropdown-item">📡 Latest Report</a>
+            <a href="/history" class="nav-dropdown-item active">📅 History</a>
             <a href="/theory" class="nav-dropdown-item">📚 Theory</a>
         </div>
     </div>
     
     <div class="container">
         <div class="header">
-            <!-- <div class="header-icon">📡</div> -->
-            <h1>Amateur Radio Propagation Report</h1>
-            <h2>{{.Date}}</h2>
-            <div class="generated-time">🕒 Generated: {{.GeneratedAt}}</div>
+            <h1>📅 Report History</h1>
+            <h2>Browse Previous Reports</h2>
+            <div class="generated-time">Select a date to view historical propagation reports</div>
         </div>
         <div class="content">
-            {{.Content}}
+            <div class="history-section">
+                <h2>🗓️ Available Reports</h2>
+                <p>This page will allow you to browse and select previous radio propagation reports from a calendar interface.</p>
+                
+                <div class="feature-preview">
+                    <h3>📋 Planned Features:</h3>
+                    <ul>
+                        <li><strong>📅 Calendar View</strong> - Interactive calendar to select report dates</li>
+                        <li><strong>📊 Report Thumbnails</strong> - Preview of charts and key metrics</li>
+                        <li><strong>🔍 Search & Filter</strong> - Find reports by date range or conditions</li>
+                        <li><strong>📈 Trend Analysis</strong> - Compare conditions across multiple days</li>
+                        <li><strong>⭐ Favorites</strong> - Bookmark interesting reports for quick access</li>
+                        <li><strong>📱 Mobile Optimized</strong> - Touch-friendly interface for all devices</li>
+                    </ul>
+                </div>
+                
+                <div class="coming-soon">
+                    <h3>🚧 Under Development</h3>
+                    <p>The History page is currently under development. This feature will provide:</p>
+                    <ul>
+                        <li>Access to all previously generated reports</li>
+                        <li>Easy navigation through historical data</li>
+                        <li>Comparison tools for analyzing propagation trends</li>
+                    </ul>
+                    <p><em>Check back soon for updates!</em></p>
+                </div>
+            </div>
         </div>
         <div class="footer">
             <div class="footer-content">

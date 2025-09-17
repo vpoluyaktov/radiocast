@@ -12,6 +12,7 @@ import (
 
 	"radiocast/internal/imagery"
 	"radiocast/internal/models"
+	"radiocast/internal/storage"
 )
 
 // FileGenerator handles generation of all report files
@@ -51,11 +52,8 @@ func (fg *FileGenerator) GenerateAllFiles(ctx context.Context, data *models.Prop
 		AssetFiles: make(map[string][]byte),
 	}
 	
-	// Generate unified folder path for both local and GCS modes
-	files.FolderPath = fmt.Sprintf("reports/%04d/%02d/%02d/PropagationReport-%04d-%02d-%02d-%02d-%02d-%02d",
-		timestamp.Year(), timestamp.Month(), timestamp.Day(),
-		timestamp.Year(), timestamp.Month(), timestamp.Day(),
-		timestamp.Hour(), timestamp.Minute(), timestamp.Second())
+	// Generate unified folder path using storage utility
+	files.FolderPath = storage.GenerateReportFolderPath(timestamp)
 	
 	// 1. Generate JSON files for each data source
 	if err := fg.generateSourceJSONFiles(sourceData, files); err != nil {
@@ -68,7 +66,7 @@ func (fg *FileGenerator) GenerateAllFiles(ctx context.Context, data *models.Prop
 	}
 	
 	// 3. Generate LLM-related files
-	if err := fg.generateLLMFiles(data, sourceData, markdown, files); err != nil {
+	if err := fg.generateLLMFiles(markdown, files); err != nil {
 		log.Printf("Warning: Failed to generate LLM files: %v", err)
 	}
 	
@@ -88,10 +86,6 @@ func (fg *FileGenerator) GenerateAllFiles(ctx context.Context, data *models.Prop
 		return nil, fmt.Errorf("failed to generate HTML: %w", err)
 	}
 	
-	// 7. Generate static assets (background image, echarts.js)
-	if err := fg.generateStaticAssets(files); err != nil {
-		log.Printf("Warning: Failed to generate static assets: %v", err)
-	}
 	
 	return files, nil
 }
@@ -134,7 +128,7 @@ func (fg *FileGenerator) generateNormalizedDataJSON(data *models.PropagationData
 }
 
 // generateLLMFiles generates LLM-related files (prompts, responses)
-func (fg *FileGenerator) generateLLMFiles(data *models.PropagationData, sourceData *models.SourceData, markdown string, files *GeneratedFiles) error {
+func (fg *FileGenerator) generateLLMFiles(markdown string, files *GeneratedFiles) error {
 	// Note: This requires access to LLMClient which should be passed in
 	// For now, we'll store the markdown response
 	files.JSONFiles["llm_response.md"] = []byte(markdown)
@@ -194,7 +188,7 @@ func (fg *FileGenerator) generateCSS(files *GeneratedFiles) error {
 // generateHTML generates HTML report
 func (fg *FileGenerator) generateHTML(markdown string, data *models.PropagationData, sourceData *models.SourceData, gifRelName string, files *GeneratedFiles) error {
 	// Generate HTML with folder path for GCS compatibility
-	html, err := fg.reportGenerator.GenerateHTMLWithSourcesAndFolderPath(markdown, data, sourceData, files.FolderPath)
+	html, err := fg.reportGenerator.GenerateHTML(markdown, data, sourceData, files.FolderPath)
 	if err != nil {
 		return fmt.Errorf("failed to generate HTML: %w", err)
 	}
@@ -205,35 +199,6 @@ func (fg *FileGenerator) generateHTML(markdown string, data *models.PropagationD
 	return nil
 }
 
-// generateStaticAssets generates static assets like background image and echarts.js
-func (fg *FileGenerator) generateStaticAssets(files *GeneratedFiles) error {
-	// Try to find and include background image
-	candidates := []string{
-		filepath.Join("internal", "assets", "background.png"),
-		filepath.Join("service", "internal", "assets", "background.png"),
-		filepath.Join("..", "service", "internal", "assets", "background.png"),
-	}
-	
-	for _, path := range candidates {
-		if data, err := os.ReadFile(path); err == nil {
-			files.AssetFiles["background.png"] = data
-			log.Printf("Generated background.png asset (%d bytes)", len(data))
-			break
-		}
-	}
-	
-	// Try to find and include echarts.min.js
-	for _, path := range candidates {
-		jsPath := strings.Replace(path, "background.png", "echarts.min.js", 1)
-		if data, err := os.ReadFile(jsPath); err == nil {
-			files.AssetFiles["echarts.min.js"] = data
-			log.Printf("Generated echarts.min.js asset (%d bytes)", len(data))
-			break
-		}
-	}
-	
-	return nil
-}
 
 // prepareSunGIFHTML generates the HTML section for the Sun GIF with the correct path
 func (fg *FileGenerator) prepareSunGIFHTML(gifRelName, folderPath string) string {
@@ -243,7 +208,7 @@ func (fg *FileGenerator) prepareSunGIFHTML(gifRelName, folderPath string) string
 		if !strings.HasSuffix(folderPath, "/") {
 			folderPath += "/"
 		}
-		imgSrc = "/files/" + folderPath + gifRelName
+		imgSrc = "/reports/" + folderPath + gifRelName
 	} else {
 		// Local mode - use relative path
 		imgSrc = gifRelName

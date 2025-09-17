@@ -67,4 +67,4 @@ build/
 # Service-specific
 service/radiocast
 service/tmp/
-service/reports/
+service/local_gcs/

@@ -5,114 +5,120 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
-	"time"
 )
 
 // LocalStorageClient handles local file system storage operations
+// Uses local_gcs as the root directory to mirror GCS bucket structure
 type LocalStorageClient struct {
-	baseDir string
+	rootDir string // Always "local_gcs"
 }
 
 // NewLocalStorageClient creates a new local storage client
 func NewLocalStorageClient(baseDir string) (*LocalStorageClient, error) {
-	// Ensure base directory exists
-	if err := os.MkdirAll(baseDir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create base directory %s: %w", baseDir, err)
+	// Always use local_gcs as the root directory, ignore baseDir parameter
+	rootDir := "local_gcs"
+	
+	// Ensure root directory exists
+	if err := os.MkdirAll(rootDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create root directory %s: %w", rootDir, err)
 	}
 	
 	return &LocalStorageClient{
-		baseDir: baseDir,
+		rootDir: rootDir,
 	}, nil
 }
 
-// Close is a no-op for local storage (implements same interface as GCSClient)
+// Close is a no-op for local storage
 func (l *LocalStorageClient) Close() error {
 	return nil
 }
 
+// CreateDir creates a directory (and any necessary parent directories)
+func (l *LocalStorageClient) CreateDir(ctx context.Context, dirPath string) error {
+	fullPath := filepath.Join(l.rootDir, dirPath)
+	if err := os.MkdirAll(fullPath, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", fullPath, err)
+	}
+	return nil
+}
 
-// StoreFile stores any file (JSON, text, etc.) locally in the same folder as the report
-func (l *LocalStorageClient) StoreFile(ctx context.Context, fileData []byte, filename string, timestamp time.Time) error {
-	// Generate the file path for this file
-	filePath := filepath.Join(l.baseDir, GenerateReportFolderPath(timestamp), filename)
+// StoreFile stores a file at the specified path
+func (l *LocalStorageClient) StoreFile(ctx context.Context, filePath string, fileData []byte) error {
+	fullPath := filepath.Join(l.rootDir, filePath)
 	
 	// Ensure directory exists
-	dir := filepath.Dir(filePath)
+	dir := filepath.Dir(fullPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 	
 	// Write the file
-	if err := os.WriteFile(filePath, fileData, 0644); err != nil {
-		return fmt.Errorf("failed to write file %s: %w", filePath, err)
+	if err := os.WriteFile(fullPath, fileData, 0644); err != nil {
+		return fmt.Errorf("failed to write file %s: %w", fullPath, err)
 	}
 	
 	return nil
 }
 
-
-// GetFile retrieves any file from local storage
+// GetFile retrieves a file from the specified path
 func (l *LocalStorageClient) GetFile(ctx context.Context, filePath string) ([]byte, error) {
-	data, err := os.ReadFile(filePath)
+	fullPath := filepath.Join(l.rootDir, filePath)
+	data, err := os.ReadFile(fullPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
+		return nil, fmt.Errorf("failed to read file %s: %w", fullPath, err)
 	}
 	return data, nil
 }
 
-// GetLatestReport gets the most recent report from local storage
-func (l *LocalStorageClient) GetLatestReport() (string, error) {
-	ctx := context.Background()
-	reports, err := l.ListReports(ctx, 1)
-	if err != nil {
-		return "", err
-	}
+// ListDir lists contents of a directory
+func (l *LocalStorageClient) ListDir(ctx context.Context, dirPath string, recursive bool) ([]string, error) {
+	fullPath := filepath.Join(l.rootDir, dirPath)
 	
-	if len(reports) == 0 {
-		return "", fmt.Errorf("no reports found")
-	}
+	var files []string
 	
-	return reports[0], nil
-}
-
-
-// ListReports lists recent reports from local storage, sorted by creation time (newest first)
-func (l *LocalStorageClient) ListReports(ctx context.Context, limit int) ([]string, error) {
-	reportsPath := filepath.Join(l.baseDir, "reports")
-	
-	var reportPaths []string
-	
-	err := filepath.Walk(reportsPath, func(path string, info os.FileInfo, err error) error {
+	if recursive {
+		err := filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return nil // Skip errors and continue
+			}
+			
+			if !info.IsDir() {
+				// Get relative path from rootDir
+				relPath, _ := filepath.Rel(l.rootDir, path)
+				files = append(files, relPath)
+			}
+			return nil
+		})
+		
 		if err != nil {
-			return nil // Skip errors and continue
+			return nil, fmt.Errorf("failed to walk directory %s: %w", fullPath, err)
+		}
+	} else {
+		entries, err := os.ReadDir(fullPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read directory %s: %w", fullPath, err)
 		}
 		
-		// Look for index.html files
-		if info.Name() == "index.html" {
-			// Get relative path from baseDir
-			relPath, _ := filepath.Rel(l.baseDir, path)
-			reportPaths = append(reportPaths, relPath)
+		for _, entry := range entries {
+			entryPath := filepath.Join(dirPath, entry.Name())
+			files = append(files, entryPath)
 		}
-		return nil
-	})
+	}
 	
+	return files, nil
+}
+
+// FileExists checks if a file exists at the specified path
+func (l *LocalStorageClient) FileExists(ctx context.Context, filePath string) (bool, error) {
+	fullPath := filepath.Join(l.rootDir, filePath)
+	_, err := os.Stat(fullPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to walk reports directory: %w", err)
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to check file existence %s: %w", fullPath, err)
 	}
-	
-	// Sort alphabetically, then reverse for newest first
-	sort.Strings(reportPaths)
-	for i, j := 0, len(reportPaths)-1; i < j; i, j = i+1, j-1 {
-		reportPaths[i], reportPaths[j] = reportPaths[j], reportPaths[i]
-	}
-	
-	// Apply limit
-	if limit > 0 && limit < len(reportPaths) {
-		reportPaths = reportPaths[:limit]
-	}
-	
-	return reportPaths, nil
+	return true, nil
 }
 
 

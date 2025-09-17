@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -16,13 +17,6 @@ import (
 	"radiocast/internal/storage"
 )
 
-// DeploymentMode represents the deployment mode
-type DeploymentMode string
-
-const (
-	DeploymentLocal DeploymentMode = "local"
-	DeploymentGCS   DeploymentMode = "gcs"
-)
 
 // Server represents the HTTP server with all its dependencies
 type Server struct {
@@ -32,32 +26,21 @@ type Server struct {
 	MockService     *mocks.MockService
 	ReportGenerator *reports.ReportGenerator
 	Storage         storage.StorageClient
-	DeploymentMode  DeploymentMode
-	ReportsDir      string
+	DeploymentMode  storage.DeploymentMode
 	
 	// Mutex to prevent concurrent report generation
 	generateMutex   sync.Mutex
 }
 
 // NewServer creates a new server instance
-func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, error) {
+func NewServer(cfg *config.Config, deploymentMode storage.DeploymentMode) (*Server, error) {
 	ctx := context.Background()
-	
-	// Determine reports directory
-	reportsDir := "reports" // Default to service/reports
-	if deploymentMode == DeploymentLocal {
-		reportsDir = cfg.LocalReportsDir
-		if reportsDir == "" {
-			reportsDir = "reports" // Fallback to service/reports
-		}
-	}
 	
 	server := &Server{
 		Config:         cfg,
 		Fetcher:        fetchers.NewDataFetcher(),
 		LLMClient:      llm.NewOpenAIClient(cfg.OpenAIAPIKey, cfg.OpenAIModel),
 		DeploymentMode: deploymentMode,
-		ReportsDir:     reportsDir,
 	}
 	
 	// Initialize mock service if mockup mode is enabled
@@ -67,23 +50,29 @@ func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, erro
 		log.Printf("Mockup mode enabled - using mock data from %s", mocksDir)
 	}
 	
-	// Initialize components based on deployment mode
-	if deploymentMode == DeploymentLocal {
-		log.Printf("Local deployment mode - reports will be saved to: %s", reportsDir)
-		server.ReportGenerator = reports.NewReportGenerator(reportsDir)
-		localClient, err := storage.NewLocalStorageClient(reportsDir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize local storage client: %w", err)
-		}
-		server.Storage = localClient
+	// Initialize storage client using factory
+	storageClient, err := storage.NewStorageClient(ctx, deploymentMode, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize storage client: %w", err)
+	}
+	server.Storage = storageClient
+	
+	// Initialize report generator
+	server.ReportGenerator = reports.NewReportGenerator()
+	
+	// Initialize static assets
+	if err := server.initializeStaticAssets(ctx); err != nil {
+		log.Printf("ERROR: Failed to initialize static assets: %v", err)
+		log.Printf("Static pages (/history, /theory, /static/*) may not work correctly")
+	} else {
+		log.Printf("Static assets initialized successfully")
+	}
+	
+	// Log deployment mode
+	if deploymentMode == storage.DeploymentLocal {
+		log.Printf("Local deployment mode - reports directory determined by storage client")
 	} else {
 		log.Printf("GCS deployment mode - reports will be saved to GCS bucket: %s", cfg.GCSBucket)
-		gcsClient, err := storage.NewGCSClient(ctx, cfg.GCSBucket)
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize GCS client: %w", err)
-		}
-		server.ReportGenerator = reports.NewReportGenerator("") // Empty for GCS mode
-		server.Storage = gcsClient
 	}
 	
 	
@@ -94,26 +83,86 @@ func NewServer(cfg *config.Config, deploymentMode DeploymentMode) (*Server, erro
 func (s *Server) SetupRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
 	
-	// Serve static report files from reports directory
-	reportsDir := "./reports/"
-	if s.DeploymentMode == DeploymentGCS {
-		reportsDir = "/tmp/reports/"
-	}
-	fileServer := http.FileServer(http.Dir(reportsDir))
 	
 	// Handle specific API routes first
 	mux.HandleFunc("/health", s.HandleHealth)
 	mux.HandleFunc("/generate", s.HandleGenerate)
 	mux.HandleFunc("/reports", s.HandleListReports)
-	mux.HandleFunc("/files/", s.HandleFileProxy)
+	mux.HandleFunc("/reports/", s.HandleFileProxy)
 	
-	// Handle report directory paths (dates like 2025-09-07_15-11-33)
-	mux.Handle("/2", http.StripPrefix("/", fileServer))
+	// Handle static pages
+	mux.HandleFunc("/history", s.HandleHistory)
+	mux.HandleFunc("/theory", s.HandleTheory)
+	mux.HandleFunc("/static/styles.css", s.HandleStaticCSS)
+	mux.HandleFunc("/static/background.png", s.HandleStaticBackground)
 	
 	// Handle root path last (catch-all)
 	mux.HandleFunc("/", s.HandleRoot)
 	
 	return mux
+}
+
+// initializeStaticAssets uploads static assets and HTML pages to storage
+func (s *Server) initializeStaticAssets(ctx context.Context) error {
+	staticDir := filepath.Join("internal", "static")
+	templatesDir := filepath.Join("internal", "templates")
+	
+	// Store CSS file
+	cssPath := filepath.Join(staticDir, "styles.css")
+	cssData, err := os.ReadFile(cssPath)
+	if err != nil {
+		return fmt.Errorf("failed to read CSS file: %w", err)
+	}
+	if err := s.Storage.StoreFile(ctx, "static/styles.css", cssData); err != nil {
+		return fmt.Errorf("failed to store CSS file: %w", err)
+	}
+	log.Printf("Static CSS file uploaded successfully")
+	
+	// Store background image
+	bgPath := filepath.Join(staticDir, "background.png")
+	bgData, err := os.ReadFile(bgPath)
+	if err != nil {
+		return fmt.Errorf("failed to read background image: %w", err)
+	}
+	if err := s.Storage.StoreFile(ctx, "static/background.png", bgData); err != nil {
+		return fmt.Errorf("failed to store background image: %w", err)
+	}
+	log.Printf("Static background image uploaded successfully")
+	
+	// Store history page
+	historyPath := filepath.Join(templatesDir, "history_template.html")
+	historyData, err := os.ReadFile(historyPath)
+	if err != nil {
+		return fmt.Errorf("failed to read history template: %w", err)
+	}
+	// Store as a regular file in history folder
+	if err := s.storeHTMLPage(ctx, historyData, "history/index.html"); err != nil {
+		return fmt.Errorf("failed to store history page: %w", err)
+	}
+	log.Printf("History page uploaded successfully")
+	
+	// Store theory page
+	theoryPath := filepath.Join(templatesDir, "theory_template.html")
+	theoryData, err := os.ReadFile(theoryPath)
+	if err != nil {
+		return fmt.Errorf("failed to read theory template: %w", err)
+	}
+	// Store as a regular file in theory folder
+	if err := s.storeHTMLPage(ctx, theoryData, "theory/index.html"); err != nil {
+		return fmt.Errorf("failed to store theory page: %w", err)
+	}
+	log.Printf("Theory page uploaded successfully")
+	
+	return nil
+}
+
+// storeHTMLPage stores an HTML page directly to storage
+func (s *Server) storeHTMLPage(ctx context.Context, htmlData []byte, filePath string) error {
+	// Use the unified storage interface for both local and GCS
+	if err := s.Storage.StoreFile(ctx, filePath, htmlData); err != nil {
+		return fmt.Errorf("failed to store HTML file %s: %w", filePath, err)
+	}
+	return nil
 }
 
 // Close cleans up server resources

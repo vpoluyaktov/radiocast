@@ -10,6 +10,7 @@ import (
 
 	"radiocast/internal/config"
 	"radiocast/internal/server"
+	"radiocast/internal/storage"
 )
 
 func TestHealthEndpoint(t *testing.T) {
@@ -21,7 +22,8 @@ func TestHealthEndpoint(t *testing.T) {
 		Environment:  "test",
 	}
 
-	srv, err := server.NewServer(cfg, server.DeploymentLocal)
+	// Test server creation with local deployment mode
+	srv, err := server.NewServer(cfg, storage.DeploymentLocal)
 	if err != nil {
 		t.Skip("Skipping test - server creation failed (expected in test environment)")
 	}

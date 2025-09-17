@@ -7,9 +7,9 @@ import (
 )
 
 // GenerateReportFolderPath generates a consistent folder path for reports
-// Format: reports/YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS
+// Format: YYYY/MM/DD/PropagationReport-YYYY-MM-DD-HH-MM-SS
 func GenerateReportFolderPath(timestamp time.Time) string {
-	return fmt.Sprintf("reports/%04d/%02d/%02d/PropagationReport-%04d-%02d-%02d-%02d-%02d-%02d",
+	return fmt.Sprintf("%04d/%02d/%02d/PropagationReport-%04d-%02d-%02d-%02d-%02d-%02d",
 		timestamp.Year(), timestamp.Month(), timestamp.Day(),
 		timestamp.Year(), timestamp.Month(), timestamp.Day(),
 		timestamp.Hour(), timestamp.Minute(), timestamp.Second())

@@ -31,7 +31,7 @@ WORKDIR /home/radiocast
 # Copy only the binary and essential runtime files from builder stage
 COPY --from=builder --chown=radiocast:radiocast /app/radiocast .
 COPY --from=builder --chown=radiocast:radiocast /app/internal/templates ./internal/templates
-COPY --from=builder --chown=radiocast:radiocast /app/internal/assets ./internal/assets
+COPY --from=builder --chown=radiocast:radiocast /app/internal/static ./internal/static
 
 # Make binary executable
 RUN chmod +x radiocast

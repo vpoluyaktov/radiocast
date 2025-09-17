@@ -12,6 +12,7 @@ import (
 
 	"radiocast/internal/config"
 	"radiocast/internal/server"
+	"radiocast/internal/storage"
 )
 
 func main() {
@@ -22,12 +23,12 @@ func main() {
 	flag.Parse()
 	
 	// Validate deployment mode
-	var deploymentMode server.DeploymentMode
+	var deploymentMode storage.DeploymentMode
 	switch *deploymentFlag {
 	case "local":
-		deploymentMode = server.DeploymentLocal
+		deploymentMode = storage.DeploymentLocal
 	case "gcs":
-		deploymentMode = server.DeploymentGCS
+		deploymentMode = storage.DeploymentGCS
 	default:
 		log.Fatalf("Invalid deployment mode: %s. Use 'local' or 'gcs'", *deploymentFlag)
 	}

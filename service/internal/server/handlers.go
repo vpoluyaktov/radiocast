@@ -8,16 +8,15 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
-	"radiocast/internal/models"
 	"radiocast/internal/reports"
 )
 
 // HandleRoot serves the main page with redirect to latest report
 func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
-	log.Printf("DEBUG: handleRoot called - method: %s, URL: %s", r.Method, r.URL.Path)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -40,37 +39,21 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusFound) // 302 redirect
 }
 
-// serveInitialPage shows a loading page while report is being generated
+// serveInitialPage shows an initial page if no reports are available
 func (s *Server) serveInitialPage(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprintf(w, `<!DOCTYPE html>
-<html>
-<head>
-    <title>Radio Propagation Service</title>
-	<meta http-equiv="refresh" content="60">
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; text-align: center; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0%% { transform: rotate(0deg); } 100%% { transform: rotate(360deg); } }
-        .status { background: #e3f2fd; padding: 20px; border-radius: 5px; margin: 20px 0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Radio Propagation Service</h1>
-        <div class="spinner"></div>
-        <div class="status">
-            <h3>No reports available yet...</h3>
-            <p>Please come back later.</p>
-        </div>
-        <p style="color: #666; margin-top: 30px;">
-            For amateur radio operators worldwide | 73!
-        </p>
-    </div>
-</body>
-</html>`)
+	
+	// Load template from file
+	templatePath := filepath.Join("internal", "templates", "initial_page.html")
+	templateContent, err := os.ReadFile(templatePath)
+	if err != nil {
+		log.Printf("Failed to load initial page template: %v", err)
+		// Fallback to simple error message
+		fmt.Fprintf(w, "<html><body><h1>Service Unavailable</h1><p>Please try again later.</p></body></html>")
+		return
+	}
+	
+	w.Write(templateContent)
 }
 
 // HandleHealth provides health check endpoint
@@ -122,7 +105,18 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Starting report generation...")
 	
 	// Generate new report
-	result, err := s.generateReport(ctx)
+	storageOrchestrator := reports.NewStorageOrchestrator(s.Storage, string(s.DeploymentMode))
+	deploymentModeStr := string(s.DeploymentMode)
+	result, err := s.ReportGenerator.GenerateCompleteReport(
+		ctx,
+		s.Config,
+		s.Fetcher,
+		s.LLMClient,
+		s.MockService,
+		s.Storage,
+		deploymentModeStr,
+		storageOrchestrator,
+	)
 	if err != nil {
 		log.Printf("Report generation failed: %v", err)
 		http.Error(w, "Report generation failed: "+err.Error(), http.StatusInternalServerError)
@@ -137,40 +131,6 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
-// generateReport delegates to ReportGenerator for business logic
-func (s *Server) generateReport(ctx context.Context) (map[string]interface{}, error) {
-	// Create file manager function to pass to ReportGenerator
-	fileManagerFunc := func(ctx context.Context, data *models.PropagationData, sourceData *models.SourceData, markdownReport string) (interface{}, error) {
-		// Generate files using FileGenerator
-		fileGenerator := reports.NewFileGenerator(s.ReportGenerator, s.MockService)
-		files, err := fileGenerator.GenerateAllFiles(ctx, data, sourceData, markdownReport, s.Config.MockupMode)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate files: %w", err)
-		}
-		
-		// Store files using FileManager
-		fileManager := NewFileManager(s)
-		if err := fileManager.StoreAllFiles(ctx, files, data); err != nil {
-			return nil, fmt.Errorf("failed to store files: %w", err)
-		}
-		
-		return files, nil
-	}
-
-	// Delegate to ReportGenerator
-	deploymentModeStr := string(s.DeploymentMode)
-	return s.ReportGenerator.GenerateCompleteReport(
-		ctx,
-		s.Config,
-		s.Fetcher,
-		s.LLMClient,
-		s.MockService,
-		s.Storage,
-		deploymentModeStr,
-		fileManagerFunc,
-	)
-}
-
 // HandleFileProxy serves files from local storage or GCS
 func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -178,8 +138,8 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Extract file path from URL (e.g., /files/2025-09-05_23-40-58/index.html)
-	filePath := strings.TrimPrefix(r.URL.Path, "/files/")
+	// Extract file path from URL (e.g., /reports/2025-09-05_23-40-58/index.html)
+	filePath := strings.TrimPrefix(r.URL.Path, "/reports/")
 	if filePath == "" {
 		http.Error(w, "File path required", http.StatusBadRequest)
 		return
@@ -187,44 +147,29 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 	
 	ctx := r.Context()
 	
-	// In local mode, serve from local storage directly
-	if s.DeploymentMode == "local" {
-		// Security check: prevent directory traversal
-		if strings.Contains(filePath, "..") {
-			http.Error(w, "Invalid file path", http.StatusBadRequest)
-			return
-		}
-		
-		// Serve from local reports directory
-		localPath := filepath.Join(s.ReportsDir, filePath)
-		if _, err := os.Stat(localPath); os.IsNotExist(err) {
-			http.Error(w, "File not found", http.StatusNotFound)
-			return
-		}
-		
-		http.ServeFile(w, r, localPath)
+	// Security check: prevent directory traversal
+	if strings.Contains(filePath, "..") {
+		http.Error(w, "Invalid file path", http.StatusBadRequest)
 		return
 	}
 	
-	// GCS mode - serve from GCS storage
-	if s.DeploymentMode == "gcs" && s.Storage != nil {
-		fileData, err := s.Storage.GetFile(ctx, filePath)
-		if err != nil {
-			log.Printf("Failed to get file from GCS: %v", err)
-			http.Error(w, "File not found", http.StatusNotFound)
-			return
-		}
-		
-		// Set appropriate content type based on file extension
-		contentType := s.getContentType(filePath)
-		w.Header().Set("Content-Type", contentType)
-		w.Header().Set("Cache-Control", "public, max-age=3600")
-		w.Write(fileData)
+	// Use storage client to get file (works for both local and remote storage)
+	// Both local and GCS store files with "reports/" prefix in the unified structure
+	actualFilePath := "reports/" + filePath
+	
+	fileData, err := s.Storage.GetFile(ctx, actualFilePath)
+	if err != nil {
+		log.Printf("Failed to get file from storage: %v", err)
+		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
 	
-	// If no storage is configured, return error
-	http.Error(w, "Storage not configured", http.StatusInternalServerError)
+	// Set appropriate content type
+	contentType := GetContentType(filePath)
+	w.Header().Set("Content-Type", contentType)
+	
+	// Write file data to response
+	w.Write(fileData)
 }
 
 // HandleListReports lists recent reports
@@ -247,11 +192,29 @@ func (s *Server) HandleListReports(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	reports, err := s.Storage.ListReports(ctx, limit)
+	// List all files in reports directory recursively
+	allFiles, err := s.Storage.ListDir(ctx, "reports", true)
 	if err != nil {
 		log.Printf("Failed to list reports: %v", err)
 		http.Error(w, "Failed to list reports: "+err.Error(), http.StatusInternalServerError)
 		return
+	}
+	
+	// Filter for index.html files and extract report paths
+	var reports []string
+	for _, file := range allFiles {
+		if strings.HasSuffix(file, "/index.html") {
+			reports = append(reports, file)
+		}
+	}
+	
+	// Sort and limit results (newest first - reverse alphabetical)
+	sort.Strings(reports)
+	for i, j := 0, len(reports)-1; i < j; i, j = i+1, j-1 {
+		reports[i], reports[j] = reports[j], reports[i]
+	}
+	if limit > 0 && limit < len(reports) {
+		reports = reports[:limit]
 	}
 	
 	response := map[string]interface{}{
@@ -266,54 +229,123 @@ func (s *Server) HandleListReports(w http.ResponseWriter, r *http.Request) {
 
 // findLatestReportURL finds the URL of the latest report
 func (s *Server) findLatestReportURL(ctx context.Context) (string, error) {
-	if s.Storage != nil {
-		// GCS mode - get latest report from storage
-		reports, err := s.Storage.ListReports(ctx, 1)
-		if err != nil || len(reports) == 0 {
-			return "", fmt.Errorf("no reports available")
-		}
-		return fmt.Sprintf("/files/%s", reports[0]), nil
-	}
-	
-	// Local mode - find latest timestamped directory
-	entries, err := os.ReadDir(s.ReportsDir)
+	// List all files in reports directory recursively
+	allFiles, err := s.Storage.ListDir(ctx, "reports", true)
 	if err != nil {
-		return "", fmt.Errorf("failed to read reports directory: %w", err)
+		return "", fmt.Errorf("failed to list reports: %w", err)
 	}
 	
-	// Find the most recent directory (sorted by name which includes timestamp)
-	var latestDir string
-	for _, entry := range entries {
-		if entry.IsDir() && entry.Name() > latestDir {
-			latestDir = entry.Name()
+	// Filter for index.html files
+	var reports []string
+	for _, file := range allFiles {
+		if strings.HasSuffix(file, "/index.html") {
+			reports = append(reports, file)
 		}
 	}
 	
-	if latestDir == "" {
-		return "", fmt.Errorf("no report directories found")
+	if len(reports) == 0 {
+		return "", fmt.Errorf("no reports available")
 	}
 	
-	return fmt.Sprintf("/%s/index.html", latestDir), nil
+	// Sort and get the latest (newest first - reverse alphabetical)
+	sort.Strings(reports)
+	for i, j := 0, len(reports)-1; i < j; i, j = i+1, j-1 {
+		reports[i], reports[j] = reports[j], reports[i]
+	}
+	
+	reportPath := reports[0]
+	// Add leading slash (reportPath already includes "reports/" prefix)
+	return "/" + reportPath, nil
 }
 
-// getContentType returns the appropriate content type for a file
-func (s *Server) getContentType(filePath string) string {
-	if strings.HasSuffix(filePath, ".html") {
-		return "text/html"
-	} else if strings.HasSuffix(filePath, ".png") {
-		return "image/png"
-	} else if strings.HasSuffix(filePath, ".gif") {
-		return "image/gif"
-	} else if strings.HasSuffix(filePath, ".json") {
-		return "application/json"
-	} else if strings.HasSuffix(filePath, ".txt") {
-		return "text/plain"
-	} else if strings.HasSuffix(filePath, ".md") {
-		return "text/markdown"
-	} else if strings.HasSuffix(filePath, ".css") {
-		return "text/css"
-	} else if strings.HasSuffix(filePath, ".js") {
-		return "application/javascript"
+// HandleHistory serves the history page
+func (s *Server) HandleHistory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
 	}
-	return "application/octet-stream"
+	
+	w.Header().Set("Content-Type", "text/html")
+	
+	ctx := r.Context()
+	
+	// Load history page from storage
+	historyContent, err := s.Storage.GetFile(ctx, "history/index.html")
+	if err != nil {
+		log.Printf("Failed to load history page: %v", err)
+		http.Error(w, "History page not found", http.StatusInternalServerError)
+		return
+	}
+	
+	w.Write(historyContent)
 }
+
+// HandleTheory serves the theory page
+func (s *Server) HandleTheory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "text/html")
+	
+	ctx := r.Context()
+	
+	// Load theory page from storage
+	theoryContent, err := s.Storage.GetFile(ctx, "theory/index.html")
+	if err != nil {
+		log.Printf("Failed to load theory page: %v", err)
+		http.Error(w, "Theory page not found", http.StatusInternalServerError)
+		return
+	}
+	
+	w.Write(theoryContent)
+}
+
+// HandleStaticCSS serves the static CSS file for History and Theory pages
+func (s *Server) HandleStaticCSS(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "text/css")
+	
+	ctx := r.Context()
+	
+	// Try to get CSS from static assets storage path
+	cssPath := "static/styles.css"
+	cssContent, err := s.Storage.GetFile(ctx, cssPath)
+	if err != nil {
+		log.Printf("Failed to load CSS from storage: %v", err)
+		http.Error(w, "CSS not found", http.StatusInternalServerError)
+		return
+	}
+	
+	w.Write(cssContent)
+}
+
+// HandleStaticBackground serves the background image for History and Theory pages
+func (s *Server) HandleStaticBackground(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "image/png")
+	
+	ctx := r.Context()
+	
+	// Try to get background image from static assets storage path
+	imagePath := "static/background.png"
+	imageContent, err := s.Storage.GetFile(ctx, imagePath)
+	if err != nil {
+		log.Printf("Failed to load background image from storage: %v", err)
+		http.Error(w, "Background image not found", http.StatusInternalServerError)
+		return
+	}
+	
+	w.Write(imageContent)
+}
+
+
