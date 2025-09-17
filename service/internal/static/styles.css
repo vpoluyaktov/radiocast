@@ -1277,7 +1277,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 .desktop-layout .calendar-container {
     background: rgba(255, 255, 255, 0.3);
     border-radius: 8px;
-    padding: 8px;
+    padding: 8px 8px 4px 8px;
     margin: 10px 0 0 0;
     overflow: hidden;
 }
@@ -1334,7 +1334,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     border-radius: 4px;
     transition: all 0.3s ease;
     position: relative;
-    height: 75px;
+    height: 95px;
     border: 1px solid transparent;
     padding: 3px;
     overflow: hidden;
