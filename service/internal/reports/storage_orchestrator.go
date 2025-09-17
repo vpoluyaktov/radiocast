@@ -56,8 +56,18 @@ func (so *StorageOrchestrator) storeFilesViaStorage(ctx context.Context, files *
 		}
 	}
 	
-	// Note: Asset files (CSS, background image) are now served from /static/ folder
-	// No need to store them in each report folder
+	// Store asset files (excluding CSS and background image which are served from /static/)
+	for filename, data := range files.AssetFiles {
+		// Only store dynamic assets like sun GIF, skip static assets
+		if filename == "styles.css" || filename == "background.png" {
+			continue // Skip static assets - they're served from /static/ folder
+		}
+		assetPath := reportFolderPath + "/" + filename
+		if err := so.storage.StoreFile(ctx, assetPath, data); err != nil {
+			return fmt.Errorf("failed to store asset file %s: %w", filename, err)
+		}
+		log.Printf("Stored asset file: %s (%d bytes)", filename, len(data))
+	}
 	
 	return nil
 }
