@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
 
+	"radiocast/internal/logger"
 	"radiocast/internal/models"
 
 	"github.com/sashabaranov/go-openai"
@@ -39,12 +39,12 @@ func (c *OpenAIClient) GenerateReportWithSources(data *models.PropagationData, s
 		return "", fmt.Errorf("OpenAI client not initialized")
 	}
 
-	log.Printf("Generating report for %s", data.Timestamp.Format("2006-01-02"))
+	logger.Infof("Generating report for %s", data.Timestamp.Format("2006-01-02"))
 
 	// Load system prompt from file
 	systemPrompt, err := c.loadSystemPrompt()
 	if err != nil {
-		log.Printf("Failed to load system prompt: %v", err)
+		logger.Infof("Failed to load system prompt: %v", err)
 		systemPrompt = c.getDefaultSystemPrompt()
 	}
 
@@ -77,7 +77,7 @@ func (c *OpenAIClient) GenerateReportWithSources(data *models.PropagationData, s
 	)
 
 	if err != nil {
-		log.Printf("OpenAI API error: %v", err)
+		logger.Infof("OpenAI API error: %v", err)
 		return "", fmt.Errorf("OpenAI API error: %w", err)
 	}
 
@@ -86,7 +86,7 @@ func (c *OpenAIClient) GenerateReportWithSources(data *models.PropagationData, s
 	}
 
 	report := resp.Choices[0].Message.Content
-	log.Printf("Generated report with %d characters", len(report))
+	logger.Infof("Generated report with %d characters", len(report))
 	
 	return report, nil
 }
@@ -125,7 +125,7 @@ func (c *OpenAIClient) BuildPrompt(sourceData *models.SourceData, data *models.P
 func (c *OpenAIClient) GetSystemPrompt() string {
 	systemPrompt, err := c.loadSystemPrompt()
 	if err != nil {
-		log.Printf("Failed to load system prompt: %v", err)
+		logger.Infof("Failed to load system prompt: %v", err)
 		return c.getDefaultSystemPrompt()
 	}
 	return systemPrompt

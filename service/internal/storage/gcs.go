@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"strings"
+
+	"radiocast/internal/logger"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
@@ -44,7 +45,7 @@ func (g *GCSClient) CreateDir(ctx context.Context, dirPath string) error {
 
 // StoreFile stores a file at the specified path
 func (g *GCSClient) StoreFile(ctx context.Context, filePath string, fileData []byte) error {
-	log.Printf("Storing file to GCS: gs://%s/%s", g.bucket, filePath)
+	logger.Debugf("Storing file to GCS: gs://%s/%s", g.bucket, filePath)
 	
 	// Get bucket handle
 	bucket := g.client.Bucket(g.bucket)
@@ -71,7 +72,7 @@ func (g *GCSClient) StoreFile(ctx context.Context, filePath string, fileData []b
 		return fmt.Errorf("failed to finalize GCS file upload: %w", err)
 	}
 	
-	log.Printf("File successfully stored: %s", filePath)
+	logger.Debugf("File successfully stored: %s", filePath)
 	return nil
 }
 

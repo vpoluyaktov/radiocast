@@ -33,6 +33,7 @@ type Config struct {
 	// Service configuration
 	Environment string `env:"ENVIRONMENT,default=development"`
 	LogLevel    string `env:"LOG_LEVEL,default=info"`
+	LogFormat   string `env:"LOG_FORMAT,default=auto"`
 }
 
 // Load loads configuration from environment variables

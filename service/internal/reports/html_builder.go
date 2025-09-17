@@ -4,17 +4,17 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"log"
 	"time"
+
+	"radiocast/internal/charts"
+	"radiocast/internal/config"
+	"radiocast/internal/logger"
+	"radiocast/internal/models"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
-
-	"radiocast/internal/config"
-	"radiocast/internal/models"
-	"radiocast/internal/charts"
 )
 
 // HTMLBuilder handles HTML generation with goldmark
@@ -127,14 +127,14 @@ func (h *HTMLBuilder) BuildCompleteHTML(
 	sunGifHTML template.HTML,
 	folderPath string) (string, error) {
 
-	log.Println("Building complete HTML...")
+	logger.Info("Building complete HTML...")
 
 	// Use the already processed HTML content directly (no markdown conversion needed)
 	htmlContent := processedHTMLContent
 	
 	// Debug: Log the processed HTML content
-	log.Printf("Processed HTML content length: %d", len(htmlContent))
-	log.Printf("HTML content preview: %s", htmlContent[:min(200, len(htmlContent))])
+	logger.Debugf("Processed HTML content length: %d", len(htmlContent))
+	logger.Debugf("HTML content preview: %s", htmlContent[:min(200, len(htmlContent))])
 
 	// Prepare template data
 	templateData := TemplateData{
@@ -157,7 +157,7 @@ func (h *HTMLBuilder) BuildCompleteHTML(
 	}
 
 
-	log.Printf("Complete HTML built successfully (%d characters)", len(finalHTML))
+	logger.Debugf("Complete HTML built successfully (%d characters)", len(finalHTML))
 	return finalHTML, nil
 }
 
@@ -181,7 +181,7 @@ func (h *HTMLBuilder) executeTemplate(data TemplateData) (string, error) {
 	}
 
 	// Debug: Log template data before execution
-	log.Printf("Template data Content length: %d", len(string(data.Content)))
+	logger.Debugf("Template data Content length: %d", len(string(data.Content)))
 
 	// Execute template
 	var buf bytes.Buffer

@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"radiocast/internal/config"
 	"radiocast/internal/fetchers"
 	"radiocast/internal/llm"
+	"radiocast/internal/logger"
 	"radiocast/internal/mocks"
 	"radiocast/internal/reports"
 	"radiocast/internal/storage"
@@ -47,7 +47,7 @@ func NewServer(cfg *config.Config, deploymentMode storage.DeploymentMode) (*Serv
 	if cfg.MockupMode {
 		mocksDir := filepath.Join("internal", "mocks")
 		server.MockService = mocks.NewMockService(mocksDir)
-		log.Printf("Mockup mode enabled - using mock data from %s", mocksDir)
+		logger.Infof("Mockup mode enabled - using mock data from %s", mocksDir)
 	}
 	
 	// Initialize storage client using factory
@@ -62,17 +62,17 @@ func NewServer(cfg *config.Config, deploymentMode storage.DeploymentMode) (*Serv
 	
 	// Initialize static assets
 	if err := server.initializeStaticAssets(ctx); err != nil {
-		log.Printf("ERROR: Failed to initialize static assets: %v", err)
-		log.Printf("Static pages (/history, /theory, /static/*) may not work correctly")
+		logger.Infof("ERROR: Failed to initialize static assets: %v", err)
+		logger.Infof("Static pages (/history, /theory, /static/*) may not work correctly")
 	} else {
-		log.Printf("Static assets initialized successfully")
+		logger.Infof("Static assets initialized successfully")
 	}
 	
 	// Log deployment mode
 	if deploymentMode == storage.DeploymentLocal {
-		log.Printf("Local deployment mode - reports directory determined by storage client")
+		logger.Infof("Local deployment mode - reports directory determined by storage client")
 	} else {
-		log.Printf("GCS deployment mode - reports will be saved to GCS bucket: %s", cfg.GCSBucket)
+		logger.Infof("GCS deployment mode - reports will be saved to GCS bucket: %s", cfg.GCSBucket)
 	}
 	
 	
@@ -116,7 +116,7 @@ func (s *Server) initializeStaticAssets(ctx context.Context) error {
 	if err := s.Storage.StoreFile(ctx, "static/styles.css", cssData); err != nil {
 		return fmt.Errorf("failed to store CSS file: %w", err)
 	}
-	log.Printf("Static CSS file uploaded successfully")
+	logger.Infof("Static CSS file uploaded successfully")
 	
 	// Store background image
 	bgPath := filepath.Join(staticDir, "background.png")
@@ -127,7 +127,7 @@ func (s *Server) initializeStaticAssets(ctx context.Context) error {
 	if err := s.Storage.StoreFile(ctx, "static/background.png", bgData); err != nil {
 		return fmt.Errorf("failed to store background image: %w", err)
 	}
-	log.Printf("Static background image uploaded successfully")
+	logger.Infof("Static background image uploaded successfully")
 	
 	// Store history page
 	historyPath := filepath.Join(templatesDir, "history_template.html")
@@ -139,7 +139,7 @@ func (s *Server) initializeStaticAssets(ctx context.Context) error {
 	if err := s.storeHTMLPage(ctx, historyData, "history/index.html"); err != nil {
 		return fmt.Errorf("failed to store history page: %w", err)
 	}
-	log.Printf("History page uploaded successfully")
+	logger.Infof("History page uploaded successfully")
 	
 	// Store theory page
 	theoryPath := filepath.Join(templatesDir, "theory_template.html")
@@ -151,7 +151,7 @@ func (s *Server) initializeStaticAssets(ctx context.Context) error {
 	if err := s.storeHTMLPage(ctx, theoryData, "theory/index.html"); err != nil {
 		return fmt.Errorf("failed to store theory page: %w", err)
 	}
-	log.Printf("Theory page uploaded successfully")
+	logger.Infof("Theory page uploaded successfully")
 	
 	return nil
 }

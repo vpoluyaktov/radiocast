@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 	"html/template"
-	"log"
 	"time"
 
 	"radiocast/internal/charts"
 	"radiocast/internal/config"
 	"radiocast/internal/fetchers"
 	"radiocast/internal/llm"
-	"radiocast/internal/mocks"
+	"radiocast/internal/logger"
 	"radiocast/internal/models"
+	"radiocast/internal/mocks"
 	"radiocast/internal/storage"
 )
 
@@ -42,10 +42,10 @@ func (rg *ReportGenerator) GenerateReport(ctx context.Context,
 	markdownContent string,
 	folderPath string) (string, error) {
 
-	log.Println("Starting report generation...")
+	logger.Info("Starting report generation...")
 
 	// Generate charts
-	log.Println("Generating charts...")
+	logger.Info("Generating charts...")
 	chartData, err := rg.htmlBuilder.GenerateChartData(propagationData, sourceData, folderPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate charts: %w", err)
@@ -55,7 +55,7 @@ func (rg *ReportGenerator) GenerateReport(ctx context.Context,
 	sunGifHTML := template.HTML("{{.SunGif}}")
 
 	// Process markdown with template placeholders
-	log.Println("Processing markdown with placeholders...")
+	logger.Info("Processing markdown with placeholders...")
 	processedContent, err := rg.htmlBuilder.ProcessMarkdownWithPlaceholders(
 		markdownContent, chartData, sunGifHTML)
 	if err != nil {
@@ -63,16 +63,16 @@ func (rg *ReportGenerator) GenerateReport(ctx context.Context,
 	}
 
 	// Build complete HTML document
-	log.Println("Building complete HTML document...")
-	log.Printf("Processed content length: %d", len(processedContent))
-	log.Printf("Processed content preview: %s", processedContent[:min(300, len(processedContent))])
+	logger.Info("Building complete HTML document...")
+	logger.Debug("Processed content length", map[string]interface{}{"length": len(processedContent)})
+	logger.Debug("Processed content preview", map[string]interface{}{"preview": processedContent[:min(300, len(processedContent))]})
 	finalHTML, err := rg.htmlBuilder.BuildCompleteHTML(
 		processedContent, propagationData, chartData, sunGifHTML, folderPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to build complete HTML: %w", err)
 	}
 
-	log.Printf("Report generation completed successfully (%d characters)", len(finalHTML))
+	logger.Info("Report generation completed successfully", map[string]interface{}{"characters": len(finalHTML)})
 	return finalHTML, nil
 }
 
@@ -86,7 +86,7 @@ func (rg *ReportGenerator) GenerateHTML(markdownReport string, data *models.Prop
 func (rg *ReportGenerator) MarkdownToHTML(markdownText string) string {
 	htmlContent, err := rg.htmlBuilder.ConvertMarkdownToHTML(markdownText)
 	if err != nil {
-		log.Printf("Error converting markdown to HTML: %v", err)
+		logger.Error("Error converting markdown to HTML", err)
 		return markdownText // Return original on error
 	}
 	return htmlContent
@@ -109,7 +109,7 @@ func (rg *ReportGenerator) GenerateCompleteReport(ctx context.Context,
 	deploymentMode string,
 	storageOrchestrator StorageInterface) (map[string]interface{}, error) {
 
-	log.Println("Starting report generation...")
+	logger.Info("Starting complete report generation...")
 
 	// Step 1: Get data and generate markdown report
 	data, sourceData, markdownReport, err := rg.fetchDataAndGenerateReport(ctx, cfg, fetcher, llmClient, mockService)
@@ -152,38 +152,38 @@ func (rg *ReportGenerator) fetchDataAndGenerateReport(ctx context.Context,
 
 	if cfg.MockupMode && mockService != nil {
 		// Use mock data
-		log.Println("Using mock data for report generation...")
+		logger.Info("Using mock data for report generation...")
 		data, sourceData, err = mockService.LoadMockData()
 		if err != nil {
 			return nil, nil, "", fmt.Errorf("mock data loading failed: %w", err)
 		}
 
-		log.Println("Loading mock LLM response...")
+		logger.Info("Loading mock LLM response...")
 		markdownReport, err = mockService.LoadMockLLMResponse()
 		if err != nil {
 			return nil, nil, "", fmt.Errorf("mock LLM response loading failed: %w", err)
 		}
 		
-		log.Printf("Mock data loaded successfully for timestamp: %s", data.Timestamp.Format(time.RFC3339))
-		log.Printf("Mock LLM report loaded successfully (length: %d characters)", len(markdownReport))
+		logger.Info("Mock data loaded successfully", map[string]interface{}{"timestamp": data.Timestamp.Format(time.RFC3339)})
+		logger.Info("Mock LLM report loaded successfully", map[string]interface{}{"length": len(markdownReport)})
 	} else {
 		// Fetch data from all sources
-		log.Println("Fetching data from all sources...")
+		logger.Info("Fetching data from all sources...")
 		data, sourceData, err = fetcher.FetchAllDataWithSources(ctx, cfg.NOAAKIndexURL, cfg.NOAASolarURL, cfg.N0NBHSolarURL, cfg.SIDCRSSURL)
 		if err != nil {
 			return nil, nil, "", fmt.Errorf("data fetching failed: %w", err)
 		}
 
-		log.Printf("Data fetched successfully for timestamp: %s", data.Timestamp.Format(time.RFC3339))
+		logger.Info("Data fetched successfully", map[string]interface{}{"timestamp": data.Timestamp.Format(time.RFC3339)})
 
 		// Generate LLM report with raw source data
-		log.Println("Generating LLM report with raw source data...")
+		logger.Info("Generating LLM report with raw source data...")
 		markdownReport, err = llmClient.GenerateReportWithSources(data, sourceData)
 		if err != nil {
 			return nil, nil, "", fmt.Errorf("LLM report generation failed: %w", err)
 		}
 
-		log.Printf("LLM report generated successfully (length: %d characters)", len(markdownReport))
+		logger.Info("LLM report generated successfully", map[string]interface{}{"length": len(markdownReport)})
 	}
 
 	return data, sourceData, markdownReport, nil
