@@ -1097,15 +1097,23 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 
 /* History Page Layout */
 .page-header h1 {
-    margin: 0 0 20px 0;
-    font-size: 1.8em;
+    margin: 0 0 5px 0;
+    font-size: 1.5em;
     color: #007bff;
+}
+
+/* Reduce content padding for history page */
+.main-content .content {
+    padding: 10px 40px;
 }
 
 .desktop-layout {
     display: flex;
     gap: 20px;
     min-height: calc(100vh - 200px);
+    width: 95%;
+    margin: 0 auto;
+    max-width: 1400px;
 }
 
 .calendar-section {
@@ -1259,7 +1267,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 
 #currentMonth {
     margin: 0;
-    font-size: 1.5em;
+    font-size: 1.3em;
     color: #007bff;
     font-weight: 600;
     min-width: 220px;
@@ -1271,6 +1279,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     border-radius: 8px;
     padding: 8px;
     margin: 10px 0 0 0;
+    overflow: hidden;
 }
 
 .mobile-layout .calendar-container {
@@ -1280,6 +1289,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     padding: 15px;
+    overflow: hidden;
 }
 
 .calendar-weekdays {
@@ -1296,15 +1306,15 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     color: #666;
     background: rgba(0, 123, 255, 0.1);
     border-radius: 4px;
-    font-size: 0.8em;
+    font-size: 0.9em;
 }
 
 .desktop-layout .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 1px;
-    height: 300px;
     margin-bottom: 0;
+    overflow: hidden;
 }
 
 .mobile-layout .calendar-grid {
@@ -1312,6 +1322,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     grid-template-columns: repeat(7, 1fr);
     gap: 1px;
     height: 420px;
+    overflow: hidden;
 }
 
 .desktop-layout .calendar-day {
@@ -1323,7 +1334,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     border-radius: 4px;
     transition: all 0.3s ease;
     position: relative;
-    height: 85px;
+    height: 75px;
     border: 1px solid transparent;
     padding: 3px;
     overflow: hidden;
@@ -1391,7 +1402,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 }
 
 .day-number {
-    font-size: 1.35em;
+    font-size: 1.0em;
     font-weight: 600;
     color: #333;
 }
@@ -1402,6 +1413,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     gap: 1px;
     flex: 1;
     overflow-y: auto;
+    align-items: center;
 }
 
 .report-link-inline {
@@ -1410,7 +1422,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     text-decoration: none;
     padding: 2px 4px;
     border-radius: 3px;
-    font-size: 1.05em;
+    font-size: 0.8em;
     font-weight: 500;
     margin: 1px 0;
     display: block;
@@ -1427,7 +1439,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 }
 
 .no-reports-text {
-    font-size: 0.6em;
+    font-size: 0.8em;
     color: #666;
     text-align: center;
     font-style: italic;
@@ -1548,16 +1560,16 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     }
     
     .day-number {
-        font-size: 1.5em;
+        font-size: 1.2em;
     }
     
     .report-link-inline {
-        font-size: 0.9em;
+        font-size: 0.75em;
         padding: 1px 3px;
     }
     
     .no-reports-text {
-        font-size: 0.55em;
+        font-size: 0.7em;
         margin-top: 4px;
     }
     
@@ -1584,7 +1596,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     }
     
     #currentMonth {
-        font-size: 1.2em;
+        font-size: 1.1em;
         min-width: 150px;
     }
     
@@ -1610,16 +1622,16 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     }
     
     .day-number {
-        font-size: 1.35em;
+        font-size: 1.1em;
     }
     
     .report-link-inline {
-        font-size: 0.825em;
+        font-size: 0.7em;
         padding: 1px 2px;
     }
     
     .no-reports-text {
-        font-size: 0.5em;
+        font-size: 0.65em;
         margin-top: 2px;
     }
     
