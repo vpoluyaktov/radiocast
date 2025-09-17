@@ -1391,7 +1391,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 }
 
 .day-number {
-    font-size: 0.9em;
+    font-size: 1.35em;
     font-weight: 600;
     color: #333;
 }
@@ -1408,11 +1408,12 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     background: #28a745;
     color: white;
     text-decoration: none;
-    padding: 1px 2px;
-    border-radius: 2px;
-    font-size: 0.6em;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 1.05em;
     font-weight: 500;
-    text-align: center;
+    margin: 1px 0;
+    display: block;
     transition: all 0.2s ease;
     white-space: nowrap;
     overflow: hidden;
@@ -1547,11 +1548,11 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     }
     
     .day-number {
-        font-size: 1em;
+        font-size: 1.5em;
     }
     
     .report-link-inline {
-        font-size: 0.6em;
+        font-size: 0.9em;
         padding: 1px 3px;
     }
     
@@ -1609,11 +1610,11 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     }
     
     .day-number {
-        font-size: 0.9em;
+        font-size: 1.35em;
     }
     
     .report-link-inline {
-        font-size: 0.55em;
+        font-size: 0.825em;
         padding: 1px 2px;
     }
     
