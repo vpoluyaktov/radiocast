@@ -93,6 +93,45 @@ validate_openai_key() {
     return 0
 }
 
+# Function to validate Radiocast API key
+validate_radiocast_key() {
+    local env_var_name=""
+    
+    # Determine which environment variable to check based on environment
+    case $ENVIRONMENT in
+        "stage")
+            env_var_name="RADIOCAST_API_KEY_STAGE"
+            ;;
+        "prod")
+            env_var_name="RADIOCAST_API_KEY_PROD"
+            ;;
+        *)
+            print_error "Invalid environment for API key validation: $ENVIRONMENT"
+            return 1
+            ;;
+    esac
+    
+    # Get the API key value
+    local api_key_value="${!env_var_name}"
+    
+    if [ -z "$api_key_value" ]; then
+        print_error "$env_var_name environment variable is required"
+        print_error "Please set it with: export $env_var_name=your_radiocast_api_key"
+        return 1
+    fi
+    
+    # Validate API key format (should be 64 hex characters)
+    if [[ ! "$api_key_value" =~ ^[a-f0-9]{64}$ ]]; then
+        print_warning "Radiocast API key should be 64 hexadecimal characters"
+    fi
+    
+    # Export the key as RADIOCAST_API_KEY for terraform
+    export RADIOCAST_API_KEY="$api_key_value"
+    
+    print_status "Radiocast API key validated for $ENVIRONMENT environment"
+    return 0
+}
+
 # Check if environment is provided
 if [ -z "$1" ]; then
     print_error "Usage: $0 <environment> [action]"
@@ -132,9 +171,13 @@ if ! setup_gcp_auth; then
     exit 1
 fi
 
-# Validate OpenAI API key for apply/destroy actions
+# Validate API keys for apply/destroy actions
 if [[ "$ACTION" =~ ^(apply|destroy)$ ]]; then
     if ! validate_openai_key; then
+        exit 1
+    fi
+    
+    if ! validate_radiocast_key; then
         exit 1
     fi
 fi
@@ -173,15 +216,17 @@ terraform init -reconfigure
 case $ACTION in
     "plan")
         print_status "Planning Terraform deployment..."
-        if [ -n "$OPENAI_API_KEY" ]; then
-            terraform plan -var-file="$TFVARS_FILE" -var="openai_api_key=$OPENAI_API_KEY"
+        if [ -n "$OPENAI_API_KEY" ] && [ -n "$RADIOCAST_API_KEY" ]; then
+            terraform plan -var-file="$TFVARS_FILE" -var="openai_api_key=$OPENAI_API_KEY" -var="radiocast_api_key=$RADIOCAST_API_KEY"
+        elif [ -n "$OPENAI_API_KEY" ]; then
+            terraform plan -var-file="$TFVARS_FILE" -var="openai_api_key=$OPENAI_API_KEY" -var="radiocast_api_key=placeholder"
         else
-            terraform plan -var-file="$TFVARS_FILE" -var="openai_api_key=placeholder"
+            terraform plan -var-file="$TFVARS_FILE" -var="openai_api_key=placeholder" -var="radiocast_api_key=placeholder"
         fi
         ;;
     "apply")
         print_status "Applying Terraform configuration..."
-        terraform apply -var-file="$TFVARS_FILE" -var="openai_api_key=$OPENAI_API_KEY" -auto-approve
+        terraform apply -var-file="$TFVARS_FILE" -var="openai_api_key=$OPENAI_API_KEY" -var="radiocast_api_key=$RADIOCAST_API_KEY" -auto-approve
         
         # Get service URL after successful apply
         if [ $? -eq 0 ]; then
@@ -206,7 +251,7 @@ case $ACTION in
         read -p "Are you sure? Type 'yes' to confirm: " confirm
         if [ "$confirm" = "yes" ]; then
             print_status "Destroying resources..."
-            terraform destroy -var-file="$TFVARS_FILE" -var="openai_api_key=$OPENAI_API_KEY" -auto-approve
+            terraform destroy -var-file="$TFVARS_FILE" -var="openai_api_key=$OPENAI_API_KEY" -var="radiocast_api_key=$RADIOCAST_API_KEY" -auto-approve
         else
             print_status "Destroy cancelled"
         fi

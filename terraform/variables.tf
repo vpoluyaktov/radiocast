@@ -25,6 +25,12 @@ variable "openai_api_key" {
   sensitive   = true
 }
 
+variable "radiocast_api_key" {
+  description = "Radiocast API key for /generate endpoint protection"
+  type        = string
+  sensitive   = true
+}
+
 variable "tfstate_bucket_name" {
   description = "Name of the GCS bucket for Terraform state"
   type        = string

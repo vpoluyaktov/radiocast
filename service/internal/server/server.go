@@ -86,7 +86,7 @@ func (s *Server) SetupRoutes() *http.ServeMux {
 	
 	// Handle specific API routes first
 	mux.HandleFunc("/health", s.HandleHealth)
-	mux.HandleFunc("/generate", s.HandleGenerate)
+	mux.HandleFunc("/generate", s.requireAPIKey(s.HandleGenerate))
 	mux.HandleFunc("/reports", s.HandleListReports)
 	mux.HandleFunc("/reports/", s.HandleFileProxy)
 	

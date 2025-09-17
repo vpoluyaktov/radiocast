@@ -84,7 +84,7 @@ This will:
 # Health check
 curl http://localhost:8981/health
 
-# Generate a new report
+# Generate a new report (no API key required by default)
 curl -X POST http://localhost:8981/generate
 
 # View reports in browser
@@ -170,6 +170,15 @@ Health check endpoint for monitoring and load balancers.
 ### `POST /generate` - Generate Report
 Generates a new propagation report with concurrency protection.
 
+**API Key Protection**: If the `API_KEY` environment variable is set, this endpoint requires authentication via the `Authorization` header.
+
+**Authentication (when API_KEY is configured)**:
+```bash
+# With API key
+curl -X POST http://localhost:8981/generate \
+  -H "Authorization: Bearer your-api-key-here"
+```
+
 **Response (Success)**:
 ```json
 {
@@ -195,6 +204,16 @@ Generates a new propagation report with concurrency protection.
 ```
 *HTTP 409 Conflict - Only one report can be generated at a time*
 
+**Response (Unauthorized - when API_KEY is configured)**:
+```json
+{
+  "error": "Missing Authorization header",
+  "message": "This endpoint requires an API key. Please provide it in the Authorization header as 'Bearer <your-api-key>'",
+  "status": "unauthorized"
+}
+```
+*HTTP 401 Unauthorized - API key required but not provided or invalid*
+
 ### `GET /reports?limit=10` - List Reports
 Lists recent reports with metadata and direct links.
 
@@ -208,6 +227,46 @@ Lists recent reports with metadata and direct links.
 | `ENVIRONMENT` | Deployment environment | `local` | ❌ |
 | `GCP_PROJECT_ID` | GCP project (production only) | - | ❌ |
 | `GCS_BUCKET` | GCS bucket (production only) | - | ❌ |
+| `RADIOCAST_API_KEY` | API key for `/generate` endpoint protection | - | ❌ |
+
+## 🔐 API Security
+
+The `/generate` endpoint can be protected with an API key to prevent unauthorized report generation.
+
+### Enabling API Key Protection
+
+Set the `RADIOCAST_API_KEY` environment variable to enable protection:
+
+```bash
+export RADIOCAST_API_KEY="your-secret-api-key-here"
+./run_local.sh server
+```
+
+### Using the Protected Endpoint
+
+When API key protection is enabled, include the key in the `Authorization` header:
+
+```bash
+# Correct usage with API key
+curl -X POST http://localhost:8981/generate \
+  -H "Authorization: Bearer your-secret-api-key-here"
+
+# This will be rejected with HTTP 401
+curl -X POST http://localhost:8981/generate
+```
+
+### Backward Compatibility
+
+- **No RADIOCAST_API_KEY configured**: The `/generate` endpoint works without authentication (default behavior)
+- **RADIOCAST_API_KEY configured**: The `/generate` endpoint requires the `Authorization: Bearer <key>` header
+- **Other endpoints**: All other endpoints (`/health`, `/reports`, `/`, etc.) remain unprotected
+
+### Security Best Practices
+
+- Use a strong, randomly generated API key (minimum 32 characters)
+- Store the API key securely (environment variables, secret managers)
+- Rotate API keys regularly in production environments
+- Monitor logs for unauthorized access attempts
 
 ## 📡 Data Sources
 

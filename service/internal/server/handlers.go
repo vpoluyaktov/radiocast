@@ -348,4 +348,99 @@ func (s *Server) HandleStaticBackground(w http.ResponseWriter, r *http.Request) 
 	w.Write(imageContent)
 }
 
+// requireAPIKey is a middleware that validates API key for protected endpoints
+func (s *Server) requireAPIKey(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// If no API key is configured, allow access (backward compatibility)
+		if s.Config.RadiocastAPIKey == "" {
+			logger.Debug("No API key configured, allowing access")
+			next(w, r)
+			return
+		}
+		
+		// Extract API key from Authorization header
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			logger.Warn("Missing Authorization header for protected endpoint", map[string]interface{}{
+				"endpoint": r.URL.Path,
+				"method":   r.Method,
+				"remote_addr": r.RemoteAddr,
+			})
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			response := map[string]interface{}{
+				"error":   "Missing Authorization header",
+				"message": "This endpoint requires an API key. Please provide it in the Authorization header as 'Bearer <your-api-key>'",
+				"status":  "unauthorized",
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		
+		// Check if header starts with "Bearer "
+		const bearerPrefix = "Bearer "
+		if !strings.HasPrefix(authHeader, bearerPrefix) {
+			logger.Warn("Invalid Authorization header format", map[string]interface{}{
+				"endpoint": r.URL.Path,
+				"method":   r.Method,
+				"remote_addr": r.RemoteAddr,
+			})
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			response := map[string]interface{}{
+				"error":   "Invalid Authorization header format",
+				"message": "Authorization header must be in format 'Bearer <your-api-key>'",
+				"status":  "unauthorized",
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		
+		// Extract the API key
+		providedKey := strings.TrimSpace(authHeader[len(bearerPrefix):])
+		if providedKey == "" {
+			logger.Warn("Empty API key provided", map[string]interface{}{
+				"endpoint": r.URL.Path,
+				"method":   r.Method,
+				"remote_addr": r.RemoteAddr,
+			})
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			response := map[string]interface{}{
+				"error":   "Empty API key",
+				"message": "API key cannot be empty",
+				"status":  "unauthorized",
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		
+		// Validate API key
+		if providedKey != s.Config.RadiocastAPIKey {
+			logger.Warn("Invalid API key provided", map[string]interface{}{
+				"endpoint": r.URL.Path,
+				"method":   r.Method,
+				"remote_addr": r.RemoteAddr,
+				"provided_key_length": len(providedKey),
+			})
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			response := map[string]interface{}{
+				"error":   "Invalid API key",
+				"message": "The provided API key is not valid",
+				"status":  "unauthorized",
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		
+		// API key is valid, proceed to the next handler
+		logger.Debug("Valid API key provided, allowing access", map[string]interface{}{
+			"endpoint": r.URL.Path,
+			"method":   r.Method,
+		})
+		next(w, r)
+	}
+}
+
 

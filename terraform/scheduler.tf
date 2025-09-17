@@ -13,7 +13,8 @@ resource "google_cloud_scheduler_job" "daily_report" {
     uri         = "${google_cloud_run_v2_service.radiocast.uri}/generate"
 
     headers = {
-      "Content-Type" = "application/json"
+      "Content-Type"  = "application/json"
+      "Authorization" = "Bearer ${var.radiocast_api_key}"
     }
 
     oidc_token {

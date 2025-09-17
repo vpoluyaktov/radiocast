@@ -34,6 +34,9 @@ type Config struct {
 	Environment string `env:"ENVIRONMENT,default=development"`
 	LogLevel    string `env:"LOG_LEVEL,default=info"`
 	LogFormat   string `env:"LOG_FORMAT,default=auto"`
+	
+	// API Security
+	RadiocastAPIKey string `env:"RADIOCAST_API_KEY"`
 }
 
 // Load loads configuration from environment variables
