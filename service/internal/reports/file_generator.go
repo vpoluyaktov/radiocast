@@ -76,12 +76,7 @@ func (fg *FileGenerator) GenerateAllFiles(ctx context.Context, data *models.Prop
 		logger.Warn("Failed to generate Sun GIF", map[string]interface{}{"error": err.Error()})
 	}
 
-	// 5. Generate CSS file
-	if err := fg.generateCSS(files); err != nil {
-		logger.Warn("Failed to generate CSS", map[string]interface{}{"error": err.Error()})
-	}
-
-	// 6. Generate HTML report
+	// 5. Generate HTML report (CSS generation removed - all pages use /static/styles.css)
 	if err := fg.generateHTML(markdown, data, sourceData, gifRelName, files); err != nil {
 		return nil, fmt.Errorf("failed to generate HTML: %w", err)
 	}
@@ -173,17 +168,6 @@ func (fg *FileGenerator) generateSunGIF(ctx context.Context, mockupMode bool, ti
 	return nil
 }
 
-// generateCSS generates CSS content
-func (fg *FileGenerator) generateCSS(files *GeneratedFiles) error {
-	cssContent, err := fg.reportGenerator.GenerateStaticCSS()
-	if err != nil {
-		return fmt.Errorf("failed to generate CSS: %w", err)
-	}
-	
-	files.AssetFiles["styles.css"] = []byte(cssContent)
-	logger.Debug("Generated CSS file", map[string]interface{}{"bytes": len(cssContent)})
-	return nil
-}
 
 // generateHTML generates HTML report
 func (fg *FileGenerator) generateHTML(markdown string, data *models.PropagationData, sourceData *models.SourceData, gifRelName string, files *GeneratedFiles) error {

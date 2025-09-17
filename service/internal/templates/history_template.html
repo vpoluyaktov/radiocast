@@ -13,7 +13,7 @@
     })(window,document,'script','dataLayer','GTM-WPRFL98D');</script>
     <!-- End Google Tag Manager -->
 </head>
-<body style="background-image: url('/static/background.png'); background-size: contain; background-repeat: repeat-y; background-position: top center;">
+<body style="background-image: url('/static/background.png'); background-size: cover; background-repeat: no-repeat; background-position: center center; background-attachment: fixed;">
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WPRFL98D"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
@@ -41,50 +41,114 @@
         </div>
     </div>
     
-    <div class="container">
-        <div class="header">
+    <div class="main-content">
+        <div class="page-header">
             <h1>📅 Report History</h1>
-            <h2>Browse Previous Reports</h2>
-            <div class="generated-time">Select a date to view historical propagation reports</div>
         </div>
         <div class="content">
-            <div class="history-section">
-                <h2>🗓️ Available Reports</h2>
-                <p>This page will allow you to browse and select previous radio propagation reports from a calendar interface.</p>
-                
-                <div class="feature-preview">
-                    <h3>📋 Planned Features:</h3>
-                    <ul>
-                        <li><strong>📅 Calendar View</strong> - Interactive calendar to select report dates</li>
-                        <li><strong>📊 Report Thumbnails</strong> - Preview of charts and key metrics</li>
-                        <li><strong>🔍 Search & Filter</strong> - Find reports by date range or conditions</li>
-                        <li><strong>📈 Trend Analysis</strong> - Compare conditions across multiple days</li>
-                        <li><strong>⭐ Favorites</strong> - Bookmark interesting reports for quick access</li>
-                        <li><strong>📱 Mobile Optimized</strong> - Touch-friendly interface for all devices</li>
-                    </ul>
+            <!-- Desktop Split Layout -->
+            <div class="desktop-layout">
+                <div class="calendar-section">
+                    <div class="calendar-header">
+                        <button id="prevMonth" class="calendar-nav-btn">‹</button>
+                        <h2 id="currentMonth">Loading...</h2>
+                        <button id="nextMonth" class="calendar-nav-btn">›</button>
+                    </div>
+                    
+                    <div class="calendar-legend">
+                        <div class="legend-item">
+                            <div class="legend-color today"></div>
+                            <span>Today</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color has-reports"></div>
+                            <span>Reports Available</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color no-reports"></div>
+                            <span>No Reports</span>
+                        </div>
+                    </div>
+                    
+                    <div class="calendar-container">
+                        <div class="calendar-weekdays">
+                            <div class="weekday">Sun</div>
+                            <div class="weekday">Mon</div>
+                            <div class="weekday">Tue</div>
+                            <div class="weekday">Wed</div>
+                            <div class="weekday">Thu</div>
+                            <div class="weekday">Fri</div>
+                            <div class="weekday">Sat</div>
+                        </div>
+                        <div id="calendarGrid" class="calendar-grid">
+                            <!-- Calendar days will be generated here -->
+                        </div>
+                    </div>
+                    
+                    <div id="loadingIndicator" class="loading-indicator">
+                        <div class="spinner"></div>
+                        <p>Loading reports...</p>
+                    </div>
                 </div>
                 
-                <div class="coming-soon">
-                    <h3>🚧 Under Development</h3>
-                    <p>The History page is currently under development. This feature will provide:</p>
-                    <ul>
-                        <li>Access to all previously generated reports</li>
-                        <li>Easy navigation through historical data</li>
-                        <li>Comparison tools for analyzing propagation trends</li>
-                    </ul>
-                    <p><em>Check back soon for updates!</em></p>
+                <div class="preview-section">
+                    <div class="preview-header">
+                        <h3 id="previewTitle">Select a Report</h3>
+                    </div>
+                    <div class="preview-container">
+                        <iframe id="reportPreview" class="report-iframe" src="about:blank"></iframe>
+                        <div id="previewPlaceholder" class="preview-placeholder">
+                            <div class="placeholder-content">
+                                <h4>📊 Report Preview</h4>
+                                <p>Click on a report link in the calendar to preview it here</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="preview-actions">
+                        <button id="viewReportBtn" class="view-report-btn" style="display: none;">View Full Report</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mobile Layout -->
+            <div class="mobile-layout">
+                <div class="calendar-header">
+                    <button id="prevMonthMobile" class="calendar-nav-btn">‹</button>
+                    <h2 id="currentMonthMobile">Loading...</h2>
+                    <button id="nextMonthMobile" class="calendar-nav-btn">›</button>
+                </div>
+                
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <div class="legend-color today"></div>
+                        <span>Today</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color has-reports"></div>
+                        <span>Reports Available</span>
+                    </div>
+                </div>
+                
+                <div class="calendar-container">
+                    <div class="calendar-weekdays">
+                        <div class="weekday">Sun</div>
+                        <div class="weekday">Mon</div>
+                        <div class="weekday">Tue</div>
+                        <div class="weekday">Wed</div>
+                        <div class="weekday">Thu</div>
+                        <div class="weekday">Fri</div>
+                        <div class="weekday">Sat</div>
+                    </div>
+                    <div id="calendarGridMobile" class="calendar-grid">
+                        <!-- Calendar days will be generated here -->
+                    </div>
                 </div>
             </div>
         </div>
         <div class="footer">
             <div class="footer-content">
-                <div class="data-sources">
-                    <h4>📡 Data Sources</h4>
-                    <p>NOAA SWPC • N0NBH Solar Data • SIDC Sunspot Data</p>
-                </div>
                 <div class="service-info">
-                    <p>Report generated by <a href="https://github.com/vpoluyaktov/radiocast" target="_blank" rel="noopener noreferrer">Radiocast Service</a> using <b>AI</b></p>
-                    <p>{{.Version}}</p>
+                    <p>Version: v1.0.0</p>
                     <p class="disclaimer">⚠️ For amateur radio use only. Conditions may vary by location.</p>
                     <p>Developed by KK7UNL</p>
                 </div>
@@ -113,6 +177,271 @@
         // Refresh button functionality
         refreshButton.addEventListener('click', function() {
             window.location.href = '/';
+        });
+
+        // Calendar functionality
+        class ReportCalendar {
+            constructor() {
+                this.currentDate = new Date();
+                this.reports = [];
+                this.reportsByDate = new Map();
+                this.selectedDate = null;
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.loadReports();
+            }
+            
+            initializeElements() {
+                // Desktop elements
+                this.prevMonthBtn = document.getElementById('prevMonth');
+                this.nextMonthBtn = document.getElementById('nextMonth');
+                this.currentMonthEl = document.getElementById('currentMonth');
+                this.calendarGrid = document.getElementById('calendarGrid');
+                this.loadingIndicator = document.getElementById('loadingIndicator');
+                
+                // Mobile elements
+                this.prevMonthBtnMobile = document.getElementById('prevMonthMobile');
+                this.nextMonthBtnMobile = document.getElementById('nextMonthMobile');
+                this.currentMonthElMobile = document.getElementById('currentMonthMobile');
+                this.calendarGridMobile = document.getElementById('calendarGridMobile');
+                
+                // Preview elements
+                this.previewTitle = document.getElementById('previewTitle');
+                this.reportPreview = document.getElementById('reportPreview');
+                this.previewPlaceholder = document.getElementById('previewPlaceholder');
+                this.viewReportBtn = document.getElementById('viewReportBtn');
+                
+                this.currentReportUrl = null;
+            }
+            
+            bindEvents() {
+                // Desktop navigation
+                this.prevMonthBtn.addEventListener('click', () => this.previousMonth());
+                this.nextMonthBtn.addEventListener('click', () => this.nextMonth());
+                
+                // Mobile navigation
+                this.prevMonthBtnMobile.addEventListener('click', () => this.previousMonth());
+                this.nextMonthBtnMobile.addEventListener('click', () => this.nextMonth());
+                
+                // Preview functionality
+                this.viewReportBtn.addEventListener('click', () => {
+                    if (this.currentReportUrl) {
+                        window.open(this.currentReportUrl, '_blank');
+                    }
+                });
+            }
+            
+            async loadReports() {
+                this.showLoading(true);
+                try {
+                    const response = await fetch('/reports?limit=1000');
+                    const data = await response.json();
+                    this.reports = data.reports || [];
+                    this.processReports();
+                    this.renderCalendar();
+                } catch (error) {
+                    console.error('Failed to load reports:', error);
+                    this.showError('Failed to load reports. Please try again.');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+            
+            processReports() {
+                this.reportsByDate.clear();
+                
+                this.reports.forEach(reportPath => {
+                    // Extract date from path: reports/2025/09/17/PropagationReport-2025-09-17-09-29-26/index.html
+                    const pathParts = reportPath.split('/');
+                    if (pathParts.length >= 4) {
+                        const year = pathParts[1];
+                        const month = pathParts[2];
+                        const day = pathParts[3];
+                        const dateKey = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                        
+                        // Extract timestamp from folder name
+                        const folderName = pathParts[4];
+                        const timestampMatch = folderName.match(/(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})/);
+                        const timestamp = timestampMatch ? timestampMatch[1] : 'Unknown';
+                        
+                        if (!this.reportsByDate.has(dateKey)) {
+                            this.reportsByDate.set(dateKey, []);
+                        }
+                        
+                        this.reportsByDate.get(dateKey).push({
+                            path: reportPath,
+                            timestamp: timestamp,
+                            displayTime: this.formatTime(timestamp)
+                        });
+                    }
+                });
+                
+                // Sort reports by timestamp for each date
+                this.reportsByDate.forEach(reports => {
+                    reports.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+                });
+            }
+            
+            formatTime(timestamp) {
+                if (timestamp === 'Unknown') return 'Unknown';
+                // Convert 2025-09-17-09-29-26 to 09:29:26
+                const parts = timestamp.split('-');
+                if (parts.length >= 6) {
+                    return `${parts[3]}:${parts[4]}:${parts[5]}`;
+                }
+                return timestamp;
+            }
+            
+            renderCalendar() {
+                const year = this.currentDate.getFullYear();
+                const month = this.currentDate.getMonth();
+                
+                const monthText = new Intl.DateTimeFormat('en-US', {
+                    month: 'long',
+                    year: 'numeric'
+                }).format(this.currentDate);
+                
+                // Update month headers (both desktop and mobile)
+                this.currentMonthEl.textContent = monthText;
+                this.currentMonthElMobile.textContent = monthText;
+                
+                // Clear calendar grids
+                this.calendarGrid.innerHTML = '';
+                this.calendarGridMobile.innerHTML = '';
+                
+                // Get first day of month and number of days
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const startDate = new Date(firstDay);
+                startDate.setDate(startDate.getDate() - firstDay.getDay());
+                
+                // Generate calendar days for both layouts
+                for (let i = 0; i < 42; i++) { // 6 weeks * 7 days
+                    const date = new Date(startDate);
+                    date.setDate(startDate.getDate() + i);
+                    
+                    const dayElDesktop = this.createDayElement(date, month, 'desktop');
+                    const dayElMobile = this.createDayElement(date, month, 'mobile');
+                    
+                    this.calendarGrid.appendChild(dayElDesktop);
+                    this.calendarGridMobile.appendChild(dayElMobile);
+                }
+            }
+            
+            createDayElement(date, currentMonth, layout) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day';
+                
+                const dayNumber = date.getDate();
+                const isCurrentMonth = date.getMonth() === currentMonth;
+                const dateKey = date.toISOString().split('T')[0];
+                const hasReports = this.reportsByDate.has(dateKey);
+                const isToday = this.isToday(date);
+                
+                if (!isCurrentMonth) {
+                    dayEl.classList.add('other-month');
+                }
+                
+                if (isToday) {
+                    dayEl.classList.add('today');
+                }
+                
+                if (hasReports) {
+                    dayEl.classList.add('has-reports');
+                    const reports = this.reportsByDate.get(dateKey);
+                    
+                    // Create day header with number
+                    const dayHeader = document.createElement('div');
+                    dayHeader.className = 'day-header';
+                    dayHeader.innerHTML = `<span class="day-number">${dayNumber}</span>`;
+                    dayEl.appendChild(dayHeader);
+                    
+                    // Create reports list
+                    const reportsList = document.createElement('div');
+                    reportsList.className = 'day-reports';
+                    
+                    reports.forEach(report => {
+                        const reportLink = document.createElement('a');
+                        reportLink.className = 'report-link-inline';
+                        reportLink.textContent = report.displayTime;
+                        reportLink.title = `Report generated at ${report.displayTime}`;
+                        
+                        if (layout === 'desktop') {
+                            // Desktop: show preview on click
+                            reportLink.href = '#';
+                            reportLink.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                this.showPreview(report);
+                            });
+                        } else {
+                            // Mobile: open directly in new tab
+                            reportLink.href = `/${report.path}`;
+                            reportLink.target = '_blank';
+                            reportLink.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                            });
+                        }
+                        
+                        reportsList.appendChild(reportLink);
+                    });
+                    
+                    dayEl.appendChild(reportsList);
+                } else {
+                    dayEl.innerHTML = `
+                        <div class="day-header">
+                            <span class="day-number">${dayNumber}</span>
+                        </div>
+                        <div class="no-reports-text">No reports</div>
+                    `;
+                }
+                
+                return dayEl;
+            }
+            
+            showPreview(report) {
+                const reportUrl = `/${report.path}`;
+                this.currentReportUrl = reportUrl;
+                
+                // Update preview title
+                this.previewTitle.textContent = `Report - ${report.displayTime}`;
+                
+                // Show iframe and hide placeholder
+                this.reportPreview.src = reportUrl;
+                this.reportPreview.style.display = 'block';
+                this.previewPlaceholder.style.display = 'none';
+                this.viewReportBtn.style.display = 'block';
+            }
+            
+            isToday(date) {
+                const today = new Date();
+                return date.toDateString() === today.toDateString();
+            }
+            
+            
+            previousMonth() {
+                this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+                this.renderCalendar();
+            }
+            
+            nextMonth() {
+                this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+                this.renderCalendar();
+            }
+            
+            showLoading(show) {
+                this.loadingIndicator.style.display = show ? 'block' : 'none';
+            }
+            
+            showError(message) {
+                this.calendarGrid.innerHTML = `<div class="error-message">${message}</div>`;
+            }
+        }
+        
+        // Initialize calendar when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            new ReportCalendar();
         });
     </script>
 </body>

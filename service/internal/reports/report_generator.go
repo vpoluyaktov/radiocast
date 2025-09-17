@@ -92,10 +92,6 @@ func (rg *ReportGenerator) MarkdownToHTML(markdownText string) string {
 	return htmlContent
 }
 
-// GenerateStaticCSS generates static CSS content for saving to the report folder
-func (rg *ReportGenerator) GenerateStaticCSS() (string, error) {
-	return rg.htmlBuilder.LoadStaticCSS()
-}
 
 
 
