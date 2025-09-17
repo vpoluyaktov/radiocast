@@ -3,9 +3,9 @@ package reports
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
+	"radiocast/internal/logger"
 	"radiocast/internal/models"
 	"radiocast/internal/storage"
 )
@@ -32,7 +32,7 @@ func (so *StorageOrchestrator) StoreAllFiles(ctx context.Context, files *Generat
 	if err := so.storeFilesViaStorage(ctx, files, timestamp); err != nil {
 		return fmt.Errorf("failed to store files: %w", err)
 	}
-	log.Printf("All files stored successfully via storage client")
+	logger.Infof("All files stored successfully via storage client")
 
 	return nil
 }
@@ -66,7 +66,7 @@ func (so *StorageOrchestrator) storeFilesViaStorage(ctx context.Context, files *
 		if err := so.storage.StoreFile(ctx, assetPath, data); err != nil {
 			return fmt.Errorf("failed to store asset file %s: %w", filename, err)
 		}
-		log.Printf("Stored asset file: %s (%d bytes)", filename, len(data))
+		logger.Infof("Stored asset file: %s (%d bytes)", filename, len(data))
 	}
 	
 	return nil

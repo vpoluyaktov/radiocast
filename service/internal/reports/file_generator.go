@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"radiocast/internal/imagery"
+	"radiocast/internal/logger"
 	"radiocast/internal/models"
 	"radiocast/internal/storage"
 )
@@ -57,28 +57,28 @@ func (fg *FileGenerator) GenerateAllFiles(ctx context.Context, data *models.Prop
 	
 	// 1. Generate JSON files for each data source
 	if err := fg.generateSourceJSONFiles(sourceData, files); err != nil {
-		log.Printf("Warning: Failed to generate source JSON files: %v", err)
+		logger.Warn("Failed to generate source JSON files", map[string]interface{}{"error": err.Error()})
 	}
 	
 	// 2. Generate normalized data JSON
 	if err := fg.generateNormalizedDataJSON(data, files); err != nil {
-		log.Printf("Warning: Failed to generate normalized data: %v", err)
+		logger.Warn("Failed to generate normalized data", map[string]interface{}{"error": err.Error()})
 	}
 	
 	// 3. Generate LLM-related files
 	if err := fg.generateLLMFiles(markdown, files); err != nil {
-		log.Printf("Warning: Failed to generate LLM files: %v", err)
+		logger.Warn("Failed to generate LLM files", map[string]interface{}{"error": err.Error()})
 	}
 	
 	// 4. Generate Sun GIF (last 72h)
 	gifRelName := "sun_72h.gif"
 	if err := fg.generateSunGIF(ctx, mockupMode, timestamp, gifRelName, files); err != nil {
-		log.Printf("Warning: Failed to generate Sun GIF: %v", err)
+		logger.Warn("Failed to generate Sun GIF", map[string]interface{}{"error": err.Error()})
 	}
 
 	// 5. Generate CSS file
 	if err := fg.generateCSS(files); err != nil {
-		log.Printf("Warning: Failed to generate CSS: %v", err)
+		logger.Warn("Failed to generate CSS", map[string]interface{}{"error": err.Error()})
 	}
 
 	// 6. Generate HTML report
@@ -95,25 +95,25 @@ func (fg *FileGenerator) generateSourceJSONFiles(sourceData *models.SourceData, 
 	if sourceData.NOAAKIndex != nil {
 		data, _ := json.MarshalIndent(sourceData.NOAAKIndex, "", "  ")
 		files.JSONFiles["noaa_k_index.json"] = data
-		log.Printf("Generated NOAA K-Index JSON (%d bytes)", len(data))
+		logger.Debug("Generated NOAA K-Index JSON", map[string]interface{}{"bytes": len(data)})
 	}
 	
 	if sourceData.NOAASolar != nil {
 		data, _ := json.MarshalIndent(sourceData.NOAASolar, "", "  ")
 		files.JSONFiles["noaa_solar.json"] = data
-		log.Printf("Generated NOAA Solar JSON (%d bytes)", len(data))
+		logger.Debug("Generated NOAA Solar JSON", map[string]interface{}{"bytes": len(data)})
 	}
 	
 	if sourceData.N0NBH != nil {
 		data, _ := json.MarshalIndent(sourceData.N0NBH, "", "  ")
 		files.JSONFiles["n0nbh_data.json"] = data
-		log.Printf("Generated N0NBH JSON (%d bytes)", len(data))
+		logger.Debug("Generated N0NBH JSON", map[string]interface{}{"bytes": len(data)})
 	}
 	
 	if sourceData.SIDC != nil {
 		data, _ := json.MarshalIndent(sourceData.SIDC, "", "  ")
 		files.JSONFiles["sidc_data.json"] = data
-		log.Printf("Generated SIDC JSON (%d bytes)", len(data))
+		logger.Debug("Generated SIDC JSON", map[string]interface{}{"bytes": len(data)})
 	}
 	
 	return nil
@@ -123,7 +123,7 @@ func (fg *FileGenerator) generateSourceJSONFiles(sourceData *models.SourceData, 
 func (fg *FileGenerator) generateNormalizedDataJSON(data *models.PropagationData, files *GeneratedFiles) error {
 	normalizedData, _ := json.MarshalIndent(data, "", "  ")
 	files.JSONFiles["normalized_data.json"] = normalizedData
-	log.Printf("Generated normalized data JSON (%d bytes)", len(normalizedData))
+	logger.Debug("Generated normalized data JSON", map[string]interface{}{"bytes": len(normalizedData)})
 	return nil
 }
 
@@ -132,7 +132,7 @@ func (fg *FileGenerator) generateLLMFiles(markdown string, files *GeneratedFiles
 	// Note: This requires access to LLMClient which should be passed in
 	// For now, we'll store the markdown response
 	files.JSONFiles["llm_response.md"] = []byte(markdown)
-	log.Printf("Generated LLM response file (%d bytes)", len(markdown))
+	logger.Debug("Generated LLM response file", map[string]interface{}{"bytes": len(markdown)})
 	return nil
 }
 
@@ -140,13 +140,13 @@ func (fg *FileGenerator) generateLLMFiles(markdown string, files *GeneratedFiles
 func (fg *FileGenerator) generateSunGIF(ctx context.Context, mockupMode bool, timestamp time.Time, gifRelName string, files *GeneratedFiles) error {
 	if mockupMode && fg.mockService != nil {
 		// Use mock Sun GIF
-		log.Println("Generating mock Sun GIF data...")
+		logger.Info("Generating mock Sun GIF data...")
 		mockGifData, err := fg.mockService.LoadMockSunGif()
 		if err != nil {
 			return fmt.Errorf("failed to load mock Sun GIF: %w", err)
 		}
 		files.AssetFiles[gifRelName] = mockGifData
-		log.Printf("Generated mock Sun GIF (%d bytes)", len(mockGifData))
+		logger.Debug("Generated mock Sun GIF", map[string]interface{}{"bytes": len(mockGifData)})
 	} else {
 		// Generate Sun GIF using Helioviewer and ffmpeg
 		// Create temporary file for generation
@@ -164,7 +164,7 @@ func (fg *FileGenerator) generateSunGIF(ctx context.Context, mockupMode bool, ti
 		}
 		
 		files.AssetFiles[gifRelName] = gifData
-		log.Printf("Generated Sun GIF (%d bytes)", len(gifData))
+		logger.Debug("Generated Sun GIF", map[string]interface{}{"bytes": len(gifData)})
 		
 		// Clean up temporary file
 		os.Remove(gifPath)
@@ -181,7 +181,7 @@ func (fg *FileGenerator) generateCSS(files *GeneratedFiles) error {
 	}
 	
 	files.AssetFiles["styles.css"] = []byte(cssContent)
-	log.Printf("Generated CSS file (%d bytes)", len(cssContent))
+	logger.Debug("Generated CSS file", map[string]interface{}{"bytes": len(cssContent)})
 	return nil
 }
 
@@ -195,7 +195,7 @@ func (fg *FileGenerator) generateHTML(markdown string, data *models.PropagationD
 	
 	// Inject Sun GIF section into HTML
 	files.HTMLContent = fg.injectSunGIFIntoHTML(html, gifRelName, files.FolderPath)
-	log.Printf("Generated HTML report (%d bytes)", len(files.HTMLContent))
+	logger.Debug("Generated HTML report", map[string]interface{}{"bytes": len(files.HTMLContent)})
 	return nil
 }
 

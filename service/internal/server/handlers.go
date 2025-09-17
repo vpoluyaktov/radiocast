@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"radiocast/internal/logger"
 	"radiocast/internal/reports"
 )
 
@@ -27,14 +27,14 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	// Find latest report and redirect to it
 	latestReportURL, err := s.findLatestReportURL(ctx)
 	if err != nil {
-		log.Printf("No reports available: %v", err)
+		logger.Warn("No reports available", map[string]interface{}{"error": err.Error()})
 		// show initial page
 		s.serveInitialPage(w)
 		return
 	}
 	
 	// Redirect to the latest report with 302 status
-	log.Printf("Redirecting to latest report: %s", latestReportURL)
+	logger.Info("Redirecting to latest report", map[string]interface{}{"url": latestReportURL})
 	w.Header().Set("Location", latestReportURL)
 	w.WriteHeader(http.StatusFound) // 302 redirect
 }
@@ -47,7 +47,7 @@ func (s *Server) serveInitialPage(w http.ResponseWriter) {
 	templatePath := filepath.Join("internal", "templates", "initial_page.html")
 	templateContent, err := os.ReadFile(templatePath)
 	if err != nil {
-		log.Printf("Failed to load initial page template: %v", err)
+		logger.Error("Failed to load initial page template", err)
 		// Fallback to simple error message
 		fmt.Fprintf(w, "<html><body><h1>Service Unavailable</h1><p>Please try again later.</p></body></html>")
 		return
@@ -85,7 +85,7 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	
 	// Try to acquire the mutex - if already locked, return error immediately
 	if !s.generateMutex.TryLock() {
-		log.Printf("Report generation already in progress, rejecting new request")
+		logger.Warn("Report generation already in progress, rejecting new request")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
 		response := map[string]interface{}{
@@ -102,7 +102,7 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	
 	ctx := r.Context()
 	
-	log.Printf("Starting report generation...")
+	logger.Info("Starting report generation...")
 	
 	// Generate new report
 	storageOrchestrator := reports.NewStorageOrchestrator(s.Storage, string(s.DeploymentMode))
@@ -118,12 +118,12 @@ func (s *Server) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 		storageOrchestrator,
 	)
 	if err != nil {
-		log.Printf("Report generation failed: %v", err)
+		logger.Error("Report generation failed", err)
 		http.Error(w, "Report generation failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	
-	log.Printf("Report generation completed successfully")
+	logger.Info("Report generation completed successfully")
 	
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
@@ -159,7 +159,7 @@ func (s *Server) HandleFileProxy(w http.ResponseWriter, r *http.Request) {
 	
 	fileData, err := s.Storage.GetFile(ctx, actualFilePath)
 	if err != nil {
-		log.Printf("Failed to get file from storage: %v", err)
+		logger.Error("Failed to get file from storage", err, map[string]interface{}{"path": actualFilePath})
 		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
@@ -195,7 +195,7 @@ func (s *Server) HandleListReports(w http.ResponseWriter, r *http.Request) {
 	// List all files in reports directory recursively
 	allFiles, err := s.Storage.ListDir(ctx, "reports", true)
 	if err != nil {
-		log.Printf("Failed to list reports: %v", err)
+		logger.Error("Failed to list reports", err)
 		http.Error(w, "Failed to list reports: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -272,7 +272,7 @@ func (s *Server) HandleHistory(w http.ResponseWriter, r *http.Request) {
 	// Load history page from storage
 	historyContent, err := s.Storage.GetFile(ctx, "history/index.html")
 	if err != nil {
-		log.Printf("Failed to load history page: %v", err)
+		logger.Error("Failed to load history page", err)
 		http.Error(w, "History page not found", http.StatusInternalServerError)
 		return
 	}
@@ -294,7 +294,7 @@ func (s *Server) HandleTheory(w http.ResponseWriter, r *http.Request) {
 	// Load theory page from storage
 	theoryContent, err := s.Storage.GetFile(ctx, "theory/index.html")
 	if err != nil {
-		log.Printf("Failed to load theory page: %v", err)
+		logger.Error("Failed to load theory page", err)
 		http.Error(w, "Theory page not found", http.StatusInternalServerError)
 		return
 	}
@@ -317,7 +317,7 @@ func (s *Server) HandleStaticCSS(w http.ResponseWriter, r *http.Request) {
 	cssPath := "static/styles.css"
 	cssContent, err := s.Storage.GetFile(ctx, cssPath)
 	if err != nil {
-		log.Printf("Failed to load CSS from storage: %v", err)
+		logger.Error("Failed to load CSS from storage", err, map[string]interface{}{"path": cssPath})
 		http.Error(w, "CSS not found", http.StatusInternalServerError)
 		return
 	}
@@ -340,7 +340,7 @@ func (s *Server) HandleStaticBackground(w http.ResponseWriter, r *http.Request) 
 	imagePath := "static/background.png"
 	imageContent, err := s.Storage.GetFile(ctx, imagePath)
 	if err != nil {
-		log.Printf("Failed to load background image from storage: %v", err)
+		logger.Error("Failed to load background image from storage", err, map[string]interface{}{"path": imagePath})
 		http.Error(w, "Background image not found", http.StatusInternalServerError)
 		return
 	}

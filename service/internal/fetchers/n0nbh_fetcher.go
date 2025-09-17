@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"log"
 
+	"radiocast/internal/logger"
 	"radiocast/internal/models"
 
 	"github.com/go-resty/resty/v2"
@@ -49,7 +49,7 @@ func (f *N0NBHFetcher) Fetch(ctx context.Context, url string) (*models.N0NBHResp
 		if bodyLen > 200 {
 			bodyLen = 200
 		}
-		log.Printf("N0NBH API returned status %d, response: %s", resp.StatusCode(), string(resp.Body()[:bodyLen]))
+		logger.Warnf("N0NBH API returned status %d, response: %s", resp.StatusCode(), string(resp.Body()[:bodyLen]))
 		return nil, fmt.Errorf("N0NBH API returned status %d", resp.StatusCode())
 	}
 	

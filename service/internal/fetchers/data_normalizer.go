@@ -2,11 +2,11 @@ package fetchers
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
 
+	"radiocast/internal/logger"
 	"radiocast/internal/models"
 
 	"github.com/mmcdole/gofeed"
@@ -36,7 +36,7 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 		if latest.EstimatedKp > 0 {
 			data.GeomagData.KIndex = latest.EstimatedKp
 		}
-		log.Printf("DEBUG: Set K-Index source to: %s", data.GeomagData.KIndexDataSource)
+		logger.Debugf("DEBUG: Set K-Index source to: %s", data.GeomagData.KIndexDataSource)
 		
 		// Determine geomagnetic activity level
 		if data.GeomagData.KIndex <= 2 {
@@ -57,8 +57,8 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 		data.SolarData.SolarFluxDataSource = latest.Source
 		data.SolarData.SunspotNumber = int(latest.SunspotNumber)
 		data.SolarData.SunspotDataSource = latest.Source
-		log.Printf("DEBUG: Set Solar Flux source to: %s", data.SolarData.SolarFluxDataSource)
-		log.Printf("DEBUG: Set Sunspot source to: %s", data.SolarData.SunspotDataSource)
+		logger.Debugf("DEBUG: Set Solar Flux source to: %s", data.SolarData.SolarFluxDataSource)
+		logger.Debugf("DEBUG: Set Sunspot source to: %s", data.SolarData.SunspotDataSource)
 	}
 	
 	// Classify solar activity based on solar flux index
@@ -81,7 +81,7 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 			}
 			// Always set N0NBH as source for solar flux when available
 			data.SolarData.SolarFluxDataSource = n0nbh.Source
-			log.Printf("DEBUG: Set Solar Flux source to N0NBH: %s", data.SolarData.SolarFluxDataSource)
+			logger.Debugf("DEBUG: Set Solar Flux source to N0NBH: %s", data.SolarData.SolarFluxDataSource)
 			
 			// Re-classify solar activity after N0NBH data update
 			if data.SolarData.SolarFluxIndex < 100 {
@@ -97,14 +97,14 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 		if aIndex, err := strconv.ParseFloat(n0nbh.SolarData.AIndex, 64); err == nil {
 			data.GeomagData.AIndex = aIndex
 			data.GeomagData.AIndexDataSource = n0nbh.Source
-			log.Printf("DEBUG: Set A-Index source to: %s", data.GeomagData.AIndexDataSource)
+			logger.Debugf("DEBUG: Set A-Index source to: %s", data.GeomagData.AIndexDataSource)
 		}
 		
 		// Parse proton flux
 		if protonFlux, err := strconv.ParseFloat(n0nbh.SolarData.ProtonFlux, 64); err == nil {
 			data.SolarData.ProtonFlux = protonFlux
 			data.SolarData.ProtonFluxDataSource = n0nbh.Source
-			log.Printf("DEBUG: Set Proton Flux source to: %s", data.SolarData.ProtonFluxDataSource)
+			logger.Debugf("DEBUG: Set Proton Flux source to: %s", data.SolarData.ProtonFluxDataSource)
 		}
 		
 		// Process band conditions
@@ -164,7 +164,7 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 	data.Forecast = n.GenerateBasicForecast(data)
 	
 	// Debug: Log all source attributions before returning
-	log.Printf("DEBUG: Final source attribution - Solar Flux: '%s', Sunspot: '%s', K-Index: '%s', A-Index: '%s', Band Data: '%s'", 
+	logger.Debugf("DEBUG: Final source attribution - Solar Flux: '%s', Sunspot: '%s', K-Index: '%s', A-Index: '%s', Band Data: '%s'", 
 		data.SolarData.SolarFluxDataSource, 
 		data.SolarData.SunspotDataSource,
 		data.GeomagData.KIndexDataSource,
