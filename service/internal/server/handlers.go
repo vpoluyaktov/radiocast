@@ -302,50 +302,51 @@ func (s *Server) HandleTheory(w http.ResponseWriter, r *http.Request) {
 	w.Write(theoryContent)
 }
 
-// HandleStaticCSS serves the static CSS file for History and Theory pages
-func (s *Server) HandleStaticCSS(w http.ResponseWriter, r *http.Request) {
+// HandleStaticFiles serves static files (CSS, images, etc.) from the static directory
+func (s *Server) HandleStaticFiles(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	
-	w.Header().Set("Content-Type", "text/css")
-	
 	ctx := r.Context()
 	
-	// Try to get CSS from static assets storage path
-	cssPath := "static/styles.css"
-	cssContent, err := s.Storage.GetFile(ctx, cssPath)
+	// Extract filename from URL path (e.g., "/static/common.css" -> "common.css")
+	filename := strings.TrimPrefix(r.URL.Path, "/static/")
+	if filename == "" {
+		http.Error(w, "File not specified", http.StatusBadRequest)
+		return
+	}
+	
+	// Set appropriate content type based on file extension
+	ext := filepath.Ext(filename)
+	switch ext {
+	case ".css":
+		w.Header().Set("Content-Type", "text/css")
+	case ".png":
+		w.Header().Set("Content-Type", "image/png")
+	case ".jpg", ".jpeg":
+		w.Header().Set("Content-Type", "image/jpeg")
+	case ".gif":
+		w.Header().Set("Content-Type", "image/gif")
+	case ".svg":
+		w.Header().Set("Content-Type", "image/svg+xml")
+	case ".js":
+		w.Header().Set("Content-Type", "application/javascript")
+	default:
+		w.Header().Set("Content-Type", "application/octet-stream")
+	}
+	
+	// Try to get file from static assets storage path
+	filePath := "static/" + filename
+	fileContent, err := s.Storage.GetFile(ctx, filePath)
 	if err != nil {
-		logger.Error("Failed to load CSS from storage", err, map[string]interface{}{"path": cssPath})
-		http.Error(w, "CSS not found", http.StatusInternalServerError)
+		logger.Error("Failed to load static file from storage", err, map[string]interface{}{"path": filePath})
+		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
 	
-	w.Write(cssContent)
-}
-
-// HandleStaticBackground serves the background image for History and Theory pages
-func (s *Server) HandleStaticBackground(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	
-	w.Header().Set("Content-Type", "image/png")
-	
-	ctx := r.Context()
-	
-	// Try to get background image from static assets storage path
-	imagePath := "static/background.png"
-	imageContent, err := s.Storage.GetFile(ctx, imagePath)
-	if err != nil {
-		logger.Error("Failed to load background image from storage", err, map[string]interface{}{"path": imagePath})
-		http.Error(w, "Background image not found", http.StatusInternalServerError)
-		return
-	}
-	
-	w.Write(imageContent)
+	w.Write(fileContent)
 }
 
 // requireAPIKey is a middleware that validates API key for protected endpoints

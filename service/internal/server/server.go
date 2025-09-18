@@ -93,8 +93,7 @@ func (s *Server) SetupRoutes() *http.ServeMux {
 	// Handle static pages
 	mux.HandleFunc("/history", s.HandleHistory)
 	mux.HandleFunc("/theory", s.HandleTheory)
-	mux.HandleFunc("/static/styles.css", s.HandleStaticCSS)
-	mux.HandleFunc("/static/background.png", s.HandleStaticBackground)
+	mux.HandleFunc("/static/", s.HandleStaticFiles)
 	
 	// Handle root path last (catch-all)
 	mux.HandleFunc("/", s.HandleRoot)
@@ -107,27 +106,29 @@ func (s *Server) initializeStaticAssets(ctx context.Context) error {
 	staticDir := filepath.Join("internal", "static")
 	templatesDir := filepath.Join("internal", "templates")
 	
-	// Store CSS file
-	cssPath := filepath.Join(staticDir, "styles.css")
-	cssData, err := os.ReadFile(cssPath)
+	// Store all files from static directory
+	staticFiles, err := os.ReadDir(staticDir)
 	if err != nil {
-		return fmt.Errorf("failed to read CSS file: %w", err)
+		return fmt.Errorf("failed to read static directory: %w", err)
 	}
-	if err := s.Storage.StoreFile(ctx, "static/styles.css", cssData); err != nil {
-		return fmt.Errorf("failed to store CSS file: %w", err)
-	}
-	logger.Infof("Static CSS file uploaded successfully")
 	
-	// Store background image
-	bgPath := filepath.Join(staticDir, "background.png")
-	bgData, err := os.ReadFile(bgPath)
-	if err != nil {
-		return fmt.Errorf("failed to read background image: %w", err)
+	for _, file := range staticFiles {
+		if file.IsDir() {
+			continue // Skip directories
+		}
+		
+		filePath := filepath.Join(staticDir, file.Name())
+		fileData, err := os.ReadFile(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to read static file %s: %w", file.Name(), err)
+		}
+		
+		if err := s.Storage.StoreFile(ctx, "static/"+file.Name(), fileData); err != nil {
+			return fmt.Errorf("failed to store static file %s: %w", file.Name(), err)
+		}
+		
+		logger.Infof("Static file %s uploaded successfully", file.Name())
 	}
-	if err := s.Storage.StoreFile(ctx, "static/background.png", bgData); err != nil {
-		return fmt.Errorf("failed to store background image: %w", err)
-	}
-	logger.Infof("Static background image uploaded successfully")
 	
 	// Store history page
 	historyPath := filepath.Join(templatesDir, "history_template.html")
