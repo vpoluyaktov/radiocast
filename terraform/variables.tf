@@ -89,3 +89,9 @@ variable "radiocast_retention_days" {
   type        = number
   default     = 180
 }
+
+variable "github_actions_sa_email" {
+  description = "Email of the GitHub Actions service account that needs to read secrets during deployment"
+  type        = string
+  default     = ""
+}

@@ -15,3 +15,6 @@ timeout       = "600s"
 
 # Enable monitoring for production
 enable_monitoring = true
+
+# GitHub Actions service account for deployment
+github_actions_sa_email = "radiocast-prod-deploy@dfh-prod-id.iam.gserviceaccount.com"
