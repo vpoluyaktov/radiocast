@@ -15,3 +15,6 @@ timeout       = "300s"
 
 # Monitoring disabled for staging
 enable_monitoring = false
+
+# GitHub Actions service account for deployment
+github_actions_sa_email = "radiocast-stage-deploy@dfh-stage-id.iam.gserviceaccount.com"
