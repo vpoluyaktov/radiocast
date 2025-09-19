@@ -10,6 +10,19 @@
     /* Color, size, weight, and alignment now handled by common.css */
 }
 
+/* History page main content styling */
+.main-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
 /* Reduce content padding for history page */
 .main-content .content {
     padding: 10px 40px;
@@ -445,6 +458,12 @@
     
     .mobile-layout {
         display: block;
+    }
+    
+    /* Responsive main content styling */
+    .main-content {
+        margin: 0;
+        border-radius: 0;
     }
     
     /* Reduce content padding for mobile */

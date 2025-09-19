@@ -108,11 +108,11 @@ body {
 .nav-dropdown-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
+    gap: 12px;
+    padding: 14px 18px;
     color: #333;
     text-decoration: none;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 500;
     transition: all 0.2s ease;
     border-radius: 8px;
@@ -159,8 +159,8 @@ body::before {
     }
     
     .nav-dropdown-item {
-        padding: 10px 14px;
-        font-size: 13px;
+        padding: 12px 16px;
+        font-size: 15px;
     }
     
     /* Common header responsive styles */
@@ -173,6 +173,15 @@ body::before {
     h2 {
         font-size: 1.2em;
         padding: 6px 10px;
+    }
+    
+    .footer {
+        padding: 20px 15px;
+    }
+    
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 20px;
     }
 }
 
@@ -189,8 +198,8 @@ body::before {
     }
     
     .nav-dropdown-item {
-        padding: 8px 12px;
-        font-size: 12px;
+        padding: 10px 14px;
+        font-size: 14px;
     }
     
     /* Common header responsive styles for small screens */
@@ -204,6 +213,14 @@ body::before {
         font-size: 1.1em;
         padding: 5px 8px;
         border-left-width: 2px;
+    }
+    
+    .footer {
+        padding: 15px 10px;
+    }
+    
+    .footer p {
+        font-size: 0.8em;
     }
 }
 
@@ -240,3 +257,43 @@ h2:has-text("🌍") { border-left-color: #3498db; }
 h2:has-text("📈") { border-left-color: #9b59b6; }
 h2:has-text("💡") { border-left-color: #f1c40f; }
 h2:has-text("🔬") { border-left-color: #95a5a6; }
+
+/* Common footer styling for all pages */
+.footer {
+    background: rgba(255, 255, 255, 0.3);
+    color: #6c757d;
+    padding: 30px 40px;
+    margin-top: 20px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 12px 12px;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: start;
+    text-align: center;
+}
+
+.footer p {
+    margin: 5px 0;
+    opacity: 0.8;
+    font-size: 0.9em;
+}
+
+.footer a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+.footer a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+.footer .disclaimer {
+    font-style: italic;
+}
