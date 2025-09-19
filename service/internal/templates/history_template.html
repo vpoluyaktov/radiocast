@@ -357,7 +357,10 @@
                     const reportsList = document.createElement('div');
                     reportsList.className = 'day-reports';
 
-                    reports.forEach(report => {
+                    // Show only the 3 most recent reports (reports are sorted chronologically)
+                    const recentReports = reports.slice(-3);
+                    
+                    recentReports.forEach(report => {
                         const reportLink = document.createElement('a');
                         reportLink.className = 'report-link-inline';
                         reportLink.textContent = report.displayTime;

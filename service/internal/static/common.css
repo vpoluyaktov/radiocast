@@ -162,6 +162,18 @@ body::before {
         padding: 10px 14px;
         font-size: 13px;
     }
+    
+    /* Common header responsive styles */
+    .header h1,
+    .page-header h1,
+    .main-content h1 {
+        font-size: 1.4em;
+    }
+    
+    h2 {
+        font-size: 1.2em;
+        padding: 6px 10px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -180,20 +192,44 @@ body::before {
         padding: 8px 12px;
         font-size: 12px;
     }
+    
+    /* Common header responsive styles for small screens */
+    .header h1,
+    .page-header h1,
+    .main-content h1 {
+        font-size: 1.2em;
+    }
+    
+    h2 {
+        font-size: 1.1em;
+        padding: 5px 8px;
+        border-left-width: 2px;
+    }
+}
+
+/* Common header styles for all pages */
+.header h1,
+.page-header h1,
+.main-content h1 {
+    color: #000000;
+    font-size: 1.8em;
+    font-weight: 600;
+    text-align: center;
+    margin: 0 0 25px 0;
 }
 
 /* Common h2 styling with gradient background */
 h2 { 
-    color: #222; 
-    margin-top: 25px; 
-    font-size: 1.6em;
-    border-left: 4px solid #0056b3;
-    padding-left: 15px;
-    background: linear-gradient(90deg, rgba(0,86,179,0.3) 0%, rgba(0,123,255,0.1) 80%, transparent 100%);
-    padding: 10px 15px;
-    border-radius: 0 8px 8px 0;
-    text-shadow: 0 0 3px rgba(255,255,255,0.9), 0 0 5px rgba(255,255,255,0.7);
-    font-weight: 600;
+    color: #333; 
+    margin-top: 20px; 
+    font-size: 1.3em;
+    border-left: 3px solid #0056b3;
+    padding-left: 12px;
+    background: linear-gradient(90deg, rgba(0,86,179,0.15) 0%, rgba(0,123,255,0.05) 80%, transparent 100%);
+    padding: 8px 12px;
+    border-radius: 0 6px 6px 0;
+    font-weight: 500;
+    margin-bottom: 15px;
 }
 
 /* Emoji styling for better visibility */

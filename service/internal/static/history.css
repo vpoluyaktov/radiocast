@@ -7,8 +7,7 @@
 /* History Page Layout */
 .page-header h1 {
     margin: 0 0 5px 0;
-    font-size: 1.5em;
-    color: #007bff;
+    /* Color, size, weight, and alignment now handled by common.css */
 }
 
 /* Reduce content padding for history page */
@@ -230,7 +229,7 @@
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 1px;
-    height: 420px;
+    height: 450px;
     overflow: hidden;
 }
 
@@ -246,7 +245,7 @@
     height: 95px;
     border: 1px solid transparent;
     padding: 3px;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 .mobile-layout .calendar-day {
@@ -258,7 +257,7 @@
     border-radius: 4px;
     transition: all 0.3s ease;
     position: relative;
-    height: 70px;
+    height: 90px;
     border: 1px solid transparent;
     padding: 2px;
     overflow: hidden;
@@ -323,6 +322,12 @@
     flex: 1;
     overflow-y: auto;
     align-items: center;
+}
+
+/* Ensure desktop calendar cells handle multiple reports properly */
+.desktop-layout .day-reports {
+    gap: 2px;
+    padding: 1px 0;
 }
 
 .report-link-inline {
@@ -442,33 +447,57 @@
         display: block;
     }
     
+    /* Reduce content padding for mobile */
+    .main-content .content {
+        padding: 10px 15px;
+    }
+    
+    /* Optimize calendar header for mobile */
+    .mobile-layout .calendar-header {
+        gap: 10px;
+        padding: 8px;
+        margin: 10px 0 10px 0;
+    }
+    
+    .mobile-layout #currentMonthMobile {
+        font-size: 1.1em;
+        min-width: 180px;
+    }
+    
+    /* Optimize calendar container width */
     .calendar-container {
-        padding: 15px;
+        padding: 10px;
         background: rgba(255, 255, 255, 0.5);
         border-radius: 12px;
-        margin: 15px 0;
+        margin: 10px 0;
         backdrop-filter: blur(10px);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     }
     
+    /* Increase calendar cell height and improve spacing */
     .calendar-day {
-        height: 60px;
+        height: 90px;
         font-size: 0.9em;
         padding: 3px;
     }
     
     .day-number {
-        font-size: 1.2em;
+        font-size: 1.0em;
+        font-weight: 600;
     }
     
+    /* Make report times more readable */
     .report-link-inline {
-        font-size: 0.75em;
-        padding: 1px 3px;
+        font-size: 0.8em;
+        padding: 2px 4px;
+        margin: 1px 0;
+        min-height: 16px;
+        line-height: 1.2;
     }
     
     .no-reports-text {
-        font-size: 0.7em;
-        margin-top: 4px;
+        font-size: 0.75em;
+        margin-top: 6px;
     }
     
     .calendar-legend {
@@ -488,59 +517,70 @@
 }
 
 @media (max-width: 480px) {
-    .calendar-header {
-        gap: 10px;
-        padding: 10px;
+    /* Further optimize for very small screens */
+    .main-content .content {
+        padding: 10px 10px;
     }
     
-    #currentMonth {
-        font-size: 1.1em;
-        min-width: 150px;
+    .mobile-layout .calendar-header {
+        gap: 8px;
+        padding: 8px;
+    }
+    
+    .mobile-layout #currentMonthMobile {
+        font-size: 1.0em;
+        min-width: 160px;
     }
     
     .calendar-nav-btn {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         font-size: 14px;
     }
     
     .calendar-container {
-        padding: 10px;
+        padding: 8px;
     }
     
     .weekday {
-        padding: 8px 4px;
+        padding: 6px 2px;
         font-size: 0.8em;
     }
     
+    /* Maintain reasonable cell height on small screens */
     .calendar-day {
-        height: 50px;
-        font-size: 0.8em;
+        height: 85px;
+        font-size: 0.85em;
         padding: 2px;
     }
     
     .day-number {
-        font-size: 1.1em;
+        font-size: 0.95em;
+        font-weight: 600;
     }
     
+    /* Keep report times readable */
     .report-link-inline {
-        font-size: 0.7em;
-        padding: 1px 2px;
+        font-size: 0.75em;
+        padding: 2px 3px;
+        margin: 1px 0;
+        min-height: 14px;
+        line-height: 1.1;
     }
     
     .no-reports-text {
-        font-size: 0.65em;
-        margin-top: 2px;
+        font-size: 0.7em;
+        margin-top: 4px;
     }
     
     .calendar-legend {
-        gap: 10px;
+        gap: 8px;
         padding: 8px;
         flex-wrap: wrap;
     }
     
     .legend-item {
-        font-size: 0.7em;
+        font-size: 0.75em;
         gap: 4px;
     }
     
