@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"radiocast/internal/config"
 	"radiocast/internal/logger"
 	"radiocast/internal/reports"
 )
@@ -267,17 +269,36 @@ func (s *Server) HandleHistory(w http.ResponseWriter, r *http.Request) {
 	
 	w.Header().Set("Content-Type", "text/html")
 	
-	ctx := r.Context()
-	
-	// Load history page from storage
-	historyContent, err := s.Storage.GetFile(ctx, "history/index.html")
+	// Load and parse the history template
+	templatePath := filepath.Join("internal", "templates", "history_template.html")
+	templateContent, err := os.ReadFile(templatePath)
 	if err != nil {
-		logger.Error("Failed to load history page", err)
-		http.Error(w, "History page not found", http.StatusInternalServerError)
+		logger.Error("Failed to load history template", err)
+		http.Error(w, "History page template not found", http.StatusInternalServerError)
 		return
 	}
 	
-	w.Write(historyContent)
+	// Parse template
+	tmpl, err := template.New("history").Parse(string(templateContent))
+	if err != nil {
+		logger.Error("Failed to parse history template", err)
+		http.Error(w, "History page template error", http.StatusInternalServerError)
+		return
+	}
+	
+	// Prepare template data
+	data := struct {
+		Version string
+	}{
+		Version: config.GetVersion(),
+	}
+	
+	// Execute template
+	if err := tmpl.Execute(w, data); err != nil {
+		logger.Error("Failed to execute history template", err)
+		http.Error(w, "History page render error", http.StatusInternalServerError)
+		return
+	}
 }
 
 // HandleTheory serves the theory page
@@ -289,17 +310,36 @@ func (s *Server) HandleTheory(w http.ResponseWriter, r *http.Request) {
 	
 	w.Header().Set("Content-Type", "text/html")
 	
-	ctx := r.Context()
-	
-	// Load theory page from storage
-	theoryContent, err := s.Storage.GetFile(ctx, "theory/index.html")
+	// Load and parse the theory template
+	templatePath := filepath.Join("internal", "templates", "theory_template.html")
+	templateContent, err := os.ReadFile(templatePath)
 	if err != nil {
-		logger.Error("Failed to load theory page", err)
-		http.Error(w, "Theory page not found", http.StatusInternalServerError)
+		logger.Error("Failed to load theory template", err)
+		http.Error(w, "Theory page template not found", http.StatusInternalServerError)
 		return
 	}
 	
-	w.Write(theoryContent)
+	// Parse template
+	tmpl, err := template.New("theory").Parse(string(templateContent))
+	if err != nil {
+		logger.Error("Failed to parse theory template", err)
+		http.Error(w, "Theory page template error", http.StatusInternalServerError)
+		return
+	}
+	
+	// Prepare template data
+	data := struct {
+		Version string
+	}{
+		Version: config.GetVersion(),
+	}
+	
+	// Execute template
+	if err := tmpl.Execute(w, data); err != nil {
+		logger.Error("Failed to execute theory template", err)
+		http.Error(w, "Theory page render error", http.StatusInternalServerError)
+		return
+	}
 }
 
 // HandleStaticFiles serves static files (CSS, images, etc.) from the static directory
