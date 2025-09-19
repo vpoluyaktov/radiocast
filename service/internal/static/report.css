@@ -24,10 +24,7 @@
 
 .header h1 {
     margin: 0 0 10px 0;
-    color: #007bff;
-    font-size: 2.2em;
-    font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+    /* Color, size, weight, and alignment now handled by common.css */
 }
 
 .header .subtitle {
@@ -396,7 +393,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     body { padding: 70px 10px 10px 10px; } /* Adjust for smaller nav header */
     .container { margin: 0; border-radius: 0; }
     .header { padding: 20px; }
-    .header h1 { font-size: 1.8em; }
+    /* Header h1 responsive styles now handled by common.css */
     .content { padding: 20px; }
     .charts-section { padding: 20px; }
     .footer { padding: 15px 20px; }
@@ -645,9 +642,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
         padding: 15px 10px;
     }
     
-    .header h1 {
-        font-size: 1.6em;
-    }
+    /* Header h1 responsive styles now handled by common.css */
     
     .content {
         padding: 15px 10px; 
