@@ -64,6 +64,14 @@
     font-weight: 500;
 }
 
+.data-sources h4,
+.service-info h4 {
+    margin: 0 0 15px 0;
+    color: #05208e;
+    font-size: 1.2em;
+    font-weight: 500;
+}
+
 .preview-container {
     flex: 1;
     position: relative;
@@ -508,10 +516,10 @@
     
     /* Make report times more readable */
     .report-link-inline {
-        font-size: 0.8em;
-        padding: 2px 4px;
+        font-size: 0.65em;
+        padding: 2px 3px;
         margin: 1px 0;
-        min-height: 16px;
+        min-height: 14px;
         line-height: 1.2;
     }
     
@@ -581,10 +589,10 @@
     
     /* Keep report times readable */
     .report-link-inline {
-        font-size: 0.75em;
-        padding: 2px 3px;
+        font-size: 0.6em;
+        padding: 1px 2px;
         margin: 1px 0;
-        min-height: 14px;
+        min-height: 12px;
         line-height: 1.1;
     }
     
