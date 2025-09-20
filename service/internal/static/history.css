@@ -59,8 +59,9 @@
 
 .preview-header h3 {
     margin: 0 0 15px 0;
-    color: #007bff;
+    color: #05208e;
     font-size: 1.2em;
+    font-weight: 500;
 }
 
 .preview-container {
@@ -112,7 +113,7 @@
 }
 
 .view-report-btn {
-    background: #007bff;
+    background: #05208e;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -124,9 +125,9 @@
 }
 
 .view-report-btn:hover {
-    background: #0056b3;
+    background: #041a73;
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(5, 32, 142, 0.3);
 }
 
 .mobile-layout {
@@ -164,7 +165,7 @@
     height: 35px;
     border: none;
     border-radius: 50%;
-    background: #007bff;
+    background: #05208e;
     color: white;
     font-size: 16px;
     font-weight: bold;
@@ -173,13 +174,13 @@
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(5, 32, 142, 0.3);
 }
 
 .calendar-nav-btn:hover {
-    background: #0056b3;
+    background: #041a73;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+    box-shadow: 0 4px 12px rgba(5, 32, 142, 0.4);
 }
 
 .calendar-nav-btn:active {
@@ -189,7 +190,7 @@
 #currentMonth {
     margin: 0;
     font-size: 1.3em;
-    color: #007bff;
+    color: #05208e;
     font-weight: 600;
     min-width: 220px;
     text-align: center;
