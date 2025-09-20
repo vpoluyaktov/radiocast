@@ -17,8 +17,9 @@ import (
 
 // FileGenerator handles generation of all report files
 type FileGenerator struct {
-	reportGenerator *ReportGenerator
-	mockService     MockService
+	reportGenerator   *ReportGenerator
+	mockService       MockService
+	sunImageGenerator *imagery.SunImageGenerator
 }
 
 // MockService interface for dependency injection
@@ -38,8 +39,9 @@ type GeneratedFiles struct {
 // NewFileGenerator creates a new file generator
 func NewFileGenerator(reportGenerator *ReportGenerator, mockService MockService) *FileGenerator {
 	return &FileGenerator{
-		reportGenerator: reportGenerator,
-		mockService:     mockService,
+		reportGenerator:   reportGenerator,
+		mockService:       mockService,
+		sunImageGenerator: imagery.NewSunImageGenerator(),
 	}
 }
 
@@ -186,19 +188,8 @@ func (fg *FileGenerator) generateHTML(markdown string, data *models.PropagationD
 
 // prepareSunGIFHTML generates the HTML section for the Sun GIF with the correct path
 func (fg *FileGenerator) prepareSunGIFHTML(gifRelName, folderPath string) string {
-	var imgSrc string
-	if folderPath != "" {
-		// GCS mode - use the full folder path
-		if !strings.HasSuffix(folderPath, "/") {
-			folderPath += "/"
-		}
-		imgSrc = "/reports/" + folderPath + gifRelName
-	} else {
-		// Local mode - use relative path
-		imgSrc = gifRelName
-	}
-	
-	return fmt.Sprintf(`<div class="chart-section"><div class="chart-container-integrated"><h3>Sun Images for Past 72 Hours</h3><img src="%s" alt="Sun last 72h" style="max-width:100%%;height:auto;border-radius:8px;" /><br/><i>Images copyrighted by the SDO/NASA and Helioviewer project</i></div></div>`, imgSrc)
+	sunGifHTML := fg.sunImageGenerator.GenerateSunImagesHTML(gifRelName, folderPath)
+	return string(sunGifHTML)
 }
 
 // injectSunGIFIntoHTML replaces the {{.SunGif}} placeholder with the actual Sun GIF HTML

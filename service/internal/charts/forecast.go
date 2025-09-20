@@ -54,10 +54,10 @@ func (cg *ChartGenerator) generateForecastSnippet(data *models.PropagationData) 
 	}
 
 	option := map[string]interface{}{
-		"title": map[string]interface{}{
-			"text": "3-Day K-index Forecast",
-			"left": "center",
-		},
+		// "title": map[string]interface{}{
+		// 	"text": "3-Day K-index Forecast",
+		// 	"left": "center",
+		// },
 		"tooltip": map[string]interface{}{
 			"trigger": "axis",
 			"axisPointer": map[string]interface{}{"type": "shadow"},

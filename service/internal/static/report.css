@@ -146,29 +146,6 @@ tr:hover {
     font-size: 0.9em;
 }
 
-/* Print button */
-.print-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 25px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
-    transition: all 0.3s ease;
-    z-index: 100;
-}
-
-.print-button:hover {
-    background: #0056b3;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
-}
 
 /* Band analysis table specific styles */
 .band-analysis-table {
@@ -201,12 +178,27 @@ tr:hover {
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
 }
 
 .chart-container h3 {
     margin-top: 0;
-    color: #007bff;
+    color: #05208e;
     text-align: center;
+    font-weight: 500;
+}
+
+.chart-container img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chart-container img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
 
 /* HAM-specific styling */
@@ -287,7 +279,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 }
 
 .data-sources h4 {
-    color: #007bff;
+    color: #05208e;
     margin-bottom: 10px;
     font-size: 1.1em;
 }
@@ -309,14 +301,14 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 }
 
 .footer a {
-    color: #007bff;
+    color: #05208e;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.3s ease;
 }
 
 .footer a:hover {
-    color: #0056b3;
+    color: #041a73;
     text-decoration: underline;
 }
 
@@ -354,9 +346,10 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 .chart-container h3 {
     margin-top: 0;
     margin-bottom: 15px;
-    color: #007bff;
+    color: #05208e;
     text-align: center;
     font-size: 1.2em;
+    font-weight: 500;
 }
 
 .chart-image {
@@ -428,21 +421,10 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     }
     
     th, td { 
-        padding: 8px 6px; 
+        padding: 6px 8px; 
         white-space: nowrap;
     }
     
-    /* Better button positioning */
-    .print-button { 
-        position: relative;
-        top: auto;
-        right: auto;
-        bottom: auto;
-        left: auto;
-        display: block;
-        margin: 20px auto;
-        width: fit-content;
-    }
     
     /* Charts grid responsive */
     .charts-grid {
@@ -505,13 +487,7 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
         display: none;
     }
     
-    .chart-container-integrated {
-        display: none;
-    }
     
-    .print-button {
-        display: none;
-    }
     
     .footer {
         background: white;
@@ -534,10 +510,10 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
 .chart-section h3 {
     margin-top: 0;
     margin-bottom: 20px;
-    color: #007bff;
+    color: #05208e;
     text-align: center;
     font-size: 1.3em;
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .chart-section .chart-image {
@@ -556,32 +532,6 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
 
-/* Integrated chart container for Sun images */
-.chart-container-integrated {
-    text-align: center;
-}
-
-.chart-container-integrated h3 {
-    color: #2c3e50;
-    font-size: 1.3em;
-    margin-bottom: 20px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.chart-container-integrated img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.chart-container-integrated img:hover {
-    transform: scale(1.02);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-}
 
 /* Responsive chart layout */
 @media (max-width: 768px) {
@@ -596,10 +546,6 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
         border-radius: 6px;
     }
     
-    .chart-container-integrated h3 {
-        font-size: 1.1em;
-        margin-bottom: 15px;
-    }
 }
 
 /* iPhone and very small screens specific optimizations */

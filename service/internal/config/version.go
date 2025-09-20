@@ -20,6 +20,14 @@ func GetVersion() string {
 	commitCount := getGitCommitCount()
 	
 	if commitCount > 0 {
+		// Cut the last digit from base version and replace with commit count
+		// e.g., "0.1.0" -> "0.1" + "." + "231" = "0.1.231"
+		parts := strings.Split(baseVersion, ".")
+		if len(parts) >= 3 {
+			// Take first two parts (major.minor) and add commit count as patch
+			return parts[0] + "." + parts[1] + "." + strconv.Itoa(commitCount)
+		}
+		// Fallback if version format is unexpected
 		return baseVersion + "." + strconv.Itoa(commitCount)
 	}
 	
