@@ -52,7 +52,8 @@ type TemplateData struct {
 	
 	// Chart placeholders
 	SunGif                   template.HTML
-	SolarActivityChart       template.HTML
+	GaugePanelChart          template.HTML
+	KIndexGaugeChart         template.HTML
 	BandConditionsChart      template.HTML
 	KIndexChart              template.HTML
 	ForecastChart            template.HTML
@@ -84,7 +85,8 @@ func (h *HTMLBuilder) GenerateChartData(data *models.PropagationData, sourceData
 
 	// Create chart data with empty defaults
 	chartData := &TemplateData{
-		SolarActivityChart:       template.HTML(""),
+		GaugePanelChart:          template.HTML(""),
+		KIndexGaugeChart:         template.HTML(""),
 		BandConditionsChart:      template.HTML(""),
 		KIndexChart:              template.HTML(""),
 		ForecastChart:            template.HTML(""),
@@ -94,8 +96,10 @@ func (h *HTMLBuilder) GenerateChartData(data *models.PropagationData, sourceData
 	// Map snippets by ID to template data
 	for _, snippet := range snippets {
 		switch snippet.ID {
-		case "chart-solar-activity":
-			chartData.SolarActivityChart = template.HTML(snippet.HTML)
+		case "chart-gauge-panel":
+			chartData.GaugePanelChart = template.HTML(snippet.HTML)
+		case "chart-k-index-gauge":
+			chartData.KIndexGaugeChart = template.HTML(snippet.HTML)
 		case "chart-band-conditions":
 			chartData.BandConditionsChart = template.HTML(snippet.HTML)
 		case "chart-geomagnetic-conditions":
@@ -134,7 +138,8 @@ func (h *HTMLBuilder) BuildCompleteHTML(
 		Content:                  template.HTML(htmlContent),
 		Version:                  config.GetVersion(),
 		SunGif:                   sunGifHTML,
-		SolarActivityChart:       chartData.SolarActivityChart,
+		GaugePanelChart:          chartData.GaugePanelChart,
+		KIndexGaugeChart:         chartData.KIndexGaugeChart,
 		BandConditionsChart:      chartData.BandConditionsChart,
 		KIndexChart:              chartData.KIndexChart,
 		ForecastChart:            chartData.ForecastChart,
@@ -208,14 +213,16 @@ func (h *HTMLBuilder) ProcessMarkdownWithPlaceholders(
 	// Prepare data for placeholder substitution
 	data := struct {
 		SunGif                   template.HTML
-		SolarActivityChart       template.HTML
+		GaugePanelChart          template.HTML
+		KIndexGaugeChart         template.HTML
 		BandConditionsChart      template.HTML
 		KIndexChart              template.HTML
 		ForecastChart            template.HTML
 		PropagationTimelineChart template.HTML
 	}{
 		SunGif:                   sunGifHTML,
-		SolarActivityChart:       chartData.SolarActivityChart,
+		GaugePanelChart:          chartData.GaugePanelChart,
+		KIndexGaugeChart:         chartData.KIndexGaugeChart,
 		BandConditionsChart:      chartData.BandConditionsChart,
 		KIndexChart:              chartData.KIndexChart,
 		ForecastChart:            chartData.ForecastChart,
