@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio Propagation Report - 2025-09-19</title>
+    <link rel="stylesheet" href="/static/common.css" type="text/css">
+    <link rel="stylesheet" href="/static/report.css" type="text/css">
+    
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-WPRFL98D');</script>
+    
+</head>
+<body style="background-image: url('/static/background.png'); background-size: contain; background-repeat: repeat-y; background-position: top center;">
+    
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WPRFL98D"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    
+    
+    
+    <div class="nav-header">
+        <button class="nav-button hamburger-menu" id="hamburgerMenu" title="Main Menu">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
+        <button class="nav-button refresh-button" id="refreshButton" title="Go to Latest Report">
+            <svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M21 21v-5h-5"/>
+            </svg>
+        </button>
+        <div class="nav-dropdown" id="navDropdown">
+            <a href="/" class="nav-dropdown-item active">📊 Latest Report</a>
+            <a href="/history" class="nav-dropdown-item">📅 Reports History</a>
+            <a href="/theory" class="nav-dropdown-item">📚 Radio Propagation Theory</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            
+            <h1>Amateur Radio Propagation Report</h1>
+            <h2>2025-09-19</h2>
+            <div class="generated-time">🕒 Generated: 2025-09-19 16:41:37 UTC</div>
+        </div>
+        <div class="content">
+            <h2 id="-quick-summary">🎯 Quick Summary</h2>
+<p>HF propagation is looking up today! Solar flux is moderately high at 146, and geomagnetic activity has settled after a recent disturbance—expect improved conditions, especially on the higher bands during daylight. 20m and 15m are your best bets for daytime DX, while 40m and 80m will shine after sunset.</p>
+<hr>
+<h2 id="-current-solar-activity">📊 Current Solar Activity</h2>
+<p><div class="chart-section"><div class="chart-container-integrated"><h3>Sun Images for Past 72 Hours</h3><img src="/reports/2025/09/19/PropagationReport-2025-09-19-16-41-37/sun_72h.gif" alt="Sun last 72h" style="max-width:100%;height:auto;border-radius:8px;" /><br/><i>Images copyrighted by the SDO/NASA and Helioviewer project</i></div></div></p>
+<ul>
+<li><strong>Solar Flux:</strong> 146 (good for HF propagation; higher flux means more energy for the ionosphere)</li>
+<li><strong>Sunspot Number:</strong> 83 (moderate; supports reliable HF openings)</li>
+<li><strong>Recent Trend:</strong> Solar flux and sunspot numbers are down from earlier in the year but remain solid for late-cycle conditions.</li>
+<li><strong>Flares/Disturbances:</strong> No major solar flares reported. The geomagnetic field is calming after a recent active period.</li>
+</ul>
+<p><script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<div class="chart-container">
+	<h3>Current Solar Activity</h3>
+	<div id="chart-solar-activity" style="width:100%;height:360px;"></div>
+</div>
+<script>(function(){var el=document.getElementById('chart-solar-activity');if(!el)return;var c=echarts.init(el);var option={"grid":{"bottom":"8%","containLabel":true,"left":"8%","right":"4%"},"series":[{"barWidth":"40%","data":[{"value":100},{"value":133},{"value":1.33}],"type":"bar"}],"tooltip":{"axisPointer":{"type":"shadow"},"trigger":"axis"},"xAxis":{"data":["Solar Flux","Sunspots","K-index"],"type":"category"},"yAxis":{"type":"value"}};c.setOption(option);window.addEventListener('resize',function(){c.resize();});})();</script></p>
+<hr>
+<h2 id="-band-by-band-analysis">📻 Band-by-Band Analysis</h2>
+<table>
+<thead>
+<tr>
+<th>Band</th>
+<th style="text-align:center">Day Condition</th>
+<th style="text-align:center">Night Condition</th>
+<th>Best Times</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>80m</td>
+<td style="text-align:center">🟠 Fair</td>
+<td style="text-align:center">🟡 Good</td>
+<td>Night, early AM</td>
+<td>Good for local/regional NVIS at night; some QRN possible.</td>
+</tr>
+<tr>
+<td>40m</td>
+<td style="text-align:center">🟡 Good</td>
+<td style="text-align:center">🟢 Excellent</td>
+<td>Night, sunrise</td>
+<td>Excellent for domestic and some DX at night; quieter after sunset.</td>
+</tr>
+<tr>
+<td>20m</td>
+<td style="text-align:center">🟡 Good</td>
+<td style="text-align:center">🟠 Fair</td>
+<td>Late morning–sunset</td>
+<td>Best daytime DX band; some evening openings possible.</td>
+</tr>
+<tr>
+<td>17m</td>
+<td style="text-align:center">🟡 Good</td>
+<td style="text-align:center">🟠 Fair</td>
+<td>Midday–afternoon</td>
+<td>Short/medium-haul DX; less crowded than 20m.</td>
+</tr>
+<tr>
+<td>15m</td>
+<td style="text-align:center">🟡 Good</td>
+<td style="text-align:center">🟠 Fair</td>
+<td>Late morning–afternoon</td>
+<td>Daytime DX, especially north-south paths; check for short evening openings.</td>
+</tr>
+<tr>
+<td>12m</td>
+<td style="text-align:center">🟠 Fair</td>
+<td style="text-align:center">🔴 Poor</td>
+<td>Early afternoon</td>
+<td>Sporadic openings; watch for brief DX windows.</td>
+</tr>
+<tr>
+<td>10m</td>
+<td style="text-align:center">🟠 Fair</td>
+<td style="text-align:center">🔴 Poor</td>
+<td>Early afternoon</td>
+<td>Occasional short-skip; mostly closed at night.</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Analysis:</strong>
+<ul>
+<li><strong>Best Bands Today:</strong> 20m and 15m during daylight for DX; 40m and 80m at night for regional and some DX.</li>
+<li><strong>Challenging Bands:</strong> 12m and 10m are marginal—watch for brief openings, especially if you enjoy chasing rare DX.</li>
+<li><strong>Geographic Patterns:</strong> North-south paths (e.g., Europe to South America, US to South Pacific) are favored on higher bands.</li>
+</ul>
+</li>
+</ul>
+<p><script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<div class="chart-container">
+	<h3>HF Band Conditions (24h)</h3>
+	<div id="chart-band-conditions" style="width:100%;height:500px;"></div>
+</div>
+<script>(function(){
+	var el=document.getElementById('chart-band-conditions');
+	if(!el)return;
+	var c=echarts.init(el);
+	var option={"grid":{"bottom":80,"left":110,"right":40,"top":60},"series":[{"data":[[0,0,1],[1,0,1],[2,0,1],[3,0,1],[4,0,1],[5,0,1],[6,0,2],[7,0,2],[8,0,2],[9,0,2],[10,0,2],[11,0,2],[12,0,2],[13,0,2],[14,0,2],[15,0,2],[16,0,2],[17,0,2],[18,0,1],[19,0,1],[20,0,1],[21,0,1],[22,0,1],[23,0,1],[0,1,1],[1,1,1],[2,1,1],[3,1,1],[4,1,1],[5,1,1],[6,1,2],[7,1,2],[8,1,2],[9,1,2],[10,1,2],[11,1,2],[12,1,2],[13,1,2],[14,1,2],[15,1,2],[16,1,2],[17,1,2],[18,1,1],[19,1,1],[20,1,1],[21,1,1],[22,1,1],[23,1,1],[0,2,3],[1,2,3],[2,2,3],[3,2,3],[4,2,3],[5,2,3],[6,2,3],[7,2,3],[8,2,3],[9,2,3],[10,2,3],[11,2,3],[12,2,3],[13,2,3],[14,2,3],[15,2,3],[16,2,3],[17,2,3],[18,2,3],[19,2,3],[20,2,3],[21,2,3],[22,2,3],[23,2,3],[0,3,3],[1,3,3],[2,3,3],[3,3,3],[4,3,3],[5,3,3],[6,3,3],[7,3,3],[8,3,3],[9,3,3],[10,3,3],[11,3,3],[12,3,3],[13,3,3],[14,3,3],[15,3,3],[16,3,3],[17,3,3],[18,3,3],[19,3,3],[20,3,3],[21,3,3],[22,3,3],[23,3,3],[0,4,3],[1,4,3],[2,4,3],[3,4,3],[4,4,3],[5,4,3],[6,4,3],[7,4,3],[8,4,3],[9,4,3],[10,4,3],[11,4,3],[12,4,3],[13,4,3],[14,4,3],[15,4,3],[16,4,3],[17,4,3],[18,4,3],[19,4,3],[20,4,3],[21,4,3],[22,4,3],[23,4,3],[0,5,3],[1,5,3],[2,5,3],[3,5,3],[4,5,3],[5,5,3],[6,5,2],[7,5,2],[8,5,2],[9,5,2],[10,5,2],[11,5,2],[12,5,2],[13,5,2],[14,5,2],[15,5,2],[16,5,2],[17,5,2],[18,5,3],[19,5,3],[20,5,3],[21,5,3],[22,5,3],[23,5,3],[0,6,3],[1,6,3],[2,6,3],[3,6,3],[4,6,3],[5,6,3],[6,6,2],[7,6,2],[8,6,2],[9,6,2],[10,6,2],[11,6,2],[12,6,2],[13,6,2],[14,6,2],[15,6,2],[16,6,2],[17,6,2],[18,6,3],[19,6,3],[20,6,3],[21,6,3],[22,6,3],[23,6,3]],"emphasis":{"itemStyle":{"shadowBlur":10,"shadowColor":"rgba(0,0,0,0.3)"}},"itemStyle":{"borderColor":"#f5f5f5","borderWidth":1},"label":{"show":false},"type":"heatmap"}],"tooltip":{"position":"top"},"visualMap":{"bottom":30,"left":"center","orient":"horizontal","pieces":[{"color":"#000000","label":"Closed","value":0},{"color":"#dc3545","label":"Poor","value":1},{"color":"#fd7e14","label":"Fair","value":2},{"color":"#ffc107","label":"Good","value":3},{"color":"#28a745","label":"Excellent","value":4}],"showLabel":true,"type":"piecewise"},"xAxis":{"data":["00","01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23"],"name":"UTC Hour","splitArea":{"show":true},"type":"category"},"yAxis":{"data":["10m","12m","15m","17m","20m","40m","80m"],"name":"Band","splitArea":{"show":true},"type":"category"}};
+	// Set the formatter as a JavaScript function, not a string
+	option.tooltip = option.tooltip || {};
+	option.tooltip.position = 'top';
+	option.tooltip.formatter = function(params) {
+				var bands = ['10m', '12m', '15m', '17m', '20m', '40m', '80m'];
+				var value = params.data[2];
+				// Ensure we're correctly mapping all five condition levels
+				var label = value === 0 ? 'Closed' : 
+						   value === 1 ? 'Poor' : 
+						   value === 2 ? 'Fair' : 
+						   value === 3 ? 'Good' : 
+						   value === 4 ? 'Excellent' : 'Unknown';
+				return label + ' | ' + bands[params.data[1]] + ' @ ' + params.data[0] + ':00';
+			};
+	c.setOption(option);
+	window.addEventListener('resize',function(){c.resize();});
+})();</script></p>
+<hr>
+<h2 id="-geomagnetic-conditions">📈 Geomagnetic Conditions</h2>
+<ul>
+<li><strong>K-index:</strong> Currently low (K=0–1), after a spike up to K=5 yesterday.</li>
+<li><strong>Recent Trend:</strong> Geomagnetic field was unsettled to active over the past 24 hours, but has now quieted significantly.</li>
+<li><strong>Impact:</strong> Ionospheric recovery is underway—expect improving HF conditions, especially on the higher bands. Aurora is low, so polar paths are stabilizing.</li>
+</ul>
+<p></p>
+<hr>
+<h2 id="-best-operating-times">⏰ Best Operating Times</h2>
+<ul>
+<li><strong>Daytime (10:00–18:00 local):</strong> 20m, 17m, and 15m are open for DX and intercontinental contacts.</li>
+<li><strong>Late Afternoon/Evening:</strong> 20m may stay open for long-haul DX; 40m starts to come alive for both DX and regional work.</li>
+<li><strong>Night (after sunset–sunrise):</strong> 40m and 80m are your go-to bands for domestic and some international contacts.</li>
+<li><strong>Early Morning:</strong> 40m and 80m remain strong; check 20m for grayline DX.</li>
+</ul>
+<hr>
+<h2 id="-dx-opportunities">🌍 DX Opportunities</h2>
+<ul>
+<li><strong>20m:</strong> Best for worldwide DX during daylight, especially on east-west paths.</li>
+<li><strong>15m/17m:</strong> Good for trans-equatorial and north-south DX—try for Africa, South America, and Oceania.</li>
+<li><strong>40m:</strong> Nighttime DX possible, especially around sunrise/sunset (grayline).</li>
+<li><strong>10m/12m:</strong> Watch for sporadic-E or short, surprise openings—keep an ear out during peak solar hours.</li>
+</ul>
+<hr>
+<h2 id="-3-day-forecast">🔮 3-Day Forecast</h2>
+<p><script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<div class="chart-container">
+	<h3>3-Day K-index Forecast</h3>
+	<div id="chart-forecast" style="width:100%;height:360px;"></div>
+</div>
+<script>(function(){
+var el=document.getElementById('chart-forecast');
+if(!el){return;}
+var c=echarts.init(el);
+var option={"grid":{"bottom":"8%","containLabel":true,"left":"8%","right":"4%"},"series":[{"barWidth":"40%","data":[{"itemStyle":{"color":"#28a745"},"value":1.3},{"itemStyle":{"color":"#28a745"},"value":0.8},{"itemStyle":{"color":"#28a745"},"value":0.3}],"label":{"show":false},"type":"bar"}],"tooltip":{"axisPointer":{"type":"shadow"},"trigger":"axis"},"xAxis":{"axisLabel":{"color":"#343a40"},"axisLine":{"lineStyle":{"color":"#ced4da"}},"data":["Today\nSep 19","Tomorrow\nSep 20","Day After\nSep 21"],"type":"category"},"yAxis":{"axisLabel":{"color":"#6c757d"},"max":6,"min":0,"splitLine":{"lineStyle":{"color":"#e9ecef"}},"type":"value"}};
+c.setOption(option);
+window.addEventListener('resize', function(){ c.resize(); });
+})();</script>
+</p>
+<ul>
+<li><strong>Solar Activity:</strong> Solar flux expected to remain in the 140s, supporting continued HF openings.</li>
+<li><strong>Geomagnetic Field:</strong> Quiet to unsettled; no major storms forecast.</li>
+<li><strong>Propagation Outlook:</strong>
+<ul>
+<li><strong>HF:</strong> Improving conditions, especially on 20m–15m. 10m/12m may see brief openings if solar flux ticks up further.</li>
+<li><strong>VHF/UHF:</strong> No significant tropospheric or auroral enhancements expected.</li>
+</ul>
+</li>
+<li><strong>Advice:</strong> Take advantage of the quiet geomagnetic field—today and the next two days are prime for HF operation!</li>
+</ul>
+<hr>
+<h2 id="-propagation-timeline">📡 Propagation Timeline</h2>
+<p><script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<div class="chart-container">
+	<h3>Propagation Quality Timeline (24 Hours)</h3>
+	<div id="chart-propagation-timeline" style="width:100%;height:420px;"></div>
+</div>
+<script>(function(){var el=document.getElementById('chart-propagation-timeline');if(!el)return;var c=echarts.init(el);var option={"grid":{"bottom":"12%","containLabel":true,"left":"8%","right":"8%"},"legend":{"bottom":0,"data":["K-index","Solar Flux"]},"series":[{"data":[2.33,2.67,1.67,0.67,1.33,2.67,1.33,1.67,2.67,3.33,4,3.67,4,3.33,4,5,4.33,1.33,1,1,0.67,0.67,1,0.33,1.33],"name":"K-index","showSymbol":true,"symbolSize":6,"type":"line","yAxisIndex":0},{"data":[100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100],"name":"Solar Flux","showSymbol":true,"symbolSize":5,"type":"line","yAxisIndex":1}],"tooltip":{"trigger":"axis"},"xAxis":{"data":["2025-09-04T18:00:00Z","2025-09-04T21:00:00Z","2025-09-05T00:00:00Z","2025-09-05T03:00:00Z","2025-09-05T06:00:00Z","2025-09-05T09:00:00Z","2025-09-05T12:00:00Z","2025-09-05T15:00:00Z","2025-09-05T18:00:00Z","2025-09-05T21:00:00Z","2025-09-06T00:00:00Z","2025-09-06T03:00:00Z","2025-09-06T06:00:00Z","2025-09-06T09:00:00Z","2025-09-06T12:00:00Z","2025-09-06T15:00:00Z","2025-09-06T18:00:00Z","2025-09-06T21:00:00Z","2025-09-07T00:00:00Z","2025-09-07T03:00:00Z","2025-09-07T06:00:00Z","2025-09-07T09:00:00Z","2025-09-07T12:00:00Z","2025-09-07T15:00:00Z","2025-09-07T18:00:00Z"],"type":"category"},"yAxis":[{"max":9,"min":0,"name":"K-index","type":"value"},{"max":300,"min":50,"name":"Solar Flux (SFU)","type":"value"}]};c.setOption(option);window.addEventListener('resize',function(){c.resize();});})();</script></p>
+<ul>
+<li><strong>Morning:</strong> 40m and 80m strong for local/regional; 20m opens up for DX.</li>
+<li><strong>Midday:</strong> 20m, 17m, and 15m at their best for DX.</li>
+<li><strong>Afternoon:</strong> 15m and 17m remain open; 20m still good.</li>
+<li><strong>Evening/Night:</strong> 40m and 80m dominate; 20m closes, but check for grayline surprises.</li>
+</ul>
+<hr>
+<h2 id="-operator-tips">💡 Operator Tips</h2>
+<ul>
+<li><strong>Contesters:</strong> Focus on 20m and 15m during the day for high rates; switch to 40m and 80m at night.</li>
+<li><strong>DXers:</strong> Watch for grayline on 40m/20m; check 15m for rare openings to Africa and Oceania.</li>
+<li><strong>Casual Operators:</strong> Try 17m for less crowded SSB and digital contacts; 40m is great for evening ragchews.</li>
+<li><strong>VHF/UHF:</strong> No major enhancements—stick to local repeaters and FM simplex.</li>
+</ul>
+<hr>
+<h2 id="-technical-details">🔬 Technical Details</h2>
+<ul>
+<li><strong>Solar Flux (F10.7):</strong> 146</li>
+<li><strong>Sunspot Number:</strong> 83 (current), monthly average ~133 (August)</li>
+<li><strong>K-index:</strong> 0–1 (quiet now; peaked at 5 yesterday)</li>
+<li><strong>A-index:</strong> 26 (still elevated, but dropping)</li>
+<li><strong>Recent Geomagnetic Activity:</strong> Active period has ended; field is stabilizing</li>
+<li><strong>Aurora:</strong> Low (4)—no significant auroral propagation</li>
+<li><strong>Proton/Electron Flux:</strong> Elevated but not at storm levels</li>
+</ul>
+<p>For those who like to dig into the numbers, the ionosphere is recovering from a recent disturbance, and the current solar flux is enough to keep the higher bands interesting. Keep an eye on the K-index—if it stays low, expect even better conditions tomorrow!</p>
+
+        </div>
+        <div class="footer">
+            <div class="footer-content">
+                <div class="data-sources">
+                    <h4>📡 Data Sources</h4>
+                    <p>NOAA SWPC • N0NBH Solar Data • SIDC Sunspot Data</p>
+                </div>
+                <div class="service-info">
+                    <p>Report generated by <a href="https://github.com/vpoluyaktov/radiocast" target="_blank" rel="noopener noreferrer">Radiocast Service</a> using <b>AI</b></p>
+                    <p>0.1.232</p>
+                    <p class="disclaimer">⚠️ For amateur radio use only. Conditions may vary by location.</p>
+                    <p>Developed by KK7UNL</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        
+        const hamburgerMenu = document.getElementById('hamburgerMenu');
+        const navDropdown = document.getElementById('navDropdown');
+        const refreshButton = document.getElementById('refreshButton');
+        
+        
+        hamburgerMenu.addEventListener('click', function() {
+            navDropdown.classList.toggle('show');
+        });
+        
+        
+        document.addEventListener('click', function(event) {
+            if (!hamburgerMenu.contains(event.target) && !navDropdown.contains(event.target)) {
+                navDropdown.classList.remove('show');
+            }
+        });
+        
+        
+        refreshButton.addEventListener('click', function() {
+            window.location.href = '/';
+        });
+    </script>
+</body>
+</html>

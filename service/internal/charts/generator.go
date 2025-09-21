@@ -19,8 +19,8 @@ func NewChartGenerator(outputDir string) *ChartGenerator {
 // GenerateEChartsSnippetsWithSources builds embeddable go-echarts charts
 func (cg *ChartGenerator) GenerateEChartsSnippetsWithSources(data *models.PropagationData, sourceData *models.SourceData) ([]ChartSnippet, error) {
     var snippets []ChartSnippet
-    // Solar Activity (Bar)
-    if sn, err := cg.generateSolarActivitySnippet(data); err == nil {
+    // Gauge Panel (K-index, Solar Flux, Sunspot combined)
+    if sn, err := cg.generateGaugePanelSnippet(data); err == nil {
         snippets = append(snippets, sn)
     }
     // K-index Trend (Line + EMA(5) + guide lines)
