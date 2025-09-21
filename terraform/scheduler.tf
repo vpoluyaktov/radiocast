@@ -16,10 +16,6 @@ resource "google_cloud_scheduler_job" "daily_report" {
       "Content-Type"  = "application/json"
       "Authorization" = "Bearer ${var.radiocast_api_key}"
     }
-
-    oidc_token {
-      service_account_email = google_service_account.radiocast.email
-    }
   }
 
   retry_config {
