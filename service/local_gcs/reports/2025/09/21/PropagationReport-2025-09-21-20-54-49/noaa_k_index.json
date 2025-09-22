@@ -1,0 +1,152 @@
+[
+  {
+    "time_tag": "2025-09-19T00:00:00",
+    "kp_index": 0.67,
+    "estimated_kp": 0.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-19T03:00:00",
+    "kp_index": 0.67,
+    "estimated_kp": 0.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-19T06:00:00",
+    "kp_index": 0.67,
+    "estimated_kp": 0.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-19T09:00:00",
+    "kp_index": 0.67,
+    "estimated_kp": 0.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-19T12:00:00",
+    "kp_index": 1.67,
+    "estimated_kp": 1.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-19T15:00:00",
+    "kp_index": 0.33,
+    "estimated_kp": 0.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-19T18:00:00",
+    "kp_index": 0.67,
+    "estimated_kp": 0.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-19T21:00:00",
+    "kp_index": 0.67,
+    "estimated_kp": 0.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T00:00:00",
+    "kp_index": 1.67,
+    "estimated_kp": 1.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T03:00:00",
+    "kp_index": 2,
+    "estimated_kp": 2,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T06:00:00",
+    "kp_index": 2,
+    "estimated_kp": 2,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T09:00:00",
+    "kp_index": 1.33,
+    "estimated_kp": 1.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T12:00:00",
+    "kp_index": 0.67,
+    "estimated_kp": 0.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T15:00:00",
+    "kp_index": 0.33,
+    "estimated_kp": 0.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T18:00:00",
+    "kp_index": 0.33,
+    "estimated_kp": 0.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T21:00:00",
+    "kp_index": 1.33,
+    "estimated_kp": 1.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T00:00:00",
+    "kp_index": 1.67,
+    "estimated_kp": 1.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T03:00:00",
+    "kp_index": 1.33,
+    "estimated_kp": 1.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T06:00:00",
+    "kp_index": 1.67,
+    "estimated_kp": 1.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T09:00:00",
+    "kp_index": 1,
+    "estimated_kp": 1,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T12:00:00",
+    "kp_index": 1.67,
+    "estimated_kp": 1.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T15:00:00",
+    "kp_index": 2,
+    "estimated_kp": 2,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T18:00:00",
+    "kp_index": 1.33,
+    "estimated_kp": 1.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T21:00:00",
+    "kp_index": 1.33,
+    "estimated_kp": 1.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-22T00:00:00",
+    "kp_index": 2.67,
+    "estimated_kp": 2.67,
+    "source": "NOAA SWPC"
+  }
+]

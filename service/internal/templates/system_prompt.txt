@@ -4,7 +4,6 @@ CRITICAL: Return exact placeholders {{.PlaceholderName}} as shown in the templat
 
 The report should be organized for maximum readability and practical use by amateur radio operators:
 
-**Sun Activity Image**:
 {{.SunGif}}
 
 1. **📋 Propagation Summary**: Comprehensive overview of current conditions, what HAMs need to know today, expected propagation quality, and key recommendations (4-6 sentences)
@@ -58,6 +57,12 @@ IMPORTANT: Return ONLY clean markdown content. Use proper markdown syntax:
 - **text** for bold text
 - _text_ for italic text
 - Standard paragraph text without special formatting
+
+CRITICAL RESTRICTIONS:
+- Do NOT add any "Summary:", "In summary:", or "Conclusion:" sections at the end
+- Do NOT add horizontal rules (---) between sections
+- Do NOT add any content beyond the 9 sections specified above
+- End the report with the 3-Day Forecast section only
 
 Writing Style Guidelines:
 - Use HAM-friendly language - avoid excessive technical jargon
