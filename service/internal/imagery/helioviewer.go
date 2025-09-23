@@ -44,7 +44,7 @@ func GenerateSunGIF(ctx context.Context, reportDir string, ts time.Time, outputG
 	if err != nil {
 		return fmt.Errorf("helio datasource lookup failed; %w", err)
 	}
-	logger.Infof("SunGIF: Using SDO/AIA 171 with sourceID: %d", sourceID)
+	logger.Debugf("SunGIF: Using SDO/AIA 171 with sourceID: %d", sourceID)
 
 	// Generate time points for the last 72 hours
 	base := ts.UTC().Truncate(time.Hour)
@@ -59,21 +59,21 @@ func GenerateSunGIF(ctx context.Context, reportDir string, ts time.Time, outputG
 		dateStr := t.Format("2006-01-02T15:04:05Z")
 		id, err := client.getClosestImageIDBySourceID(ctx, dateStr, sourceID)
 		if err != nil {
-			logger.Infof("SunGIF: getClosestImage failed for %s: %v", dateStr, err)
+			logger.Debugf("SunGIF: getClosestImage failed for %s: %v", dateStr, err)
 			continue
 		}
 
 		// Download the image
 		data, ext, err := client.downloadThumbnail(ctx, id)
 		if err != nil {
-			logger.Infof("SunGIF: downloadThumbnail failed for %s: %v", dateStr, err)
+			logger.Debugf("SunGIF: downloadThumbnail failed for %s: %v", dateStr, err)
 			continue
 		}
 
 		// Save the original image
 		framePath := filepath.Join(framesDir, fmt.Sprintf("frame_%02d.%s", i, ext))
 		if err := os.WriteFile(framePath, data, 0644); err != nil {
-			logger.Infof("SunGIF: failed to write frame: %v", err)
+			logger.Debugf("SunGIF: failed to write frame: %v", err)
 			continue
 		}
 
@@ -84,7 +84,7 @@ func GenerateSunGIF(ctx context.Context, reportDir string, ts time.Time, outputG
 			convCmd.Stdout = io.Discard
 			convCmd.Stderr = io.Discard
 			if err := convCmd.Run(); err != nil {
-				logger.Infof("SunGIF: PNG to JPG conversion failed: %v", err)
+				logger.Debugf("SunGIF: PNG to JPG conversion failed: %v", err)
 				continue
 			}
 			framePath = jpgFramePath
@@ -110,7 +110,7 @@ func GenerateSunGIF(ctx context.Context, reportDir string, ts time.Time, outputG
 		cmd.Stdout = io.Discard
 		cmd.Stderr = io.Discard
 		if err := cmd.Run(); err != nil {
-			logger.Infof("SunGIF: annotation failed: %v", err)
+			logger.Debugf("SunGIF: annotation failed: %v", err)
 			continue
 		}
 
@@ -121,7 +121,7 @@ func GenerateSunGIF(ctx context.Context, reportDir string, ts time.Time, outputG
 	if len(frames) == 0 {
 		return fmt.Errorf("no frames were successfully processed")
 	}
-	logger.Infof("SunGIF: Found %d frames for GIF assembly", len(frames))
+	logger.Debugf("SunGIF: Found %d frames for GIF assembly", len(frames))
 
 	// Sort frames to ensure correct order
 	sort.Strings(frames)
@@ -153,7 +153,7 @@ func GenerateSunGIF(ctx context.Context, reportDir string, ts time.Time, outputG
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		logger.Infof("SunGIF: ffmpeg stderr: %s", stderr.String())
+		logger.Debugf("SunGIF: ffmpeg stderr: %s", stderr.String())
 		return fmt.Errorf("assemble gif: %w", err)
 	}
 
@@ -172,7 +172,7 @@ func GenerateSunGIF(ctx context.Context, reportDir string, ts time.Time, outputG
 type hvHTTP struct{ timeout time.Duration }
 
 func (c *hvHTTP) get(ctx context.Context, url string) ([]byte, error) {
-	logger.Infof("Helioviewer API request: GET %s", url)
+	logger.Debugf("Helioviewer API request: GET %s", url)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -190,7 +190,7 @@ func (c *hvHTTP) get(ctx context.Context, url string) ([]byte, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		logger.Infof("Helioviewer API Error: Status=%d, URL=%s, Body=%s", resp.StatusCode, url, string(body))
+		logger.Warnf("Helioviewer API Error: Status=%d, URL=%s, Body=%s", resp.StatusCode, url, string(body))
 		return nil, fmt.Errorf("status %d", resp.StatusCode)
 	}
 
@@ -242,10 +242,10 @@ func (c *hvHTTP) getClosestImageIDBySourceID(ctx context.Context, date string, s
 func (c *hvHTTP) downloadThumbnail(ctx context.Context, id int64) ([]byte, string, error) {
 	// Use the downloadImage endpoint to get a pre-colorized PNG image
 	url := fmt.Sprintf("https://api.helioviewer.org/v2/downloadImage/?id=%d&width=1024", id)
-	logger.Infof("SunGIF: Downloading colorized image from %s", url)
+	logger.Debugf("SunGIF: Downloading colorized image from %s", url)
 	b, err := c.get(ctx, url)
 	if err != nil {
-		logger.Infof("SunGIF: downloadImage failed: %v, falling back to JP2", err)
+		logger.Debugf("SunGIF: downloadImage failed: %v, falling back to JP2", err)
 		// Fall back to JP2 if downloadImage endpoint fails
 		url = fmt.Sprintf("https://api.helioviewer.org/v2/getJP2Image/?id=%d", id)
 		b, err = c.get(ctx, url)
@@ -286,7 +286,7 @@ func (c *hvHTTP) downloadThumbnail(ctx context.Context, id int64) ([]byte, strin
 
 	// Check content type of downloaded image
 	contentType := http.DetectContentType(b)
-	logger.Infof("SunGIF: Downloaded image content type: %s", contentType)
+	logger.Debugf("SunGIF: Downloaded image content type: %s", contentType)
 
 	if strings.Contains(contentType, "image/png") {
 		return b, "png", nil

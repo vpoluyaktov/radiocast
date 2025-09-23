@@ -39,7 +39,7 @@ func NewDataFetcher() *DataFetcher {
 
 // FetchAllDataWithSources fetches raw data from all sources and returns both raw and normalized data
 func (f *DataFetcher) FetchAllDataWithSources(ctx context.Context, noaaKURL, noaaSolarURL, n0nbhURL, sidcURL string) (*models.PropagationData, *models.SourceData, error) {
-	logger.Info("Starting data fetch from all sources...")
+	logger.Debug("Starting data fetch from all sources...")
 	
 	// Fetch data from all sources concurrently
 	kIndexChan := make(chan []models.NOAAKIndexResponse, 1)
@@ -51,40 +51,40 @@ func (f *DataFetcher) FetchAllDataWithSources(ctx context.Context, noaaKURL, noa
 	
 	// NOAA K-index data
 	go func() {
-		logger.Info("Fetching NOAA K-index data...")
+		logger.Debug("Fetching NOAA K-index data...")
 		data, err := f.noaaFetcher.FetchKIndex(ctx, noaaKURL)
 		if err != nil {
 			logger.Error("NOAA K-index fetch failed", err)
 			errChan <- fmt.Errorf("NOAA K-index fetch failed: %w", err)
 			return
 		}
-		logger.Info("NOAA K-index fetch successful", map[string]interface{}{"data_points": len(data)})
+		logger.Debug("NOAA K-index fetch successful", map[string]interface{}{"data_points": len(data)})
 		kIndexChan <- data
 	}()
 	
 	// NOAA Solar data
 	go func() {
-		logger.Info("Fetching NOAA Solar data...")
+		logger.Debug("Fetching NOAA Solar data...")
 		data, err := f.noaaFetcher.FetchSolar(ctx, noaaSolarURL)
 		if err != nil {
 			logger.Error("NOAA Solar fetch failed", err)
 			errChan <- fmt.Errorf("NOAA Solar fetch failed: %w", err)
 			return
 		}
-		logger.Info("NOAA Solar fetch successful", map[string]interface{}{"data_points": len(data)})
+		logger.Debug("NOAA Solar fetch successful", map[string]interface{}{"data_points": len(data)})
 		solarChan <- data
 	}()
 	
 	// N0NBH data
 	go func() {
-		logger.Info("Fetching N0NBH solar data...")
+		logger.Debug("Fetching N0NBH solar data...")
 		data, err := f.n0nbhFetcher.Fetch(ctx, n0nbhURL)
 		if err != nil {
 			logger.Error("N0NBH fetch failed", err)
 			errChan <- fmt.Errorf("N0NBH fetch failed: %w", err)
 			return
 		}
-		logger.Info("N0NBH fetch successful", map[string]interface{}{
+		logger.Debug("N0NBH fetch successful", map[string]interface{}{
 			"solar_flux": data.SolarData.SolarFlux,
 			"k_index": data.SolarData.KIndex,
 			"band_conditions": len(data.Calculatedconditions.Band),
@@ -94,14 +94,14 @@ func (f *DataFetcher) FetchAllDataWithSources(ctx context.Context, noaaKURL, noa
 	
 	// SIDC RSS data
 	go func() {
-		logger.Info("Fetching SIDC sunspot data...")
+		logger.Debug("Fetching SIDC sunspot data...")
 		data, err := f.sidcFetcher.Fetch(ctx, sidcURL)
 		if err != nil {
 			logger.Error("SIDC fetch failed", err)
 			errChan <- fmt.Errorf("SIDC fetch failed: %w", err)
 			return
 		}
-		logger.Info("SIDC fetch successful", map[string]interface{}{"data_points": len(data)})
+		logger.Debug("SIDC fetch successful", map[string]interface{}{"data_points": len(data)})
 		sidcChan <- data
 	}()
 	
@@ -145,7 +145,7 @@ func (f *DataFetcher) FetchAllDataWithSources(ctx context.Context, noaaKURL, noa
 	// Normalize and combine all data
 	propagationData := f.normalizer.NormalizeData(kIndexData, solarData, n0nbhData, sidcData)
 	
-	logger.Info("Data fetch and normalization completed successfully", map[string]interface{}{
+	logger.Debug("Data fetch and normalization completed successfully", map[string]interface{}{
 		"noaa_k_index_points": len(kIndexData),
 		"noaa_solar_points": len(solarData),
 		"n0nbh_available": n0nbhData != nil,

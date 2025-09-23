@@ -114,6 +114,93 @@
                     <p><strong>MUF ≈ 3 × foF2</strong> (for 3000 km skip distance)</p>
                 </div>
                 
+                <h2>🌌 Space Weather Impact Mapping</h2>
+                <div class="theory-content">
+                    <p>Understanding how space weather parameters translate to propagation conditions helps operators interpret real-time data. Our gauges use a standardized color scheme that directly correlates space weather activity to expected propagation quality:</p>
+                    
+                    <h3>🌟 X-ray Activity Impact</h3>
+                    <p>Solar X-ray flares can cause sudden ionospheric disturbances (SID) that affect HF propagation:</p>
+                    <div class="impact-mapping">
+                        <div class="impact-item excellent">
+                            <span class="impact-indicator">🟢</span>
+                            <strong>A/B Class (0-2):</strong> Excellent - Low activity, stable propagation conditions
+                        </div>
+                        <div class="impact-item good">
+                            <span class="impact-indicator">🟡</span>
+                            <strong>C Class (2-4):</strong> Good - Minor activity, still good propagation with minimal disruption
+                        </div>
+                        <div class="impact-item fair">
+                            <span class="impact-indicator">🟠</span>
+                            <strong>M Class (4-6):</strong> Fair - Moderate activity, some disruption possible on higher frequencies
+                        </div>
+                        <div class="impact-item poor">
+                            <span class="impact-indicator">🔴</span>
+                            <strong>X Class (6-8):</strong> Poor - Major flares, significant HF blackouts possible
+                        </div>
+                        <div class="impact-item closed">
+                            <span class="impact-indicator">⚫</span>
+                            <strong>X+ Class (8-10):</strong> Closed - Extreme flares, severe disruption across all HF bands
+                        </div>
+                    </div>
+                    
+                    <h3>💨 Solar Wind Speed Impact</h3>
+                    <p>Solar wind speed affects geomagnetic stability and ionospheric conditions:</p>
+                    <div class="impact-mapping">
+                        <div class="impact-item excellent">
+                            <span class="impact-indicator">🟢</span>
+                            <strong>200-350 km/s:</strong> Excellent - Slow/normal speed, stable geomagnetic conditions
+                        </div>
+                        <div class="impact-item good">
+                            <span class="impact-indicator">🟡</span>
+                            <strong>350-500 km/s:</strong> Good - Moderate speed, minor geomagnetic effects
+                        </div>
+                        <div class="impact-item fair">
+                            <span class="impact-indicator">🟠</span>
+                            <strong>500-650 km/s:</strong> Fair - Fast speed, some ionospheric disturbance
+                        </div>
+                        <div class="impact-item poor">
+                            <span class="impact-indicator">🔴</span>
+                            <strong>650-800 km/s:</strong> Poor - Very fast speed, significant geomagnetic storm potential
+                        </div>
+                    </div>
+                    
+                    <h3>🌈 Aurora Activity Impact</h3>
+                    <p>Aurora activity indicates geomagnetic disturbances that can severely impact HF propagation, especially at higher latitudes:</p>
+                    <div class="impact-mapping">
+                        <div class="impact-item excellent">
+                            <span class="impact-indicator">🟢</span>
+                            <strong>Level 0-2:</strong> Excellent - Quiet conditions, no aurora interference
+                        </div>
+                        <div class="impact-item good">
+                            <span class="impact-indicator">🟡</span>
+                            <strong>Level 2-4:</strong> Good - Minor aurora, slight effects on polar paths
+                        </div>
+                        <div class="impact-item fair">
+                            <span class="impact-indicator">🟠</span>
+                            <strong>Level 4-6:</strong> Fair - Moderate aurora, some disruption on northern paths
+                        </div>
+                        <div class="impact-item poor">
+                            <span class="impact-indicator">🔴</span>
+                            <strong>Level 6-8:</strong> Poor - Strong aurora, significant disruption especially above 45°N
+                        </div>
+                        <div class="impact-item closed">
+                            <span class="impact-indicator">⚫</span>
+                            <strong>Level 8-9:</strong> Closed - Extreme aurora, severe disruption across northern regions
+                        </div>
+                    </div>
+                    
+                    <div class="theory-tip">
+                        <h4>💡 Practical Application</h4>
+                        <p>When multiple indicators show poor conditions (red/purple), consider:</p>
+                        <ul>
+                            <li>Switching to lower frequency bands (40m, 80m)</li>
+                            <li>Avoiding polar propagation paths</li>
+                            <li>Waiting for conditions to improve</li>
+                            <li>Using digital modes for better weak-signal performance</li>
+                        </ul>
+                    </div>
+                </div>
+                
                 <h2>📻 Band Characteristics</h2>
                 <div class="band-theory">
                     <h3>160m (1.8-2.0 MHz)</h3>
