@@ -202,6 +202,7 @@ func parseTimeMulti(s string) (time.Time, error) {
 		"2006-01-02T15:04:05Z07:00",
 		"2006-01-02 15:04:05.000",
 		"2006-01-02 15:04:05",
+		"2006-01", // For NOAA solar data format like "2025-03"
 		time.RFC3339,
 	}
 	var last error
