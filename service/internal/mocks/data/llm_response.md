@@ -66,6 +66,20 @@ Today’s HF propagation is shaped by a strong solar flux (172) and a healthy su
 - Expect slightly increased noise and absorption on lower bands (80m/40m) during geomagnetic peaks.
 - If the K-index rises above 4, watch for auroral propagation on VHF and sudden HF blackouts.
 
+## 🌟 Space Weather Details
+
+{{.SpaceWeatherDashboardChart}}
+
+- **X-ray Activity**: Currently at C1.3 level (minor flare activity). This is below the threshold for HF blackouts, but watch for any increases to M-class levels which could cause sudden shortwave fadeouts during daylight hours.
+
+- **Solar Wind**: Elevated at 547.7 km/s, which is contributing to the moderate geomagnetic activity. This faster-than-normal solar wind can enhance aurora activity and cause increased absorption on polar paths.
+
+- **Particle Environment**: Electron flux at 1670 and proton flux at 40 indicate moderate particle activity. Higher electron flux can enhance VHF/UHF propagation via auroral scatter for northern operators, while elevated proton flux may cause increased noise on HF.
+
+- **Aurora Activity**: Current level at 3 suggests minor auroral activity. Northern operators (especially in Canada, Alaska, and northern US states) may notice enhanced VHF/UHF signals via auroral reflection, but also possible flutter and distortion on HF signals.
+
+- **Helium Line**: At 146.8, indicating stable solar activity with no major eruptions expected in the near term. This correlates well with the current solar flux readings.
+
 ## 📡 Propagation Timeline & Technical Details
 
 {{.PropagationTimelineChart}}
@@ -73,7 +87,10 @@ Today’s HF propagation is shaped by a strong solar flux (172) and a healthy su
 - Propagation quality is best during daylight and early evening on 20m–15m.
 - Lower bands (80m/40m) improve after sunset as D-layer absorption fades.
 - Expect some variability in propagation during geomagnetic activity spikes—monitor real-time indices for sudden changes.
-- Technical indicators (solar wind, proton/electron flux) suggest minor disturbances but no major storms.
+- **Recent Trends**: Solar flux has been trending upward over the past 6 months (from 135 in May to current 172), indicating we're in an active phase of the solar cycle with improving long-term propagation prospects.
+- **Historical Context**: Sunspot numbers have remained consistently high (125-152 range), supporting continued good DX conditions on upper HF bands.
+
+{{.HistoricalSolarTrendChart}}
 
 ## 🔮 3-Day Forecast
 

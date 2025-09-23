@@ -27,6 +27,14 @@ func (cg *ChartGenerator) GenerateEChartsSnippetsWithSources(data *models.Propag
     if sn, err := cg.generateKIndexTrendSnippet(data, sourceData); err == nil {
         snippets = append(snippets, sn)
     }
+    // Historical Solar Trends (6-month solar flux and sunspot trends)
+    if sn, err := cg.generateHistoricalSolarTrendSnippet(data); err == nil {
+        snippets = append(snippets, sn)
+    }
+    // Space Weather Dashboard (X-ray, solar wind, particle flux, aurora)
+    if sn, err := cg.generateSpaceWeatherDashboardSnippet(data); err == nil {
+        snippets = append(snippets, sn)
+    }
     // Forecast (Bar)
     if sn, err := cg.generateForecastSnippet(data); err == nil {
         snippets = append(snippets, sn)
