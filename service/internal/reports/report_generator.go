@@ -115,7 +115,9 @@ func (rg *ReportGenerator) GenerateCompleteReport(ctx context.Context,
 
 	// Step 2: Generate files using FileGenerator
 	fileGenerator := NewFileGenerator(rg, mockService)
-	files, err := fileGenerator.GenerateAllFiles(ctx, data, sourceData, markdownReport, cfg.MockupMode)
+	systemPrompt := llmClient.GetSystemPrompt() // Get the system prompt used by LLM
+	userPrompt := llmClient.BuildPrompt(sourceData, data) // Get the user prompt with raw JSON data
+	files, err := fileGenerator.GenerateAllFiles(ctx, data, sourceData, markdownReport, systemPrompt, userPrompt, cfg.MockupMode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate files: %w", err)
 	}

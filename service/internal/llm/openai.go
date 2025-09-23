@@ -134,13 +134,14 @@ func (c *OpenAIClient) GetSystemPrompt() string {
 
 // buildPrompt constructs prompt using raw JSON data from all sources
 func (c *OpenAIClient) buildPrompt(sourceData *models.SourceData, data *models.PropagationData) string {
-	prompt := fmt.Sprintf(`## Raw Solar and Space Weather Data (as of %s)
+	prompt := fmt.Sprintf(`## Comprehensive Solar and Space Weather Data (as of %s)
 
 Please analyze the following comprehensive space weather data and generate a detailed radio propagation report. The data includes:
-- NOAA K-index data (geomagnetic activity - last 24 hours, 1-hour intervals)
-- NOAA Solar data (solar flux, sunspot numbers - last 7 months)
-- N0NBH real-time conditions (band conditions, solar metrics)
-- SIDC monthly sunspot data (last 12 months)
+- Raw source data from NOAA, N0NBH, and SIDC
+- Processed/normalized data with historical time series and enriched fields
+- Historical K-index trends (24+ hours of data points)
+- Historical solar data trends (multiple data points)
+- Current band conditions and solar metrics
 
 `, data.Timestamp.Format("2006-01-02 15:04 UTC"))
 
@@ -188,16 +189,27 @@ Please analyze the following comprehensive space weather data and generate a det
 		prompt += "\n```\n\n"
 	}
 
+	// Add processed/normalized data with historical time series and enriched fields
+	prompt += "### Processed/Normalized Data (Historical Time Series + Enriched Fields):\n```json\n"
+	if jsonData, err := json.MarshalIndent(data, "", "  "); err == nil {
+		prompt += string(jsonData)
+	} else {
+		prompt += "Error marshaling normalized data"
+	}
+	prompt += "\n```\n\n"
+
 	prompt += `### Instructions:
 Analyze all the above data and provide:
-1. Current solar activity summary (solar flux, sunspots, flares)
-2. Geomagnetic conditions (K-index trends, magnetic field)
-3. HF band conditions for each amateur band (80m-10m)
+1. Current solar activity summary (solar flux, sunspots, flares, X-ray levels)
+2. Geomagnetic conditions (K-index trends from historical data, magnetic field, aurora activity)
+3. HF band conditions for each amateur band (80m-10m) using current band data
 4. VHF/UHF propagation outlook
 5. 3-day forecast with specific recommendations
 6. Best/worst bands for current conditions
 7. Any alerts or warnings for amateur radio operators
 
+IMPORTANT: Use the historical time series data (HistoricalKIndex, HistoricalSolar) to identify trends and patterns.
+Pay special attention to the enriched N0NBH fields (XRayFlux, SolarWindSpeed, ElectronFlux, HeliumLine, Aurora) for detailed analysis.
 Focus on practical advice for amateur radio operators based on the comprehensive data provided.`
 
 	return prompt

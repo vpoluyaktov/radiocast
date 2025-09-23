@@ -1,0 +1,651 @@
+## Comprehensive Solar and Space Weather Data (as of 2025-09-22 19:55 UTC)
+
+Please analyze the following comprehensive space weather data and generate a detailed radio propagation report. The data includes:
+- Raw source data from NOAA, N0NBH, and SIDC
+- Processed/normalized data with historical time series and enriched fields
+- Historical K-index trends (24+ hours of data points)
+- Historical solar data trends (multiple data points)
+- Current band conditions and solar metrics
+
+### NOAA K-Index Data (Last 24 Hours, 1-Hour Intervals):
+```json
+[
+  {
+    "time_tag": "2025-09-19T21:00:00",
+    "kp_index": 0.67,
+    "estimated_kp": 0.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T00:00:00",
+    "kp_index": 1.67,
+    "estimated_kp": 1.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T03:00:00",
+    "kp_index": 2,
+    "estimated_kp": 2,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T06:00:00",
+    "kp_index": 2,
+    "estimated_kp": 2,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T09:00:00",
+    "kp_index": 1.33,
+    "estimated_kp": 1.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T12:00:00",
+    "kp_index": 0.67,
+    "estimated_kp": 0.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T15:00:00",
+    "kp_index": 0.33,
+    "estimated_kp": 0.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T18:00:00",
+    "kp_index": 0.33,
+    "estimated_kp": 0.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-20T21:00:00",
+    "kp_index": 1.33,
+    "estimated_kp": 1.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T00:00:00",
+    "kp_index": 1.67,
+    "estimated_kp": 1.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T03:00:00",
+    "kp_index": 1.33,
+    "estimated_kp": 1.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T06:00:00",
+    "kp_index": 1.67,
+    "estimated_kp": 1.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T09:00:00",
+    "kp_index": 1,
+    "estimated_kp": 1,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T12:00:00",
+    "kp_index": 1.67,
+    "estimated_kp": 1.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T15:00:00",
+    "kp_index": 2,
+    "estimated_kp": 2,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T18:00:00",
+    "kp_index": 1.33,
+    "estimated_kp": 1.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-21T21:00:00",
+    "kp_index": 1.33,
+    "estimated_kp": 1.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-22T00:00:00",
+    "kp_index": 2.67,
+    "estimated_kp": 2.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-22T03:00:00",
+    "kp_index": 2.33,
+    "estimated_kp": 2.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-22T06:00:00",
+    "kp_index": 2,
+    "estimated_kp": 2,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-22T09:00:00",
+    "kp_index": 3,
+    "estimated_kp": 3,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-22T12:00:00",
+    "kp_index": 3,
+    "estimated_kp": 3,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-22T15:00:00",
+    "kp_index": 3.33,
+    "estimated_kp": 3.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-22T18:00:00",
+    "kp_index": 2.67,
+    "estimated_kp": 2.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-22T21:00:00",
+    "kp_index": 3.33,
+    "estimated_kp": 3.33,
+    "source": "NOAA SWPC"
+  }
+]
+```
+
+### NOAA Solar Data (Last 7 Months):
+```json
+[
+  {
+    "time_tag": "2025-03",
+    "f10.7": 163.78,
+    "ssn": 134.2,
+    "f10.7_adj": 163.78,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-04",
+    "f10.7": 162.21,
+    "ssn": 140.6,
+    "f10.7_adj": 162.21,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-05",
+    "f10.7": 135.25,
+    "ssn": 79.2,
+    "f10.7_adj": 135.25,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-06",
+    "f10.7": 131.45,
+    "ssn": 116.3,
+    "f10.7_adj": 131.45,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-07",
+    "f10.7": 137.72,
+    "ssn": 125.6,
+    "f10.7_adj": 137.72,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-08",
+    "f10.7": 146.67,
+    "ssn": 133.5,
+    "f10.7_adj": 146.67,
+    "source": "NOAA SWPC"
+  }
+]
+```
+
+### N0NBH Real-time Data (Current Conditions):
+```json
+{
+  "solardata": {
+    "solarflux": "172",
+    "aindex": " 13",
+    "kindex": " 3",
+    "kindexnt": "No Report",
+    "sunspots": "152",
+    "heliumline": "146.8",
+    "protonflux": "40",
+    "electonflux": "1670",
+    "aurora": " 3",
+    "normalization": "1.99",
+    "latestswpcreport": "",
+    "xray": "C1.3",
+    "solarwind": "547.7",
+    "magneticfield": " -0.1",
+    "latdegree": "65.6"
+  },
+  "time": "",
+  "source": "N0NBH",
+  "calculatedconditions": {
+    "band": [
+      {
+        "name": "80m-40m",
+        "time": "day",
+        "day": "Poor",
+        "night": "Fair",
+        "source": "N0NBH"
+      },
+      {
+        "name": "30m-20m",
+        "time": "day",
+        "day": "Good",
+        "night": "Good",
+        "source": "N0NBH"
+      },
+      {
+        "name": "17m-15m",
+        "time": "day",
+        "day": "Good",
+        "night": "Good",
+        "source": "N0NBH"
+      },
+      {
+        "name": "12m-10m",
+        "time": "day",
+        "day": "Good",
+        "night": "Poor",
+        "source": "N0NBH"
+      }
+    ]
+  },
+  "calculatedvhfconditions": {
+    "phenomenon": null
+  }
+}
+```
+
+### SIDC Monthly Sunspot Data (Last 12 Months):
+```json
+[
+  {
+    "title": "Monthly Sunspot Number: 165.8",
+    "description": "Date: 2024-10, SSN: 165.8",
+    "publishedParsed": "2024-10-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 154.1",
+    "description": "Date: 2024-11, SSN: 154.1",
+    "publishedParsed": "2024-11-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 154.6",
+    "description": "Date: 2024-12, SSN: 154.6",
+    "publishedParsed": "2024-12-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 137.0",
+    "description": "Date: 2025-01, SSN: 137.0",
+    "publishedParsed": "2025-01-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 155.7",
+    "description": "Date: 2025-02, SSN: 155.7",
+    "publishedParsed": "2025-02-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 134.2",
+    "description": "Date: 2025-03, SSN: 134.2",
+    "publishedParsed": "2025-03-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 140.6",
+    "description": "Date: 2025-04, SSN: 140.6",
+    "publishedParsed": "2025-04-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 79.2",
+    "description": "Date: 2025-05, SSN: 79.2",
+    "publishedParsed": "2025-05-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 116.3",
+    "description": "Date: 2025-06, SSN: 116.3",
+    "publishedParsed": "2025-06-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 125.6",
+    "description": "Date: 2025-07, SSN: 125.6",
+    "publishedParsed": "2025-07-01T00:00:00Z"
+  },
+  {
+    "title": "Monthly Sunspot Number: 133.5",
+    "description": "Date: 2025-08, SSN: 133.5",
+    "publishedParsed": "2025-08-01T00:00:00Z"
+  }
+]
+```
+
+### Processed/Normalized Data (Historical Time Series + Enriched Fields):
+```json
+{
+  "timestamp": "2025-09-22T19:55:24.538376062-07:00",
+  "solar_data": {
+    "solar_flux_index": 146.67,
+    "solar_flux_adjusted": 146.67,
+    "solar_flux_data_source": "N0NBH",
+    "sunspot_number": 133,
+    "sunspot_data_source": "NOAA SWPC",
+    "solar_activity": "",
+    "xray_flux": "C1.3",
+    "solar_wind_speed": 547.7,
+    "solar_wind_data_source": "N0NBH",
+    "proton_flux": 40,
+    "proton_flux_data_source": "N0NBH",
+    "electron_flux": "1670",
+    "helium_line": "146.8",
+    "aurora": " 3",
+    "flare_activity": "",
+    "solar_cycle_phase": "",
+    "last_major_flare": ""
+  },
+  "geomag_data": {
+    "k_index": 3.33,
+    "k_index_data_source": "NOAA SWPC",
+    "a_index": 0,
+    "a_index_data_source": "",
+    "geomag_activity": "",
+    "magnetic_field": 0,
+    "magnetic_field_data_source": "",
+    "lat_degree": "65.6",
+    "geomag_conditions": ""
+  },
+  "band_data": {
+    "band_80m": {
+      "day": "Poor",
+      "night": "Fair"
+    },
+    "band_40m": {
+      "day": "Poor",
+      "night": "Fair"
+    },
+    "band_20m": {
+      "day": "Good",
+      "night": "Good"
+    },
+    "band_17m": {
+      "day": "Good",
+      "night": "Good"
+    },
+    "band_15m": {
+      "day": "Good",
+      "night": "Good"
+    },
+    "band_12m": {
+      "day": "Good",
+      "night": "Poor"
+    },
+    "band_10m": {
+      "day": "Good",
+      "night": "Poor"
+    },
+    "band_6m": {
+      "day": "",
+      "night": ""
+    },
+    "vhf_plus": {
+      "day": "",
+      "night": ""
+    },
+    "band_data_source": "N0NBH"
+  },
+  "forecast": {
+    "today": {
+      "date": "0001-01-01T00:00:00Z",
+      "k_index_forecast": "",
+      "solar_activity": "",
+      "hf_conditions": "",
+      "vhf_conditions": "",
+      "best_bands": null,
+      "worst_bands": null
+    },
+    "tomorrow": {
+      "date": "0001-01-01T00:00:00Z",
+      "k_index_forecast": "",
+      "solar_activity": "",
+      "hf_conditions": "",
+      "vhf_conditions": "",
+      "best_bands": null,
+      "worst_bands": null
+    },
+    "day_after": {
+      "date": "0001-01-01T00:00:00Z",
+      "k_index_forecast": "",
+      "solar_activity": "",
+      "hf_conditions": "",
+      "vhf_conditions": "",
+      "best_bands": null,
+      "worst_bands": null
+    },
+    "outlook": "",
+    "warnings": null
+  },
+  "source_events": null,
+  "historical_k_index": [
+    {
+      "timestamp": "2025-09-19T21:00:00Z",
+      "k_index": 0.67,
+      "estimated_kp": 0.67,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-20T00:00:00Z",
+      "k_index": 1.67,
+      "estimated_kp": 1.67,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-20T03:00:00Z",
+      "k_index": 2,
+      "estimated_kp": 2,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-20T06:00:00Z",
+      "k_index": 2,
+      "estimated_kp": 2,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-20T09:00:00Z",
+      "k_index": 1.33,
+      "estimated_kp": 1.33,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-20T12:00:00Z",
+      "k_index": 0.67,
+      "estimated_kp": 0.67,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-20T15:00:00Z",
+      "k_index": 0.33,
+      "estimated_kp": 0.33,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-20T18:00:00Z",
+      "k_index": 0.33,
+      "estimated_kp": 0.33,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-20T21:00:00Z",
+      "k_index": 1.33,
+      "estimated_kp": 1.33,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-21T00:00:00Z",
+      "k_index": 1.67,
+      "estimated_kp": 1.67,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-21T03:00:00Z",
+      "k_index": 1.33,
+      "estimated_kp": 1.33,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-21T06:00:00Z",
+      "k_index": 1.67,
+      "estimated_kp": 1.67,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-21T09:00:00Z",
+      "k_index": 1,
+      "estimated_kp": 1,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-21T12:00:00Z",
+      "k_index": 1.67,
+      "estimated_kp": 1.67,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-21T15:00:00Z",
+      "k_index": 2,
+      "estimated_kp": 2,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-21T18:00:00Z",
+      "k_index": 1.33,
+      "estimated_kp": 1.33,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-21T21:00:00Z",
+      "k_index": 1.33,
+      "estimated_kp": 1.33,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-22T00:00:00Z",
+      "k_index": 2.67,
+      "estimated_kp": 2.67,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-22T03:00:00Z",
+      "k_index": 2.33,
+      "estimated_kp": 2.33,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-22T06:00:00Z",
+      "k_index": 2,
+      "estimated_kp": 2,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-22T09:00:00Z",
+      "k_index": 3,
+      "estimated_kp": 3,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-22T12:00:00Z",
+      "k_index": 3,
+      "estimated_kp": 3,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-22T15:00:00Z",
+      "k_index": 3.33,
+      "estimated_kp": 3.33,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-22T18:00:00Z",
+      "k_index": 2.67,
+      "estimated_kp": 2.67,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-22T21:00:00Z",
+      "k_index": 3.33,
+      "estimated_kp": 3.33,
+      "source": "NOAA SWPC"
+    }
+  ],
+  "historical_solar": [
+    {
+      "timestamp": "2025-03-01T00:00:00Z",
+      "solar_flux": 163.78,
+      "solar_flux_adjusted": 163.78,
+      "sunspot_number": 134.2,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-04-01T00:00:00Z",
+      "solar_flux": 162.21,
+      "solar_flux_adjusted": 162.21,
+      "sunspot_number": 140.6,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-05-01T00:00:00Z",
+      "solar_flux": 135.25,
+      "solar_flux_adjusted": 135.25,
+      "sunspot_number": 79.2,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-06-01T00:00:00Z",
+      "solar_flux": 131.45,
+      "solar_flux_adjusted": 131.45,
+      "sunspot_number": 116.3,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-07-01T00:00:00Z",
+      "solar_flux": 137.72,
+      "solar_flux_adjusted": 137.72,
+      "sunspot_number": 125.6,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-08-01T00:00:00Z",
+      "solar_flux": 146.67,
+      "solar_flux_adjusted": 146.67,
+      "sunspot_number": 133.5,
+      "source": "NOAA SWPC"
+    }
+  ]
+}
+```
+
+### Instructions:
+Analyze all the above data and provide:
+1. Current solar activity summary (solar flux, sunspots, flares, X-ray levels)
+2. Geomagnetic conditions (K-index trends from historical data, magnetic field, aurora activity)
+3. HF band conditions for each amateur band (80m-10m) using current band data
+4. VHF/UHF propagation outlook
+5. 3-day forecast with specific recommendations
+6. Best/worst bands for current conditions
+7. Any alerts or warnings for amateur radio operators
+
+IMPORTANT: Use the historical time series data (HistoricalKIndex, HistoricalSolar) to identify trends and patterns.
+Pay special attention to the enriched N0NBH fields (XRayFlux, SolarWindSpeed, ElectronFlux, HeliumLine, Aurora) for detailed analysis.
+Focus on practical advice for amateur radio operators based on the comprehensive data provided.

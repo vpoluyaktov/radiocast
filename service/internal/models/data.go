@@ -13,6 +13,10 @@ type PropagationData struct {
 	BandData     BandData      `json:"band_data"`
 	Forecast     ForecastData  `json:"forecast"`
 	SourceEvents []SourceEvent `json:"source_events"`
+	
+	// Historical time series data for trend analysis
+	HistoricalKIndex []KIndexPoint `json:"historical_k_index"`
+	HistoricalSolar  []SolarPoint  `json:"historical_solar"`
 }
 
 // SourceData contains raw data from all sources before normalization
@@ -25,18 +29,27 @@ type SourceData struct {
 
 // SolarData contains solar activity information
 type SolarData struct {
-	SolarFluxIndex      float64 `json:"solar_flux_index"`        // 10.7cm flux
-	SolarFluxDataSource string  `json:"solar_flux_data_source"`  // Source API for flux data
-	SunspotNumber       int     `json:"sunspot_number"`          // Daily sunspot number
-	SunspotDataSource   string  `json:"sunspot_data_source"`     // Source API for sunspot data
-	SolarActivity       string  `json:"solar_activity"`          // Low/Moderate/High
-	FlareActivity       string  `json:"flare_activity"`          // Current flare status
-	SolarCyclePhase     string  `json:"solar_cycle_phase"`       // Current solar cycle info
-	LastMajorFlare      string  `json:"last_major_flare"`        // Most recent significant flare
-	SolarWindSpeed      float64 `json:"solar_wind_speed"`        // km/s
-	SolarWindDataSource string  `json:"solar_wind_data_source"`  // Source API for solar wind data
-	ProtonFlux          float64 `json:"proton_flux"`             // particles/cm²/s
-	ProtonFluxDataSource string `json:"proton_flux_data_source"` // Source API for proton flux data
+	SolarFluxIndex       float64 `json:"solar_flux_index"`        // 10.7cm flux (current)
+	SolarFluxAdjusted    float64 `json:"solar_flux_adjusted"`     // Adjusted 10.7cm flux
+	SolarFluxDataSource  string  `json:"solar_flux_data_source"`  // Source API for flux data
+	SunspotNumber        int     `json:"sunspot_number"`          // Daily sunspot number
+	SunspotDataSource    string  `json:"sunspot_data_source"`     // Source API for sunspot data
+	SolarActivity        string  `json:"solar_activity"`          // LLM-generated classification
+	
+	// Rich N0NBH solar data (previously lost)
+	XRayFlux             string  `json:"xray_flux"`               // X-ray flux level (e.g., "C1.2")
+	SolarWindSpeed       float64 `json:"solar_wind_speed"`        // km/s
+	SolarWindDataSource  string  `json:"solar_wind_data_source"`  // Source API for solar wind data
+	ProtonFlux           float64 `json:"proton_flux"`             // particles/cm²/s
+	ProtonFluxDataSource string  `json:"proton_flux_data_source"` // Source API for proton flux data
+	ElectronFlux         string  `json:"electron_flux"`           // Electron flux level
+	HeliumLine           string  `json:"helium_line"`             // Helium line data
+	Aurora               string  `json:"aurora"`                  // Aurora activity level
+	
+	// Derived/calculated fields
+	FlareActivity        string  `json:"flare_activity"`          // Current flare status
+	SolarCyclePhase      string  `json:"solar_cycle_phase"`       // Current solar cycle info
+	LastMajorFlare       string  `json:"last_major_flare"`        // Most recent significant flare
 }
 
 // GeomagData contains geomagnetic activity information
@@ -45,10 +58,15 @@ type GeomagData struct {
 	KIndexDataSource    string  `json:"k_index_data_source"`    // Source API for K-index data
 	AIndex              float64 `json:"a_index"`                // Current A-index
 	AIndexDataSource    string  `json:"a_index_data_source"`    // Source API for A-index data
-	GeomagActivity      string  `json:"geomag_activity"`        // Quiet/Unsettled/Active/Storm
-	GeomagConditions    string  `json:"geomag_conditions"`      // Current conditions description
+	GeomagActivity      string  `json:"geomag_activity"`        // LLM-generated classification
+	
+	// Rich N0NBH geomagnetic data (previously lost)
 	MagneticField       float64 `json:"magnetic_field"`         // nT
 	MagneticFieldDataSource string `json:"magnetic_field_data_source"` // Source API for magnetic field data
+	LatDegree           string  `json:"lat_degree"`             // Latitude degree from N0NBH
+	
+	// Derived/calculated fields
+	GeomagConditions    string  `json:"geomag_conditions"`      // Current conditions description
 }
 
 // BandData contains HF band condition information
@@ -99,5 +117,22 @@ type SourceEvent struct {
 	Description string    `json:"description"`  // Event description
 	Timestamp   time.Time `json:"timestamp"`    // When event occurred/detected
 	Impact      string    `json:"impact"`       // Expected propagation impact
+}
+
+// KIndexPoint represents a single K-index measurement with timestamp
+type KIndexPoint struct {
+	Timestamp   time.Time `json:"timestamp"`
+	KIndex      float64   `json:"k_index"`
+	EstimatedKp float64   `json:"estimated_kp"`
+	Source      string    `json:"source"`
+}
+
+// SolarPoint represents a single solar measurement with timestamp  
+type SolarPoint struct {
+	Timestamp         time.Time `json:"timestamp"`
+	SolarFlux         float64   `json:"solar_flux"`
+	SolarFluxAdjusted float64   `json:"solar_flux_adjusted"`
+	SunspotNumber     float64   `json:"sunspot_number"`
+	Source            string    `json:"source"`
 }
 

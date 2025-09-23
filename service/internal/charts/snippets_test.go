@@ -22,6 +22,15 @@ func TestChartSnippet(t *testing.T) {
 	if snippet.Title != "Test Chart" {
 		t.Errorf("Expected Title 'Test Chart', got '%s'", snippet.Title)
 	}
+	if snippet.Div != "<div id=\"test-chart\" style=\"width:100%;height:400px;\"></div>" {
+		t.Errorf("Expected Div '<div id=\"test-chart\" style=\"width:100%%;height:400px;\"></div>', got '%s'", snippet.Div)
+	}
+	if snippet.Script != "<script>console.log('test');</script>" {
+		t.Errorf("Expected Script '<script>console.log('test');</script>', got '%s'", snippet.Script)
+	}
+	if snippet.HTML != "<div>Complete HTML</div>" {
+		t.Errorf("Expected HTML '<div>Complete HTML</div>', got '%s'", snippet.HTML)
+	}
 	if snippet.Width != "100%" {
 		t.Errorf("Expected Width '100%%', got '%s'", snippet.Width)
 	}

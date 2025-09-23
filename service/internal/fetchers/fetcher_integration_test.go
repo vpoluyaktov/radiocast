@@ -2,10 +2,11 @@ package fetchers
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
+)
 
+import (
 	"radiocast/internal/models"
 	"github.com/mmcdole/gofeed"
 )
@@ -45,17 +46,9 @@ func TestFetchAllDataIntegration(t *testing.T) {
 		t.Errorf("K-index should not exceed 9, got %f", data.GeomagData.KIndex)
 	}
 	
-	// Validate geomagnetic activity classification
-	validActivities := []string{"Quiet", "Unsettled", "Active", "Storm"}
-	activityValid := false
-	for _, activity := range validActivities {
-		if data.GeomagData.GeomagActivity == activity {
-			activityValid = true
-			break
-		}
-	}
-	if !activityValid {
-		t.Errorf("Invalid geomagnetic activity: %s", data.GeomagData.GeomagActivity)
+	// Geomagnetic activity classification is now handled by LLM - should be empty from normalizer
+	if data.GeomagData.GeomagActivity != "" {
+		t.Logf("Note: Geomagnetic activity classification will be handled by LLM, got: %s", data.GeomagData.GeomagActivity)
 	}
 	
 	// Validate solar data
@@ -69,62 +62,15 @@ func TestFetchAllDataIntegration(t *testing.T) {
 		t.Errorf("Sunspot number seems too high: %d", data.SolarData.SunspotNumber)
 	}
 	
-	// Validate solar activity classification
-	validSolarActivities := []string{"Low", "Moderate", "High"}
-	solarActivityValid := false
-	for _, activity := range validSolarActivities {
-		if data.SolarData.SolarActivity == activity {
-			solarActivityValid = true
-			break
-		}
-	}
-	if data.SolarData.SolarFluxIndex > 0 && !solarActivityValid {
-		t.Errorf("Invalid solar activity classification: %s", data.SolarData.SolarActivity)
+	// Solar activity classification is now handled by LLM - should be empty from normalizer
+	if data.SolarData.SolarActivity != "" {
+		t.Logf("Note: Solar activity classification will be handled by LLM, got: %s", data.SolarData.SolarActivity)
 	}
 	
-	// Validate forecast data structure
-	if data.Forecast.Today.Date.IsZero() {
-		t.Error("Today's forecast date should be set")
+	// Forecast generation is now handled by LLM - normalizer should not generate forecasts
+	if data.Forecast.Outlook != "" {
+		t.Logf("Note: Forecast generation will be handled by LLM, got outlook: %s", data.Forecast.Outlook)
 	}
-	if data.Forecast.Tomorrow.Date.IsZero() {
-		t.Error("Tomorrow's forecast date should be set")
-	}
-	if data.Forecast.DayAfter.Date.IsZero() {
-		t.Error("Day after forecast date should be set")
-	}
-	
-	// Validate forecast dates are sequential
-	if !data.Forecast.Tomorrow.Date.After(data.Forecast.Today.Date) {
-		t.Error("Tomorrow's date should be after today's date")
-	}
-	if !data.Forecast.DayAfter.Date.After(data.Forecast.Tomorrow.Date) {
-		t.Error("Day after date should be after tomorrow's date")
-	}
-	
-	// Validate forecast content
-	if data.Forecast.Outlook == "" {
-		t.Error("Forecast outlook should not be empty")
-	}
-	if data.Forecast.Today.HFConditions == "" {
-		t.Error("Today's HF conditions should not be empty")
-	}
-	if data.Forecast.Today.KIndexForecast == "" {
-		t.Error("Today's K-index forecast should not be empty")
-	}
-	
-	// Validate forecast logic consistency (adjusted for actual logic in fetcher.go)
-	// The forecast logic considers both K-index AND solar flux
-	if data.GeomagData.KIndex <= 2 && data.SolarData.SolarFluxIndex > 120 {
-		if !strings.Contains(strings.ToLower(data.Forecast.Today.HFConditions), "good") {
-			t.Errorf("Expected good HF conditions for low K-index (%f) and high solar flux (%f), got: %s", 
-				data.GeomagData.KIndex, data.SolarData.SolarFluxIndex, data.Forecast.Today.HFConditions)
-		}
-	} else if data.GeomagData.KIndex > 4 {
-		if !strings.Contains(strings.ToLower(data.Forecast.Today.HFConditions), "poor") {
-			t.Errorf("Expected poor HF conditions for high K-index (%f), got: %s", data.GeomagData.KIndex, data.Forecast.Today.HFConditions)
-		}
-	}
-	// For K-index <= 2 but solar flux <= 120, "Poor to Fair" is expected behavior
 	
 	t.Logf("Successfully fetched and normalized data:")
 	t.Logf("K-index: %f (%s)", data.GeomagData.KIndex, data.GeomagData.GeomagActivity)
@@ -161,8 +107,9 @@ func TestNormalizeDataWithRealData(t *testing.T) {
 		t.Errorf("K-index should not be negative, got %f", result.GeomagData.KIndex)
 	}
 	
-	if result.GeomagData.GeomagActivity == "" {
-		t.Error("Geomag activity should be determined from K-index")
+	// Geomagnetic activity classification is now handled by LLM - should be empty from normalizer
+	if result.GeomagData.GeomagActivity != "" {
+		t.Logf("Note: Geomagnetic activity classification will be handled by LLM, got: %s", result.GeomagData.GeomagActivity)
 	}
 	
 	// Solar data might be 0 if recent entries have invalid values
@@ -198,9 +145,9 @@ func TestNormalizeDataEdgeCases(t *testing.T) {
 		t.Errorf("Expected zero solar flux with nil data, got %f", result.SolarData.SolarFluxIndex)
 	}
 	
-	// Forecast should still be generated
-	if result.Forecast.Today.Date.IsZero() {
-		t.Error("Forecast should be generated even with nil data")
+	// Forecast generation is now handled by LLM - should not be generated by normalizer
+	if !result.Forecast.Today.Date.IsZero() {
+		t.Logf("Note: Forecast generation will be handled by LLM, got date: %s", result.Forecast.Today.Date)
 	}
 	
 	// Test with empty arrays

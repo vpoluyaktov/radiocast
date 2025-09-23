@@ -46,7 +46,7 @@ func NewFileGenerator(reportGenerator *ReportGenerator, mockService MockService)
 }
 
 // GenerateAllFiles creates all report files (HTML, charts, JSON, assets)
-func (fg *FileGenerator) GenerateAllFiles(ctx context.Context, data *models.PropagationData, sourceData *models.SourceData, markdown string, mockupMode bool) (*GeneratedFiles, error) {
+func (fg *FileGenerator) GenerateAllFiles(ctx context.Context, data *models.PropagationData, sourceData *models.SourceData, markdown string, systemPrompt string, userPrompt string, mockupMode bool) (*GeneratedFiles, error) {
 	timestamp := data.Timestamp
 	
 	files := &GeneratedFiles{
@@ -68,7 +68,7 @@ func (fg *FileGenerator) GenerateAllFiles(ctx context.Context, data *models.Prop
 	}
 	
 	// 3. Generate LLM-related files
-	if err := fg.generateLLMFiles(markdown, files); err != nil {
+	if err := fg.generateLLMFiles(markdown, systemPrompt, userPrompt, files); err != nil {
 		logger.Warn("Failed to generate LLM files", map[string]interface{}{"error": err.Error()})
 	}
 	
@@ -125,11 +125,19 @@ func (fg *FileGenerator) generateNormalizedDataJSON(data *models.PropagationData
 }
 
 // generateLLMFiles generates LLM-related files (prompts, responses)
-func (fg *FileGenerator) generateLLMFiles(markdown string, files *GeneratedFiles) error {
-	// Note: This requires access to LLMClient which should be passed in
-	// For now, we'll store the markdown response
+func (fg *FileGenerator) generateLLMFiles(markdown string, systemPrompt string, userPrompt string, files *GeneratedFiles) error {
+	// Store the markdown response
 	files.JSONFiles["llm_response.md"] = []byte(markdown)
 	logger.Debug("Generated LLM response file", map[string]interface{}{"bytes": len(markdown)})
+	
+	// Store the system prompt
+	files.JSONFiles["system_prompt.txt"] = []byte(systemPrompt)
+	logger.Debug("Generated system prompt file", map[string]interface{}{"bytes": len(systemPrompt)})
+	
+	// Store the user prompt (includes raw JSON data and instructions)
+	files.JSONFiles["user_prompt.txt"] = []byte(userPrompt)
+	logger.Debug("Generated user prompt file", map[string]interface{}{"bytes": len(userPrompt)})
+	
 	return nil
 }
 
