@@ -15,17 +15,24 @@ func (cg *ChartGenerator) generateXRayGaugeSnippet(data *models.PropagationData)
 	
 	id := "chart-xray-gauge"
 	xrayFlux := data.SolarData.XRayFlux
+	
+	// Determine status text based on X-ray flux level
+	var statusText string
+	xrayValue := getXrayValue(xrayFlux)
+	switch {
+	case xrayValue <= 2:
+		statusText = "Quiet"
+	case xrayValue <= 4:
+		statusText = "Minor"
+	case xrayValue <= 6:
+		statusText = "Moderate"
+	case xrayValue <= 8:
+		statusText = "Major"
+	default:
+		statusText = "Extreme"
+	}
 
 	option := map[string]interface{}{
-		"title": map[string]interface{}{
-			"text": "X-ray Activity",
-			"left": "center",
-			"top": "2%",
-			"textStyle": map[string]interface{}{
-				"fontSize": 16,
-				"fontWeight": "bold",
-			},
-		},
 		"tooltip": map[string]interface{}{
 			"formatter": "{a} <br/>{b} : {c}",
 		},
@@ -36,29 +43,58 @@ func (cg *ChartGenerator) generateXRayGaugeSnippet(data *models.PropagationData)
 				"min": 0,
 				"max": 10,
 				"splitNumber": 5,
+				"radius": "80%",
 				"axisLine": map[string]interface{}{
 					"lineStyle": map[string]interface{}{
-						"width": 10,
+						"width": 20,
 						"color": [][]interface{}{
-							{0.2, "#67e0e3"}, // A/B class - blue
-							{0.4, "#37a2da"}, // C class - light blue  
-							{0.6, "#ffdb5c"}, // M class - yellow
-							{0.8, "#ff9f7f"}, // X class - orange
-							{1.0, "#fb7293"}, // X+ class - red
+							{0.2, "#28a745"}, // A/B class - Green (Excellent)
+							{0.4, "#ffc107"}, // C class - Yellow (Good)  
+							{0.6, "#fd7e14"}, // M class - Orange (Fair)
+							{0.8, "#dc3545"}, // X class - Red (Poor)
+							{1.0, "#6f42c1"}, // X+ class - Purple (Closed)
 						},
 					},
 				},
 				"pointer": map[string]interface{}{
-					"width": 6,
+					"itemStyle": map[string]interface{}{
+						"color": "auto",
+					},
+				},
+				"axisTick": map[string]interface{}{
+					"distance": -20,
+					"length": 8,
+					"lineStyle": map[string]interface{}{
+						"color": "#fff",
+						"width": 2,
+					},
+				},
+				"splitLine": map[string]interface{}{
+					"distance": -20,
+					"length": 20,
+					"lineStyle": map[string]interface{}{
+						"color": "#fff",
+						"width": 3,
+					},
+				},
+				"axisLabel": map[string]interface{}{
+					"color": "inherit",
+					"fontSize": 14,
+					"distance": 35,
 				},
 				"detail": map[string]interface{}{
-					"formatter": xrayFlux,
-					"fontSize": 16,
+					"valueAnimation": true,
+					"formatter": fmt.Sprintf("%s\n%s", xrayFlux, statusText),
+					"color": "inherit",
+					"fontSize": 14,
 					"fontWeight": "bold",
-					"offsetCenter": []string{"0%", "40%"},
+					"offsetCenter": []interface{}{0, "80%"},
 				},
 				"data": []interface{}{
-					map[string]interface{}{"value": getXrayValue(xrayFlux), "name": ""},
+					map[string]interface{}{
+						"value": getXrayValue(xrayFlux),
+						"name": "X-ray Flux",
+					},
 				},
 			},
 		},
@@ -69,13 +105,13 @@ func (cg *ChartGenerator) generateXRayGaugeSnippet(data *models.PropagationData)
 		return ChartSnippet{}, err
 	}
 
-	div := fmt.Sprintf("<div id=\"%s\" style=\"width:100%%;height:300px;\"></div>", id)
+	div := fmt.Sprintf("<div id=\"%s\" style=\"width:100%%;height:250px;\"></div>", id)
 	script := fmt.Sprintf(`<script>(function(){var el=document.getElementById('%s');if(!el)return;var c=echarts.init(el);var option=%s;c.setOption(option);window.addEventListener('resize',function(){c.resize();});})();</script>`, id, string(optJSON))
 
 	// Create complete HTML snippet with div and script
 	completeHTML := fmt.Sprintf(`<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-<div class="chart-container">
-	<h3>X-ray Activity</h3>
+<div class="gauge-item">
+	<h4>X-ray Activity</h4>
 	%s
 </div>
 %s`, div, script)

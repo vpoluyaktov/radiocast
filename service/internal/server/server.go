@@ -65,14 +65,14 @@ func NewServer(cfg *config.Config, deploymentMode storage.DeploymentMode) (*Serv
 		logger.Infof("ERROR: Failed to initialize static assets: %v", err)
 		logger.Infof("Static pages (/history, /theory, /static/*) may not work correctly")
 	} else {
-		logger.Infof("Static assets initialized successfully")
+		logger.Debugf("Static assets initialized successfully")
 	}
 	
 	// Log deployment mode
 	if deploymentMode == storage.DeploymentLocal {
-		logger.Infof("Local deployment mode - reports directory determined by storage client")
+		logger.Debugf("Local deployment mode - reports directory determined by storage client")
 	} else {
-		logger.Infof("GCS deployment mode - reports will be saved to GCS bucket: %s", cfg.GCSBucket)
+		logger.Debugf("GCS deployment mode - reports will be saved to GCS bucket: %s", cfg.GCSBucket)
 	}
 	
 	
@@ -127,7 +127,7 @@ func (s *Server) initializeStaticAssets(ctx context.Context) error {
 			return fmt.Errorf("failed to store static file %s: %w", file.Name(), err)
 		}
 		
-		logger.Infof("Static file %s uploaded successfully", file.Name())
+		logger.Debugf("Static file %s uploaded successfully", file.Name())
 	}
 	
 	// Store history page
@@ -140,7 +140,7 @@ func (s *Server) initializeStaticAssets(ctx context.Context) error {
 	if err := s.storeHTMLPage(ctx, historyData, "history/index.html"); err != nil {
 		return fmt.Errorf("failed to store history page: %w", err)
 	}
-	logger.Infof("History page uploaded successfully")
+	logger.Debugf("History page uploaded successfully")
 	
 	// Store theory page
 	theoryPath := filepath.Join(templatesDir, "theory_template.html")
@@ -152,7 +152,7 @@ func (s *Server) initializeStaticAssets(ctx context.Context) error {
 	if err := s.storeHTMLPage(ctx, theoryData, "theory/index.html"); err != nil {
 		return fmt.Errorf("failed to store theory page: %w", err)
 	}
-	logger.Infof("Theory page uploaded successfully")
+	logger.Debugf("Theory page uploaded successfully")
 	
 	return nil
 }

@@ -52,7 +52,7 @@ func (cg *ChartGenerator) generateGaugePanelSnippet(data *models.PropagationData
 	// Create combined HTML with responsive layout
 	completeHTML := fmt.Sprintf(`<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <div class="gauge-panel">
-	<h3>Current Space Weather Conditions</h3>
+	<h3>Solar Activity Metrics</h3>
 	<div class="gauge-container">
 		%s
 		%s
@@ -69,7 +69,7 @@ func (cg *ChartGenerator) generateGaugePanelSnippet(data *models.PropagationData
 
 	// Combine all divs for the Div field
 	combinedDiv := fmt.Sprintf(`<div class="gauge-panel">
-	<h3>Current Space Weather Conditions</h3>
+	<h3>Solar Activity Metrics</h3>
 	<div class="gauge-container">
 		%s
 		%s
