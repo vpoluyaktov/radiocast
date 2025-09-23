@@ -42,10 +42,10 @@ func (rg *ReportGenerator) GenerateReport(ctx context.Context,
 	markdownContent string,
 	folderPath string) (string, error) {
 
-	logger.Info("Starting report generation...")
+	logger.Debug("Starting HTML report generation...")
 
 	// Generate charts
-	logger.Info("Generating charts...")
+	logger.Debug("Generating charts...")
 	chartData, err := rg.htmlBuilder.GenerateChartData(propagationData, sourceData, folderPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate charts: %w", err)
@@ -55,7 +55,7 @@ func (rg *ReportGenerator) GenerateReport(ctx context.Context,
 	sunGifHTML := template.HTML("{{.SunGif}}")
 
 	// Process markdown with template placeholders
-	logger.Info("Processing markdown with placeholders...")
+	logger.Debug("Processing markdown with placeholders...")
 	processedContent, err := rg.htmlBuilder.ProcessMarkdownWithPlaceholders(
 		markdownContent, chartData, sunGifHTML)
 	if err != nil {
@@ -63,7 +63,7 @@ func (rg *ReportGenerator) GenerateReport(ctx context.Context,
 	}
 
 	// Build complete HTML document
-	logger.Info("Building complete HTML document...")
+	logger.Debug("Building complete HTML document...")
 	logger.Debug("Processed content length", map[string]interface{}{"length": len(processedContent)})
 	logger.Debug("Processed content preview", map[string]interface{}{"preview": processedContent[:min(300, len(processedContent))]})
 	finalHTML, err := rg.htmlBuilder.BuildCompleteHTML(
@@ -72,7 +72,7 @@ func (rg *ReportGenerator) GenerateReport(ctx context.Context,
 		return "", fmt.Errorf("failed to build complete HTML: %w", err)
 	}
 
-	logger.Info("Report generation completed successfully", map[string]interface{}{"characters": len(finalHTML)})
+	logger.Debug("Report generation completed successfully", map[string]interface{}{"characters": len(finalHTML)})
 	return finalHTML, nil
 }
 
@@ -150,29 +150,29 @@ func (rg *ReportGenerator) fetchDataAndGenerateReport(ctx context.Context,
 
 	if cfg.MockupMode && mockService != nil {
 		// Use mock data
-		logger.Info("Using mock data for report generation...")
+		logger.Debug("Using mock data for report generation...")
 		data, sourceData, err = mockService.LoadMockData()
 		if err != nil {
 			return nil, nil, "", fmt.Errorf("mock data loading failed: %w", err)
 		}
 
-		logger.Info("Loading mock LLM response...")
+		logger.Debug("Loading mock LLM response...")
 		markdownReport, err = mockService.LoadMockLLMResponse()
 		if err != nil {
 			return nil, nil, "", fmt.Errorf("mock LLM response loading failed: %w", err)
 		}
 		
-		logger.Info("Mock data loaded successfully", map[string]interface{}{"timestamp": data.Timestamp.Format(time.RFC3339)})
-		logger.Info("Mock LLM report loaded successfully", map[string]interface{}{"length": len(markdownReport)})
+		logger.Debug("Mock data loaded successfully", map[string]interface{}{"timestamp": data.Timestamp.Format(time.RFC3339)})
+		logger.Debug("Mock LLM report loaded successfully", map[string]interface{}{"length": len(markdownReport)})
 	} else {
 		// Fetch data from all sources
-		logger.Info("Fetching data from all sources...")
+		logger.Debug("Fetching data from all sources...")
 		data, sourceData, err = fetcher.FetchAllDataWithSources(ctx, cfg.NOAAKIndexURL, cfg.NOAASolarURL, cfg.N0NBHSolarURL, cfg.SIDCRSSURL)
 		if err != nil {
 			return nil, nil, "", fmt.Errorf("data fetching failed: %w", err)
 		}
 
-		logger.Info("Data fetched successfully", map[string]interface{}{"timestamp": data.Timestamp.Format(time.RFC3339)})
+		logger.Debug("Data fetched successfully", map[string]interface{}{"timestamp": data.Timestamp.Format(time.RFC3339)})
 
 		// Generate LLM report with raw source data
 		logger.Info("Generating LLM report with raw source data...")
@@ -181,7 +181,7 @@ func (rg *ReportGenerator) fetchDataAndGenerateReport(ctx context.Context,
 			return nil, nil, "", fmt.Errorf("LLM report generation failed: %w", err)
 		}
 
-		logger.Info("LLM report generated successfully", map[string]interface{}{"length": len(markdownReport)})
+		logger.Debug("LLM report generated successfully", map[string]interface{}{"length": len(markdownReport)})
 	}
 
 	return data, sourceData, markdownReport, nil

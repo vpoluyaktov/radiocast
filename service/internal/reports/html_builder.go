@@ -126,7 +126,7 @@ func (h *HTMLBuilder) BuildCompleteHTML(
 	sunGifHTML template.HTML,
 	folderPath string) (string, error) {
 
-	logger.Info("Building complete HTML...")
+	logger.Debug("Building complete HTML...")
 
 	// Use the already processed HTML content directly (no markdown conversion needed)
 	htmlContent := processedHTMLContent

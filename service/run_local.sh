@@ -208,7 +208,7 @@ run_server() {
     # Kill any existing process on the target port (safe method)
     EXISTING_PID=$(lsof -ti:$PORT 2>/dev/null)
     if [ ! -z "$EXISTING_PID" ]; then
-        print_status "🔄 Killing existing process on port $PORT (PID: $EXISTING_PID)"
+        print_status "Killing existing process on port $PORT (PID: $EXISTING_PID)"
         kill -TERM $EXISTING_PID 2>/dev/null || true
         sleep 2
         # Force kill if still running
@@ -222,18 +222,18 @@ run_server() {
     # rm -rf ./local_gcs
     # mkdir -p ./local_gcs
     
-    print_status "🧪 Testing complete pipeline..."
+    print_status "Testing complete pipeline..."
     if [ "$USE_MOCKUP" = true ]; then
-        print_status "  📁 Using mock data from internal/mocks folder"
-        print_status "  📄 Loading pre-generated LLM response"
-        print_status "  🖼️ Using mock Sun GIF (no Helioviewer download)"
+        print_status "  Using mock data from internal/mocks folder"
+        print_status "  Loading pre-generated LLM response"
+        print_status "  Using mock Sun GIF (no Helioviewer download)"
     else
-        print_status "  📡 Fetching real data from NOAA, N0NBH, and SIDC"
-        print_status "  🤖 Generating report using OpenAI"
-        print_status "  🌞 Downloading Sun images from Helioviewer"
+        print_status "  Fetching real data from NOAA, N0NBH, and SIDC"
+        print_status "  Generating report using OpenAI"
+        print_status "  Downloading Sun images from Helioviewer"
     fi
-    print_status "  📊 Converting to HTML with charts"
-    print_status "  ✅ Validating Chart Data and Band Analysis sections"
+    print_status "  Converting to HTML with charts"
+    print_status "  Validating Chart Data and Band Analysis sections"
     
     # Start server briefly to generate a report
     go run main.go &
@@ -242,9 +242,9 @@ run_server() {
     
     # Test health endpoint
     if curl -s http://localhost:$PORT/health | grep -q "healthy"; then
-        print_success "✅ Server health check passed"
+        print_success "Server health check passed"
     else
-        print_error "❌ Server health check failed"
+        print_error "Server health check failed"
         # Kill server process safely by PID
         if kill -0 $SERVER_PID 2>/dev/null; then
             kill -TERM $SERVER_PID 2>/dev/null || true
@@ -259,9 +259,9 @@ run_unit_tests() {
     
     print_status "Running Go unit tests..."
     if go test -v ./...; then
-        print_success "✅ All unit tests passed"
+        print_success "All unit tests passed"
     else
-        print_error "❌ Some unit tests failed"
+        print_error "Some unit tests failed"
         return 1
     fi
 }
