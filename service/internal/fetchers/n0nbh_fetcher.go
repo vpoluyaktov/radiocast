@@ -59,36 +59,29 @@ func (f *N0NBHFetcher) Fetch(ctx context.Context, url string) (*models.N0NBHResp
 		return nil, fmt.Errorf("failed to parse N0NBH XML response: %w", err)
 	}
 	
-	// Convert XML structure to expected JSON structure
+	// Convert XML structure to expected JSON structure - PRESERVE ALL RICH FIELDS
 	data := &models.N0NBHResponse{
-		SolarData: struct {
-			SolarFlux     string `json:"solarflux"`
-			AIndex        string `json:"aindex"`
-			KIndex        string `json:"kindex"`
-			KIndexNT      string `json:"kindexnt"`
-			SunSpots      string `json:"sunspots"`
-			HeliumLine    string `json:"heliumline"`
-			ProtonFlux    string `json:"protonflux"`
-			ElectronFlux  string `json:"electonflux"`
-			Aurora        string `json:"aurora"`
-			NormalizationTime string `json:"normalization"`
-			LatestSWPCReport  string `json:"latestswpcreport"`
-		}{
-			SolarFlux:     xmlData.SolarData.SolarFlux,
-			AIndex:        xmlData.SolarData.AIndex,
-			KIndex:        xmlData.SolarData.KIndex,
-			KIndexNT:      xmlData.SolarData.KIndexNT,
-			SunSpots:      xmlData.SolarData.SunSpots,
-			HeliumLine:    xmlData.SolarData.HeliumLine,
-			ProtonFlux:    xmlData.SolarData.ProtonFlux,
-			ElectronFlux:  xmlData.SolarData.ElectronFlux,
-			Aurora:        xmlData.SolarData.Aurora,
-			NormalizationTime: xmlData.SolarData.Normalization,
-			LatestSWPCReport:  "", // Not in XML
-		},
 		Time:   xmlData.Time,
 		Source: "N0NBH",
 	}
+	
+	// Map all fields including rich XML fields
+	data.SolarData.SolarFlux = xmlData.SolarData.SolarFlux
+	data.SolarData.AIndex = xmlData.SolarData.AIndex
+	data.SolarData.KIndex = xmlData.SolarData.KIndex
+	data.SolarData.KIndexNT = xmlData.SolarData.KIndexNT
+	data.SolarData.SunSpots = xmlData.SolarData.SunSpots
+	data.SolarData.HeliumLine = xmlData.SolarData.HeliumLine
+	data.SolarData.ProtonFlux = xmlData.SolarData.ProtonFlux
+	data.SolarData.ElectronFlux = xmlData.SolarData.ElectronFlux
+	data.SolarData.Aurora = xmlData.SolarData.Aurora
+	data.SolarData.NormalizationTime = xmlData.SolarData.Normalization
+	data.SolarData.LatestSWPCReport = "" // Not in XML
+	// Rich fields from XML (previously lost)
+	data.SolarData.XRay = xmlData.SolarData.XRay
+	data.SolarData.SolarWind = xmlData.SolarData.SolarWind
+	data.SolarData.MagneticField = xmlData.SolarData.MagneticField
+	data.SolarData.LatDegree = xmlData.SolarData.LatDegree
 	
 	// Convert band conditions - XML has separate entries for day/night
 	bandConditions := make(map[string]models.N0NBHBandCondition)

@@ -2,7 +2,8 @@ You are an expert amateur radio propagation analyst. Generate a comprehensive HF
 
 CRITICAL: Return exact placeholders {{.PlaceholderName}} as shown in the template. Do NOT write the charts yourself.
 
-The report should be organized for maximum readability and practical use by amateur radio operators:
+The report should be organized for maximum readability and practical use by amateur radio operators
+Use bold and italic markdown formatting to make the report easy to read by HAMs.
 
 {{.SunGif}}
 
@@ -18,15 +19,15 @@ The report should be organized for maximum readability and practical use by amat
 
    Base the conditions on the actual solar flux, K-index, and current space weather data provided in the JSON data, generate a comprehensive band conditions table in markdown format showing current propagation conditions for different times of day for each amateur radio band (80m, 40m, 20m, 17m, 15m, 12m, 10m). 
    
-   The table should include:
-   - Band name (e.g., "80m", "40m", etc.)
-   - Frequency range for each band (e.g., "3.5-3.6 MHz"). Use the frequency ranges allowed for HAM operators in the US.
-   - Morning (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
-   - Day (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
-   - Evening (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
-   - Night (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
+   The table should include the following columns:
+   - **Band**: Band name (e.g., "80m", "40m", etc.)
+   - **Frequency**: Frequency range for each band (e.g., "3.5-3.6 MHz").
+   - **Morning**: Morning conditions (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
+   - **Day**: Day conditions (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
+   - **Evening**: Evening conditions (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
+   - **Night**: Night conditions (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
    
-   Add text analysis which bands are working best and when (80m-10m). Don't add any header for the analysis text.
+   Below the table add text analysis which bands are working best and when (80m-10m). Don't add any header for the analysis text.
 
 6. **📊 Current Solar Activity**: Space weather conditions affecting propagation
 
@@ -37,14 +38,33 @@ The report should be organized for maximum readability and practical use by amat
 7. **📈 Geomagnetic Conditions**: K-index trends and impacts on propagation
 
    {{.KIndexChart}}
+   
+   Use the historical K-index data to explain recent trends. Mention if conditions are improving, worsening, or stable over the past 24 hours.
 
-8. **📡 Propagation Timeline & Technical Details**: 24-hour propagation quality overview and supporting data
+8. **🌟 Space Weather Details**: Advanced conditions for experienced operators
+
+   {{.SpaceWeatherDashboardChart}}
+
+   Use the enriched N0NBH data to provide HAM-friendly explanations:
+   - **X-ray Activity**: Current X-ray flux level (XRayFlux) and what it means for HF blackouts
+   - **Solar Wind**: Solar wind speed (SolarWindSpeed) impact on geomagnetic activity 
+   - **Particle Environment**: Electron flux (ElectronFlux) and proton flux effects on propagation
+   - **Aurora Activity**: Current aurora level (Aurora) and VHF/UHF implications for northern operators
+   - **Helium Line**: Solar activity indicator (HeliumLine) for trend analysis
+   
+   Keep explanations simple and focus on practical impacts for amateur radio operations.
+
+9. **📡 Propagation Timeline & Technical Details**: 24-hour propagation quality overview and supporting data
 
    {{.PropagationTimelineChart}}
+   
+   Use historical solar data trends to provide context about recent solar flux and sunspot changes over the past months.
+   
+   {{.HistoricalSolarTrendChart}}
 
-9. **🔮 3-Day Forecast**: What to expect over the next few days
+10. **🔮 3-Day Forecast**: What to expect over the next few days
 
-   {{.ForecastChart}}
+    {{.ForecastChart}}
 
 IMPORTANT: Return ONLY clean markdown content. Use proper markdown syntax:
 
@@ -58,7 +78,7 @@ IMPORTANT: Return ONLY clean markdown content. Use proper markdown syntax:
 CRITICAL RESTRICTIONS:
 - Do NOT add any "Summary:", "In summary:", or "Conclusion:" sections at the end
 - Do NOT add horizontal rules (---) between sections
-- Do NOT add any content beyond the 9 sections specified above
+- Do NOT add any content beyond the 10 sections specified above
 - End the report with the 3-Day Forecast section only
 
 Writing Style Guidelines:
@@ -69,6 +89,14 @@ Writing Style Guidelines:
 - Include specific frequency recommendations and timing
 - Mention geographic patterns (north-south vs east-west paths)
 - Give contest and DX activity specific advice
+
+Data Analysis Guidelines:
+- Use HistoricalKIndex data to identify trends (improving/worsening geomagnetic conditions)
+- Use HistoricalSolar data to show solar flux and sunspot trends over recent months
+- Reference enriched N0NBH fields (XRayFlux, SolarWindSpeed, ElectronFlux, Aurora, HeliumLine) for detailed analysis
+- Explain how historical trends affect current and future propagation
+- Connect space weather data to practical amateur radio impacts
+
 CRITICAL: Use condition indicators exactly using this color scheme in surrounding narrative if needed: 🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed
 
 Make the report engaging and easy to scan quickly!

@@ -51,12 +51,14 @@ type TemplateData struct {
 	Version                  string
 	
 	// Chart placeholders
-	SunGif                   template.HTML
-	GaugePanelChart          template.HTML
-	KIndexGaugeChart         template.HTML
-	KIndexChart              template.HTML
-	ForecastChart            template.HTML
-	PropagationTimelineChart template.HTML
+	SunGif                     template.HTML
+	GaugePanelChart            template.HTML
+	KIndexGaugeChart           template.HTML
+	KIndexChart                template.HTML
+	ForecastChart              template.HTML
+	PropagationTimelineChart   template.HTML
+	HistoricalSolarTrendChart  template.HTML
+	SpaceWeatherDashboardChart template.HTML
 }
 
 // ConvertMarkdownToHTML converts markdown to HTML using goldmark
@@ -84,11 +86,13 @@ func (h *HTMLBuilder) GenerateChartData(data *models.PropagationData, sourceData
 
 	// Create chart data with empty defaults
 	chartData := &TemplateData{
-		GaugePanelChart:          template.HTML(""),
-		KIndexGaugeChart:         template.HTML(""),
-		KIndexChart:              template.HTML(""),
-		ForecastChart:            template.HTML(""),
-		PropagationTimelineChart: template.HTML(""),
+		GaugePanelChart:            template.HTML(""),
+		KIndexGaugeChart:           template.HTML(""),
+		KIndexChart:                template.HTML(""),
+		ForecastChart:              template.HTML(""),
+		PropagationTimelineChart:   template.HTML(""),
+		HistoricalSolarTrendChart:  template.HTML(""),
+		SpaceWeatherDashboardChart: template.HTML(""),
 	}
 
 	// Map snippets by ID to template data
@@ -100,6 +104,10 @@ func (h *HTMLBuilder) GenerateChartData(data *models.PropagationData, sourceData
 			chartData.KIndexGaugeChart = template.HTML(snippet.HTML)
 		case "chart-geomagnetic-conditions":
 			chartData.KIndexChart = template.HTML(snippet.HTML)
+		case "chart-historical-solar-trend":
+			chartData.HistoricalSolarTrendChart = template.HTML(snippet.HTML)
+		case "chart-space-weather-dashboard":
+			chartData.SpaceWeatherDashboardChart = template.HTML(snippet.HTML)
 		case "chart-forecast":
 			chartData.ForecastChart = template.HTML(snippet.HTML)
 		case "chart-propagation-timeline":
@@ -129,16 +137,18 @@ func (h *HTMLBuilder) BuildCompleteHTML(
 
 	// Prepare template data
 	templateData := TemplateData{
-		Date:                     time.Now().Format("2006-01-02"),
-		GeneratedAt:              time.Now().Format("2006-01-02 15:04:05 UTC"),
-		Content:                  template.HTML(htmlContent),
-		Version:                  config.GetVersion(),
-		SunGif:                   sunGifHTML,
-		GaugePanelChart:          chartData.GaugePanelChart,
-		KIndexGaugeChart:         chartData.KIndexGaugeChart,
-		KIndexChart:              chartData.KIndexChart,
-		ForecastChart:            chartData.ForecastChart,
-		PropagationTimelineChart: chartData.PropagationTimelineChart,
+		Date:                       time.Now().Format("2006-01-02"),
+		GeneratedAt:                time.Now().Format("2006-01-02 15:04:05 UTC"),
+		Content:                    template.HTML(htmlContent),
+		Version:                    config.GetVersion(),
+		SunGif:                     sunGifHTML,
+		GaugePanelChart:            chartData.GaugePanelChart,
+		KIndexGaugeChart:           chartData.KIndexGaugeChart,
+		KIndexChart:                chartData.KIndexChart,
+		ForecastChart:              chartData.ForecastChart,
+		PropagationTimelineChart:   chartData.PropagationTimelineChart,
+		HistoricalSolarTrendChart:  chartData.HistoricalSolarTrendChart,
+		SpaceWeatherDashboardChart: chartData.SpaceWeatherDashboardChart,
 	}
 
 	// Execute template
@@ -207,19 +217,23 @@ func (h *HTMLBuilder) ProcessMarkdownWithPlaceholders(
 
 	// Prepare data for placeholder substitution
 	data := struct {
-		SunGif                   template.HTML
-		GaugePanelChart          template.HTML
-		KIndexGaugeChart         template.HTML
-		KIndexChart              template.HTML
-		ForecastChart            template.HTML
-		PropagationTimelineChart template.HTML
+		SunGif                     template.HTML
+		GaugePanelChart            template.HTML
+		KIndexGaugeChart           template.HTML
+		KIndexChart                template.HTML
+		ForecastChart              template.HTML
+		PropagationTimelineChart   template.HTML
+		HistoricalSolarTrendChart  template.HTML
+		SpaceWeatherDashboardChart template.HTML
 	}{
-		SunGif:                   sunGifHTML,
-		GaugePanelChart:          chartData.GaugePanelChart,
-		KIndexGaugeChart:         chartData.KIndexGaugeChart,
-		KIndexChart:              chartData.KIndexChart,
-		ForecastChart:            chartData.ForecastChart,
-		PropagationTimelineChart: chartData.PropagationTimelineChart,
+		SunGif:                     sunGifHTML,
+		GaugePanelChart:            chartData.GaugePanelChart,
+		KIndexGaugeChart:           chartData.KIndexGaugeChart,
+		KIndexChart:                chartData.KIndexChart,
+		ForecastChart:              chartData.ForecastChart,
+		PropagationTimelineChart:   chartData.PropagationTimelineChart,
+		HistoricalSolarTrendChart:  chartData.HistoricalSolarTrendChart,
+		SpaceWeatherDashboardChart: chartData.SpaceWeatherDashboardChart,
 	}
 
 	var buf bytes.Buffer

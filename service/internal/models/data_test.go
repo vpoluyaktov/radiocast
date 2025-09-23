@@ -144,10 +144,10 @@ func TestSourceEventValidation(t *testing.T) {
 	event := SourceEvent{
 		Source:      "NOAA",
 		EventType:   "Solar Flare",
-		Severity:    "High",
+		Severity:    "", // LLM-generated field - should be empty from normalizer
 		Description: "X-class flare detected at 12:00 UTC",
 		Timestamp:   testTime,
-		Impact:      "Strong HF radio blackout expected",
+		Impact:      "", // LLM-generated field - should be empty from normalizer
 	}
 	
 	// Verify all fields are set correctly
@@ -157,8 +157,14 @@ func TestSourceEventValidation(t *testing.T) {
 	if event.EventType != "Solar Flare" {
 		t.Errorf("Expected EventType 'Solar Flare', got '%s'", event.EventType)
 	}
-	if event.Severity != "High" {
-		t.Errorf("Expected Severity 'High', got '%s'", event.Severity)
+	if event.Severity != "" {
+		t.Errorf("Expected empty Severity (LLM-generated), got '%s'", event.Severity)
+	}
+	if event.Description != "X-class flare detected at 12:00 UTC" {
+		t.Errorf("Expected Description 'X-class flare detected at 12:00 UTC', got '%s'", event.Description)
+	}
+	if event.Impact != "" {
+		t.Errorf("Expected empty Impact (LLM-generated), got '%s'", event.Impact)
 	}
 	if !event.Timestamp.Equal(testTime) {
 		t.Errorf("Timestamp mismatch: expected %v, got %v", testTime, event.Timestamp)
@@ -166,16 +172,31 @@ func TestSourceEventValidation(t *testing.T) {
 }
 
 func TestDayForecastValidation(t *testing.T) {
-	testDate := time.Date(2025, 9, 17, 0, 0, 0, 0, time.UTC)
-	
 	forecast := DayForecast{
-		Date:            testDate,
-		KIndexForecast:  "2-4",
-		SolarActivity:   "Moderate",
-		HFConditions:    "Fair to Good",
-		VHFConditions:   "Poor",
+		Date:            time.Time{}, // LLM-generated field - should be empty from normalizer
+		KIndexForecast:  "", // LLM-generated field - should be empty from normalizer
+		SolarActivity:   "", // LLM-generated field - should be empty from normalizer
+		HFConditions:    "", // LLM-generated field - should be empty from normalizer
+		VHFConditions:   "", // LLM-generated field - should be empty from normalizer
 		BestBands:       []string{"20m", "40m"},
 		WorstBands:      []string{"6m"},
+	}
+	
+	// Test LLM-generated fields are empty
+	if !forecast.Date.IsZero() {
+		t.Errorf("Expected empty Date (LLM-generated), got %v", forecast.Date)
+	}
+	if forecast.KIndexForecast != "" {
+		t.Errorf("Expected empty KIndexForecast (LLM-generated), got '%s'", forecast.KIndexForecast)
+	}
+	if forecast.SolarActivity != "" {
+		t.Errorf("Expected empty SolarActivity (LLM-generated), got '%s'", forecast.SolarActivity)
+	}
+	if forecast.HFConditions != "" {
+		t.Errorf("Expected empty HFConditions (LLM-generated), got '%s'", forecast.HFConditions)
+	}
+	if forecast.VHFConditions != "" {
+		t.Errorf("Expected empty VHFConditions (LLM-generated), got '%s'", forecast.VHFConditions)
 	}
 	
 	// Test that arrays are properly handled
