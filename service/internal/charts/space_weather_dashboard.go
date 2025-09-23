@@ -49,23 +49,39 @@ func (cg *ChartGenerator) generateSpaceWeatherDashboardSnippet(data *models.Prop
 		allScripts = append(allScripts, auroraScript)
 	}
 
-	// Combine all scripts into one
-	combinedScript := fmt.Sprintf("<script>%s</script>", strings.Join(allScripts, "\n"))
-
-	// Create a responsive grid layout for the gauges
-	combinedDiv := fmt.Sprintf(`<div class="space-weather-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
-		%s
-		%s
-		%s
-	</div>`, xrayGauge.Div, solarWindGauge.Div, auroraGauge.Div)
-
-	// Create complete HTML snippet
+	// Create combined HTML with responsive layout using gauge panel style
 	completeHTML := fmt.Sprintf(`<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-<div class="chart-container">
+<div class="gauge-panel">
 	<h3>Space Weather Dashboard</h3>
-	%s
+	<div class="gauge-container">
+		%s
+		%s
+		%s
+	</div>
 </div>
-%s`, combinedDiv, combinedScript)
+<script>
+%s
+</script>`, 
+		extractGaugeItemContent(xrayGauge.HTML),
+		extractGaugeItemContent(solarWindGauge.HTML),
+		extractGaugeItemContent(auroraGauge.HTML),
+		strings.Join(allScripts, "\n"))
+
+	// Combine all divs for the Div field
+	combinedDiv := fmt.Sprintf(`<div class="gauge-panel">
+	<h3>Space Weather Dashboard</h3>
+	<div class="gauge-container">
+		%s
+		%s
+		%s
+	</div>
+</div>`, 
+		extractGaugeItemContent(xrayGauge.HTML),
+		extractGaugeItemContent(solarWindGauge.HTML),
+		extractGaugeItemContent(auroraGauge.HTML))
+
+	// Combine all scripts
+	combinedScript := fmt.Sprintf("<script>\n%s\n</script>", strings.Join(allScripts, "\n"))
 
 	return ChartSnippet{ID: id, Title: "Space Weather Dashboard", Div: combinedDiv, Script: combinedScript, HTML: completeHTML}, nil
 }

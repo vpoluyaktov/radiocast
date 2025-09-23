@@ -118,6 +118,83 @@
     font-style: italic;
 }
 
+/* Space Weather Impact Mapping Styles */
+.impact-mapping {
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 123, 255, 0.2);
+}
+
+.impact-item {
+    display: flex;
+    align-items: center;
+    margin: 12px 0;
+    padding: 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.impact-item:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.impact-indicator {
+    font-size: 1.2em;
+    margin-right: 12px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.impact-item.excellent {
+    border-left: 4px solid #28a745;
+}
+
+.impact-item.good {
+    border-left: 4px solid #ffc107;
+}
+
+.impact-item.fair {
+    border-left: 4px solid #fd7e14;
+}
+
+.impact-item.poor {
+    border-left: 4px solid #dc3545;
+}
+
+.impact-item.closed {
+    border-left: 4px solid #6f42c1;
+}
+
+.theory-tip {
+    background: rgba(23, 162, 184, 0.1);
+    border: 2px solid rgba(23, 162, 184, 0.3);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 25px 0;
+}
+
+.theory-tip h4 {
+    color: #17a2b8;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.theory-tip p {
+    margin-bottom: 10px;
+}
+
+.theory-tip ul {
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+.theory-tip li {
+    color: #495057;
+}
+
 /* Responsive adjustments for theory page */
 @media (max-width: 768px) {
     .main-content {
@@ -138,6 +215,20 @@
     .main-content h3 {
         font-size: 1.1em;
     }
+    
+    .impact-mapping {
+        padding: 10px;
+    }
+    
+    .impact-item {
+        padding: 8px;
+        margin: 10px 0;
+    }
+    
+    .impact-indicator {
+        margin-right: 8px;
+        min-width: 18px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -154,5 +245,27 @@
     
     .main-content h3 {
         font-size: 1.0em;
+    }
+    
+    .impact-mapping {
+        padding: 8px;
+        margin: 15px 0;
+    }
+    
+    .impact-item {
+        padding: 6px;
+        margin: 8px 0;
+        font-size: 0.9em;
+    }
+    
+    .impact-indicator {
+        margin-right: 6px;
+        min-width: 16px;
+        font-size: 1.0em;
+    }
+    
+    .theory-tip {
+        padding: 15px;
+        margin: 20px 0;
     }
 }
