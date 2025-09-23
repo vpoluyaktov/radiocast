@@ -16,18 +16,16 @@ The report should be organized for maximum readability and practical use by amat
 
 5. **📻 Band-by-Band Analysis**:
 
-   Generate a comprehensive band conditions table in markdown format showing current propagation conditions for each amateur radio band (80m, 40m, 20m, 17m, 15m, 12m, 10m). 
+   Generate a comprehensive band conditions table in markdown format showing current propagation conditions for different times of day for each amateur radio band (80m, 40m, 20m, 17m, 15m, 12m, 10m). 
    
    The table should include:
    - Band name (e.g., "80m", "40m", etc.)
-   - Day condition (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
-   - Night condition (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
-   - Best operating times (based on current solar conditions)
-   - Dynamic notes about current propagation characteristics
+   - Morning (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
+   - Day (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
+   - Evening (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
+   - Night (🟢 Excellent | 🟡 Good | 🟠 Fair | 🔴 Poor | ⚫ Closed)
    
-   Base the conditions on the actual solar flux, K-index, and current space weather data provided. Adjust the "best times" and notes based on current propagation conditions, not static values.
-
-   Add an analysis which bands are working best and when (80m-10m)
+   Base the conditions on the actual solar flux, K-index, and current space weather data provided add few sentences analysis which bands are working best and when (80m-10m).
 
    {{.BandConditionsChart}}
 

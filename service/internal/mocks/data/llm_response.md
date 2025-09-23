@@ -2,89 +2,81 @@
 
 ## 📋 Propagation Summary
 
-HF propagation is looking excellent today! Solar flux is moderate at 100 with high sunspot activity (133), and geomagnetic conditions are quiet (K=1.3). This combination creates very favorable conditions for HF communication. Expect enhanced propagation on the higher bands during daylight hours, with 20m and 15m offering the best DX opportunities. The quiet geomagnetic field means minimal ionospheric disturbance, allowing for stable signal paths. Lower bands (40m/80m) will provide excellent regional and some DX coverage after sunset. Overall, it's a great day to be on the air with reliable propagation across most amateur bands.
+HF propagation is looking lively today thanks to robust solar activity: solar flux is at 172 and sunspot numbers are high at 152, both excellent for upper HF bands. The geomagnetic field is moderately unsettled, with the K-index hovering around 3, so expect some minor absorption or fading, especially at higher latitudes and during local daytime. Daytime conditions are particularly strong on 20m through 10m, with 12m and 10m showing good potential for DX, while 80m and 40m are best reserved for nighttime use. Operators should take advantage of the current solar peak, but keep an eye out for short-term geomagnetic upticks that could briefly dampen propagation on the higher bands. Overall, it's a great day for HF—get on the air and chase those DX contacts!
 
 ## 💡 Operator Tips
 
-- **Power Settings:** Standard power levels will work well today - no need for high power due to good conditions
-- **Antenna Selection:** Directional antennas will show their advantage on 20m/15m for DX work
-- **Digital Modes:** Excellent day for weak-signal digital modes like FT8 and MSK144
-- **Contest Strategy:** Focus on 20m/15m during daylight, then shift to 40m/80m after sunset
-- **Equipment:** Check your SWR - good conditions mean you'll want optimal antenna performance
+- Focus your efforts on 20m, 17m, 15m, 12m, and 10m during daylight hours for the best DX and intercontinental contacts.
+- Use digital modes (FT8, FT4, RTTY) on 10m and 12m to exploit even marginal openings, especially during midday.
+- For local and regional QSOs, try 40m and 80m after sunset when D-layer absorption drops.
+- If you’re in northern latitudes, be aware of possible auroral flutter on higher bands due to the moderate K-index.
+- Keep antennas for higher bands (10m–20m) ready and consider verticals or beams for best DX performance.
+- Monitor grayline times for enhanced long-path openings, especially on 40m and 20m.
+- Contest and DXers: logbook those rare ones while the solar numbers are hot!
 
 ## ⏰ Best Operating Times
 
-- **Early Morning (06:00-09:00 UTC):** 40m and 80m for regional contacts, 20m starting to open for DX
-- **Midday (12:00-18:00 UTC):** Prime time for 20m, 17m, and 15m DX - best propagation window
-- **Late Afternoon (18:00-21:00 UTC):** 20m still strong, 17m/15m beginning to fade, 40m opening up
-- **Evening/Night (21:00+ UTC):** 40m and 80m dominate, excellent for regional and some DX
+- **80m & 40m:** Best after sunset and through the night; avoid daytime due to high absorption.
+- **30m:** Good all day and night, but strongest at dusk and dawn.
+- **20m:** Excellent sunrise to sunset, with extended openings into the evening.
+- **17m & 15m:** Peak performance mid-morning through late afternoon.
+- **12m & 10m:** Best from late morning to mid-afternoon; watch for short, sporadic E-skip openings.
 
 ## 🌍 DX Opportunities
 
-- **20m:** Excellent worldwide DX potential during daylight hours (12:00-20:00 UTC)
-- **15m:** Good DX openings to Europe and Asia during peak hours (14:00-18:00 UTC)
-- **17m:** Solid medium-distance DX, less crowded than 20m
-- **Grayline Enhancement:** Watch for enhanced propagation 30 minutes before/after local sunrise/sunset
-- **Special Conditions:** No auroral activity expected - standard F-layer propagation dominates
-
----
+- **Daytime:** 15m, 12m, and 10m are open for trans-equatorial and east-west DX, especially between continents.
+- **Grayline:** Enhanced propagation on 40m and 20m during local sunrise and sunset—look for long-path Asia-Pacific and South America.
+- **Special Events:** With high solar flux, expect surprise openings on 10m and 12m, including possible short-path polar routes.
+- **Auroral Activity:** Moderate K-index may bring auroral propagation on 6m and 10m at high latitudes—check for fluttery signals.
 
 ## 📻 Band-by-Band Analysis
 
-| Band   | Day Condition | Night Condition | Best Times        | Notes                                                                 |
-|--------|:-------------:|:---------------:|-------------------|-----------------------------------------------------------------------|
-| 80m    | 🟠 Fair       | 🟡 Good         | Night, early AM   | Good for local/regional NVIS at night; some QRN possible.             |
-| 40m    | 🟡 Good       | 🟢 Excellent    | Night, sunrise    | Excellent for domestic and some DX at night; quieter after sunset.    |
-| 20m    | 🟡 Good       | 🟠 Fair         | Late morning–sunset| Best daytime DX band; some evening openings possible.                 |
-| 17m    | 🟡 Good       | 🟠 Fair         | Midday–afternoon  | Short/medium-haul DX; less crowded than 20m.                          |
-| 15m    | 🟡 Good       | 🟠 Fair         | Late morning–afternoon| Daytime DX, especially north-south paths; check for short evening openings. |
-| 12m    | 🟠 Fair       | 🔴 Poor         | Early afternoon   | Sporadic openings; watch for brief DX windows.                        |
-| 10m    | 🟠 Fair       | 🔴 Poor         | Early afternoon   | Occasional short-skip; mostly closed at night.                        |
-
-- **Analysis:**  
-  - **Best Bands Today:** 20m and 15m during daylight for DX; 40m and 80m at night for regional and some DX.
-  - **Challenging Bands:** 12m and 10m are marginal—watch for brief openings, especially if you enjoy chasing rare DX.
-  - **Geographic Patterns:** North-south paths (e.g., Europe to South America, US to South Pacific) are favored on higher bands.
+| Band  | Morning        | Day            | Evening        | Night          |
+|-------|----------------|----------------|----------------|----------------|
+| 80m   | 🔴 Poor        | 🔴 Poor        | 🟡 Good        | 🟢 Excellent   |
+| 40m   | 🟠 Fair        | 🔴 Poor        | 🟡 Good        | 🟢 Excellent   |
+| 30m   | 🟡 Good        | 🟡 Good        | 🟡 Good        | 🟡 Good        |
+| 20m   | 🟢 Excellent   | 🟢 Excellent   | 🟡 Good        | 🟠 Fair        |
+| 17m   | 🟡 Good        | 🟢 Excellent   | 🟡 Good        | 🟠 Fair        |
+| 15m   | 🟡 Good        | 🟢 Excellent   | 🟡 Good        | 🟠 Fair        |
+| 12m   | 🟠 Fair        | 🟡 Good        | 🟠 Fair        | 🔴 Poor        |
+| 10m   | 🟠 Fair        | 🟡 Good        | 🟠 Fair        | 🔴 Poor        |
 
 {{.BandConditionsChart}}
+
+**Analysis:**  
+Daytime is dominated by strong conditions on 20m, 17m, and 15m, with 12m and 10m also showing good potential for DX, especially around local noon. 80m and 40m are largely closed during the day but come alive after sunset, making them ideal for nighttime ragchews and regional nets. 30m offers reliable all-day performance for both DX and domestic contacts.
 
 ## 📊 Current Solar Activity
 
 {{.GaugePanelChart}}
 
-- **K-index:** 1.3 (quiet geomagnetic conditions; excellent for HF propagation with minimal ionospheric disturbance)
-- **Solar Flux:** 100 (moderate for HF propagation; sufficient energy for ionospheric enhancement)
-- **Sunspot Number:** 133 (high activity; supports excellent HF openings and DX opportunities)
-- **Recent Trend:** Solar flux and sunspot numbers are down from earlier in the year but remain solid for late-cycle conditions.
-- **Flares/Disturbances:** No major solar flares reported. The geomagnetic field is calming after a recent active period.
+- **K-index (Geomagnetic Activity):** Currently at 3 (unsettled). This means minor disturbances—watch for some fading and absorption, especially at higher latitudes.
+- **Solar Flux (10.7cm):** 172 (very high). Indicates excellent ionization of the upper atmosphere, supporting strong propagation on 20m–10m.
+- **Sunspot Number:** 152 (high). More sunspots mean more chances for strong, stable HF propagation and frequent DX openings.
+- **Space Weather Overview:** No major solar flares reported, but the elevated K-index suggests some minor geomagnetic unrest.
 
 ## 📈 Geomagnetic Conditions
 
-- **K-index:** Currently low (K=1.3), after a spike up to K=5 yesterday.
-- **Recent Trend:** Geomagnetic field was unsettled to active over the past 24 hours, but has now quieted significantly.
-- **Impact:** Ionospheric recovery is underway—expect improving HF conditions, especially on the higher bands. Aurora is low, so polar paths are stabilizing.
-
 {{.KIndexChart}}
+
+- The K-index has been mostly between 1 and 3 over the last 24 hours, with a slight uptick to 3.33 recently.
+- This level of geomagnetic activity is typical for unsettled conditions: expect some QSB (fading), especially on polar and high-latitude paths.
+- No geomagnetic storms, but keep an eye on real-time reports for sudden changes.
 
 ## 📡 Propagation Timeline & Technical Details
 
-The 24-hour propagation timeline shows the expected quality of HF propagation throughout the day. Current solar flux of 100 SFU provides adequate ionospheric ionization for reliable F-layer propagation. The quiet geomagnetic conditions (K=1.3) ensure stable ionospheric layers with minimal disturbance.
-
-**Technical Summary:**
-- **MUF (Maximum Usable Frequency):** Approximately 28-32 MHz at midday
-- **Critical Frequency (foF2):** ~8-10 MHz during peak hours
-- **D-Layer Absorption:** Moderate during daylight, minimal at night
-- **Ionospheric Stability:** High due to quiet geomagnetic conditions
-
 {{.PropagationTimelineChart}}
+
+- 24-hour overview shows peak propagation on upper HF bands during daylight, with lower bands (80m, 40m) improving rapidly after sunset.
+- Expect the best DX on 20m–10m from late morning through early evening.
+- Technical note: D-layer absorption is strong during the day on lower bands, but E and F-layer ionization is excellent for high bands.
 
 ## 🔮 3-Day Forecast
 
 {{.ForecastChart}}
 
-- **Solar Activity:** Solar flux expected to remain around 100, supporting continued HF openings.
-- **Geomagnetic Field:** Quiet to unsettled; no major storms forecast.
-- **Propagation Outlook:**  
-  - **HF:** Stable conditions expected, especially on 20m–15m. 10m/12m may see brief openings.
-  - **VHF/UHF:** No significant tropospheric or auroral enhancements expected.
-- **Advice:** Take advantage of the quiet geomagnetic field—today and the next two days are prime for HF operation!
+- **Solar Activity:** Solar flux and sunspot numbers are forecast to remain high, supporting continued strong HF conditions.
+- **Geomagnetic Field:** K-index may remain slightly elevated (2–3), so minor disturbances are possible, but no major storms expected.
+- **HF Bands:** 20m–10m will continue to offer excellent daytime DX. 80m and 40m will be best at night. Watch for surprise 10m/12m openings.
+- **Operator Advice:** Stay flexible—monitor real-time band conditions and be ready to switch bands as needed. Take advantage of grayline and mid-day high-band openings for rare DX. Digital modes will help you work weak or marginal signals, especially during minor geomagnetic upticks.
