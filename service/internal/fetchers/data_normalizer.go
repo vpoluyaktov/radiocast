@@ -1,7 +1,6 @@
 package fetchers
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -28,53 +27,63 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 		Timestamp: now,
 	}
 	
-	// Process K-index data from NOAA
+	// Process K-index data from NOAA - PRESERVE ALL HISTORICAL DATA
 	if len(kIndex) > 0 {
+		// Convert all K-index data to historical points
+		for _, kPoint := range kIndex {
+			if timestamp, err := parseTimeMulti(kPoint.TimeTag); err == nil {
+				data.HistoricalKIndex = append(data.HistoricalKIndex, models.KIndexPoint{
+					Timestamp:   timestamp,
+					KIndex:      kPoint.KpIndex,
+					EstimatedKp: kPoint.EstimatedKp,
+					Source:      kPoint.Source,
+				})
+			}
+		}
+		
+		// Set current values from latest data point
 		latest := kIndex[len(kIndex)-1]
 		data.GeomagData.KIndex = latest.KpIndex
 		data.GeomagData.KIndexDataSource = latest.Source
 		if latest.EstimatedKp > 0 {
 			data.GeomagData.KIndex = latest.EstimatedKp
 		}
-		logger.Debugf("DEBUG: Set K-Index source to: %s", data.GeomagData.KIndexDataSource)
+		logger.Debugf("DEBUG: Set K-Index source to: %s, preserved %d historical points", data.GeomagData.KIndexDataSource, len(data.HistoricalKIndex))
 		
-		// Determine geomagnetic activity level
-		if data.GeomagData.KIndex <= 2 {
-			data.GeomagData.GeomagActivity = "Quiet"
-		} else if data.GeomagData.KIndex <= 3 {
-			data.GeomagData.GeomagActivity = "Unsettled"
-		} else if data.GeomagData.KIndex <= 4 {
-			data.GeomagData.GeomagActivity = "Active"
-		} else {
-			data.GeomagData.GeomagActivity = "Storm"
-		}
+		// Let LLM determine geomagnetic activity level - no hardcoded classification
 	}
 	
-	// Process solar data from NOAA
+	// Process solar data from NOAA - PRESERVE ALL HISTORICAL DATA
 	if len(solar) > 0 {
+		// Convert all solar data to historical points
+		for _, sPoint := range solar {
+			if timestamp, err := parseTimeMulti(sPoint.TimeTag); err == nil {
+				data.HistoricalSolar = append(data.HistoricalSolar, models.SolarPoint{
+					Timestamp:         timestamp,
+					SolarFlux:         sPoint.SolarFlux,
+					SolarFluxAdjusted: sPoint.SolarFluxAdjusted,
+					SunspotNumber:     sPoint.SunspotNumber,
+					Source:            sPoint.Source,
+				})
+			}
+		}
+		
+		// Set current values from latest data point
 		latest := solar[len(solar)-1]
 		data.SolarData.SolarFluxIndex = latest.SolarFlux
+		data.SolarData.SolarFluxAdjusted = latest.SolarFluxAdjusted  // PRESERVE adjusted value
 		data.SolarData.SolarFluxDataSource = latest.Source
 		data.SolarData.SunspotNumber = int(latest.SunspotNumber)
 		data.SolarData.SunspotDataSource = latest.Source
-		logger.Debugf("DEBUG: Set Solar Flux source to: %s", data.SolarData.SolarFluxDataSource)
+		logger.Debugf("DEBUG: Set Solar Flux source to: %s, preserved %d historical points", data.SolarData.SolarFluxDataSource, len(data.HistoricalSolar))
 		logger.Debugf("DEBUG: Set Sunspot source to: %s", data.SolarData.SunspotDataSource)
 	}
 	
-	// Classify solar activity based on solar flux index
-	if data.SolarData.SolarFluxIndex > 0 {
-		if data.SolarData.SolarFluxIndex < 100 {
-			data.SolarData.SolarActivity = "Low"
-		} else if data.SolarData.SolarFluxIndex < 150 {
-			data.SolarData.SolarActivity = "Moderate"
-		} else {
-			data.SolarData.SolarActivity = "High"
-		}
-	}
+	// Let LLM classify solar activity based on solar flux index - no hardcoded classification
 	
-	// Process N0NBH data
+	// Process N0NBH data - EXTRACT ALL RICH FIELDS
 	if n0nbh != nil {
-		// Parse additional solar data
+		// Parse solar flux data
 		if flux, err := strconv.ParseFloat(n0nbh.SolarData.SolarFlux, 64); err == nil {
 			if data.SolarData.SolarFluxIndex == 0 {
 				data.SolarData.SolarFluxIndex = flux
@@ -83,14 +92,7 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 			data.SolarData.SolarFluxDataSource = n0nbh.Source
 			logger.Debugf("DEBUG: Set Solar Flux source to N0NBH: %s", data.SolarData.SolarFluxDataSource)
 			
-			// Re-classify solar activity after N0NBH data update
-			if data.SolarData.SolarFluxIndex < 100 {
-				data.SolarData.SolarActivity = "Low"
-			} else if data.SolarData.SolarFluxIndex < 150 {
-				data.SolarData.SolarActivity = "Moderate"
-			} else {
-				data.SolarData.SolarActivity = "High"
-			}
+			// Let LLM classify solar activity - no hardcoded re-classification
 		}
 		
 		// Parse A-index
@@ -106,6 +108,33 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 			data.SolarData.ProtonFluxDataSource = n0nbh.Source
 			logger.Debugf("DEBUG: Set Proton Flux source to: %s", data.SolarData.ProtonFluxDataSource)
 		}
+		
+		// EXTRACT RICH N0NBH FIELDS (previously lost)
+		data.SolarData.XRayFlux = n0nbh.SolarData.XRay
+		data.SolarData.ElectronFlux = n0nbh.SolarData.ElectronFlux
+		data.SolarData.HeliumLine = n0nbh.SolarData.HeliumLine
+		data.SolarData.Aurora = n0nbh.SolarData.Aurora
+		
+		// Parse solar wind speed (previously lost)
+		if n0nbh.SolarData.SolarWind != "" {
+			if solarWind, err := strconv.ParseFloat(n0nbh.SolarData.SolarWind, 64); err == nil {
+				data.SolarData.SolarWindSpeed = solarWind
+				data.SolarData.SolarWindDataSource = n0nbh.Source
+				logger.Debugf("DEBUG: Set Solar Wind source to: %s", data.SolarData.SolarWindDataSource)
+			}
+		}
+		
+		// Parse magnetic field (previously lost)
+		if n0nbh.SolarData.MagneticField != "" {
+			if magField, err := strconv.ParseFloat(n0nbh.SolarData.MagneticField, 64); err == nil {
+				data.GeomagData.MagneticField = magField
+				data.GeomagData.MagneticFieldDataSource = n0nbh.Source
+				logger.Debugf("DEBUG: Set Magnetic Field source to: %s", data.GeomagData.MagneticFieldDataSource)
+			}
+		}
+		
+		// Extract latitude degree (previously lost)
+		data.GeomagData.LatDegree = n0nbh.SolarData.LatDegree
 		
 		// Process band conditions
 		data.BandData.BandDataSource = n0nbh.Source
@@ -133,7 +162,7 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 		}
 	}
 	
-	// Process SIDC events
+	// Process SIDC events - pass through without classification
 	for _, item := range sidc {
 		if item.PublishedParsed != nil && item.PublishedParsed.After(now.Add(-24*time.Hour)) {
 			event := models.SourceEvent{
@@ -141,27 +170,17 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 				EventType:   "Solar Event",
 				Description: item.Title,
 				Timestamp:   *item.PublishedParsed,
-				Impact:      "Variable", // Would need more parsing to determine
+				Impact:      "", // Let LLM determine impact
+				Severity:    "", // Let LLM determine severity
 			}
 			
-			// Simple severity classification based on keywords
-			title := strings.ToLower(item.Title)
-			if strings.Contains(title, "x-class") || strings.Contains(title, "extreme") {
-				event.Severity = "Extreme"
-			} else if strings.Contains(title, "m-class") || strings.Contains(title, "major") {
-				event.Severity = "High"
-			} else if strings.Contains(title, "c-class") || strings.Contains(title, "moderate") {
-				event.Severity = "Moderate"
-			} else {
-				event.Severity = "Low"
-			}
+			// Let LLM classify severity and impact based on event description
 			
 			data.SourceEvents = append(data.SourceEvents, event)
 		}
 	}
 	
-	// Generate basic forecast
-	data.Forecast = n.GenerateBasicForecast(data)
+	// Let LLM generate forecast - no hardcoded forecast logic
 	
 	// Debug: Log all source attributions before returning
 	logger.Debugf("DEBUG: Final source attribution - Solar Flux: '%s', Sunspot: '%s', K-Index: '%s', A-Index: '%s', Band Data: '%s'", 
@@ -174,56 +193,24 @@ func (n *DataNormalizer) NormalizeData(kIndex []models.NOAAKIndexResponse, solar
 	return data
 }
 
-// GenerateBasicForecast creates a basic forecast based on current conditions
-func (n *DataNormalizer) GenerateBasicForecast(data *models.PropagationData) models.ForecastData {
-	forecast := models.ForecastData{
-		Today: models.DayForecast{
-			Date: time.Now(),
-		},
-		Tomorrow: models.DayForecast{
-			Date: time.Now().Add(24 * time.Hour),
-		},
-		DayAfter: models.DayForecast{
-			Date: time.Now().Add(48 * time.Hour),
-		},
+// Removed GenerateBasicForecast - let LLM handle all forecasting and analysis
+
+// parseTimeMulti attempts to parse time strings with multiple possible layouts
+func parseTimeMulti(s string) (time.Time, error) {
+	layouts := []string{
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04:05Z07:00",
+		"2006-01-02 15:04:05.000",
+		"2006-01-02 15:04:05",
+		time.RFC3339,
 	}
-	
-	// Basic forecast logic based on current conditions
-	kIndex := data.GeomagData.KIndex
-	solarFlux := data.SolarData.SolarFluxIndex
-	
-	// Determine HF conditions
-	var hfConditions string
-	if kIndex <= 2 && solarFlux > 120 {
-		hfConditions = "Good to Excellent"
-		forecast.Today.BestBands = []string{"20m", "17m", "15m", "12m", "10m"}
-	} else if kIndex <= 3 && solarFlux > 100 {
-		hfConditions = "Fair to Good"
-		forecast.Today.BestBands = []string{"40m", "20m", "17m"}
-	} else {
-		hfConditions = "Poor to Fair"
-		forecast.Today.BestBands = []string{"80m", "40m"}
-		forecast.Today.WorstBands = []string{"15m", "12m", "10m"}
+	var last error
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, s); err == nil { 
+			return t, nil 
+		} else { 
+			last = err 
+		}
 	}
-	
-	forecast.Today.HFConditions = hfConditions
-	forecast.Tomorrow.HFConditions = hfConditions // Simplified
-	forecast.DayAfter.HFConditions = hfConditions
-	
-	// K-index forecast
-	forecast.Today.KIndexForecast = fmt.Sprintf("%.1f", kIndex)
-	forecast.Tomorrow.KIndexForecast = fmt.Sprintf("%.1f-%.1f", kIndex-0.5, kIndex+0.5)
-	forecast.DayAfter.KIndexForecast = fmt.Sprintf("%.1f-%.1f", kIndex-1, kIndex+1)
-	
-	// General outlook
-	if kIndex <= 2 {
-		forecast.Outlook = "Stable geomagnetic conditions expected. Good propagation likely."
-	} else if kIndex <= 4 {
-		forecast.Outlook = "Unsettled to active conditions. Variable propagation expected."
-	} else {
-		forecast.Outlook = "Geomagnetic storm conditions. Poor HF propagation likely."
-		forecast.Warnings = append(forecast.Warnings, "Geomagnetic storm in progress - expect poor HF conditions")
-	}
-	
-	return forecast
+	return time.Time{}, last
 }

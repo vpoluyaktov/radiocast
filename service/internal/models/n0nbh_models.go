@@ -43,6 +43,11 @@ type N0NBHResponse struct {
 		Aurora        string `json:"aurora"`
 		NormalizationTime string `json:"normalization"`
 		LatestSWPCReport  string `json:"latestswpcreport"`
+		// Rich fields from XML (previously lost)
+		XRay          string `json:"xray"`
+		SolarWind     string `json:"solarwind"`
+		MagneticField string `json:"magneticfield"`
+		LatDegree     string `json:"latdegree"`
 	} `json:"solardata"`
 	Time   string `json:"time"`
 	Source string `json:"source"`
