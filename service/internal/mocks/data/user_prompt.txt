@@ -1,4 +1,4 @@
-## Comprehensive Solar and Space Weather Data (as of 2025-09-22 19:55 UTC)
+## Comprehensive Solar and Space Weather Data (as of 2025-09-23 12:06 UTC)
 
 Please analyze the following comprehensive space weather data and generate a detailed radio propagation report. The data includes:
 - Raw source data from NOAA, N0NBH, and SIDC
@@ -10,42 +10,6 @@ Please analyze the following comprehensive space weather data and generate a det
 ### NOAA K-Index Data (Last 24 Hours, 1-Hour Intervals):
 ```json
 [
-  {
-    "time_tag": "2025-09-19T21:00:00",
-    "kp_index": 0.67,
-    "estimated_kp": 0.67,
-    "source": "NOAA SWPC"
-  },
-  {
-    "time_tag": "2025-09-20T00:00:00",
-    "kp_index": 1.67,
-    "estimated_kp": 1.67,
-    "source": "NOAA SWPC"
-  },
-  {
-    "time_tag": "2025-09-20T03:00:00",
-    "kp_index": 2,
-    "estimated_kp": 2,
-    "source": "NOAA SWPC"
-  },
-  {
-    "time_tag": "2025-09-20T06:00:00",
-    "kp_index": 2,
-    "estimated_kp": 2,
-    "source": "NOAA SWPC"
-  },
-  {
-    "time_tag": "2025-09-20T09:00:00",
-    "kp_index": 1.33,
-    "estimated_kp": 1.33,
-    "source": "NOAA SWPC"
-  },
-  {
-    "time_tag": "2025-09-20T12:00:00",
-    "kp_index": 0.67,
-    "estimated_kp": 0.67,
-    "source": "NOAA SWPC"
-  },
   {
     "time_tag": "2025-09-20T15:00:00",
     "kp_index": 0.33,
@@ -159,6 +123,42 @@ Please analyze the following comprehensive space weather data and generate a det
     "kp_index": 3.33,
     "estimated_kp": 3.33,
     "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-23T00:00:00",
+    "kp_index": 3.33,
+    "estimated_kp": 3.33,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-23T03:00:00",
+    "kp_index": 2.67,
+    "estimated_kp": 2.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-23T06:00:00",
+    "kp_index": 2.67,
+    "estimated_kp": 2.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-23T09:00:00",
+    "kp_index": 2.67,
+    "estimated_kp": 2.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-23T12:00:00",
+    "kp_index": 3.67,
+    "estimated_kp": 3.67,
+    "source": "NOAA SWPC"
+  },
+  {
+    "time_tag": "2025-09-23T15:00:00",
+    "kp_index": 3,
+    "estimated_kp": 3,
+    "source": "NOAA SWPC"
   }
 ]
 ```
@@ -219,17 +219,17 @@ Please analyze the following comprehensive space weather data and generate a det
     "aindex": " 13",
     "kindex": " 3",
     "kindexnt": "No Report",
-    "sunspots": "152",
-    "heliumline": "146.8",
-    "protonflux": "40",
-    "electonflux": "1670",
-    "aurora": " 3",
+    "sunspots": "174",
+    "heliumline": "147.0",
+    "protonflux": "14",
+    "electonflux": "1530",
+    "aurora": " 1",
     "normalization": "1.99",
     "latestswpcreport": "",
     "xray": "C1.3",
-    "solarwind": "547.7",
-    "magneticfield": " -0.1",
-    "latdegree": "65.6"
+    "solarwind": "571.7",
+    "magneticfield": "  2.5",
+    "latdegree": "67.5"
   },
   "time": "",
   "source": "N0NBH",
@@ -335,7 +335,7 @@ Please analyze the following comprehensive space weather data and generate a det
 ### Processed/Normalized Data (Historical Time Series + Enriched Fields):
 ```json
 {
-  "timestamp": "2025-09-22T19:55:24.538376062-07:00",
+  "timestamp": "2025-09-23T12:06:04.033527406-07:00",
   "solar_data": {
     "solar_flux_index": 146.67,
     "solar_flux_adjusted": 146.67,
@@ -344,26 +344,26 @@ Please analyze the following comprehensive space weather data and generate a det
     "sunspot_data_source": "NOAA SWPC",
     "solar_activity": "",
     "xray_flux": "C1.3",
-    "solar_wind_speed": 547.7,
+    "solar_wind_speed": 571.7,
     "solar_wind_data_source": "N0NBH",
-    "proton_flux": 40,
+    "proton_flux": 14,
     "proton_flux_data_source": "N0NBH",
-    "electron_flux": "1670",
-    "helium_line": "146.8",
-    "aurora": " 3",
+    "electron_flux": "1530",
+    "helium_line": "147.0",
+    "aurora": " 1",
     "flare_activity": "",
     "solar_cycle_phase": "",
     "last_major_flare": ""
   },
   "geomag_data": {
-    "k_index": 3.33,
+    "k_index": 3,
     "k_index_data_source": "NOAA SWPC",
     "a_index": 0,
     "a_index_data_source": "",
     "geomag_activity": "",
     "magnetic_field": 0,
     "magnetic_field_data_source": "",
-    "lat_degree": "65.6",
+    "lat_degree": "67.5",
     "geomag_conditions": ""
   },
   "band_data": {
@@ -438,42 +438,6 @@ Please analyze the following comprehensive space weather data and generate a det
   },
   "source_events": null,
   "historical_k_index": [
-    {
-      "timestamp": "2025-09-19T21:00:00Z",
-      "k_index": 0.67,
-      "estimated_kp": 0.67,
-      "source": "NOAA SWPC"
-    },
-    {
-      "timestamp": "2025-09-20T00:00:00Z",
-      "k_index": 1.67,
-      "estimated_kp": 1.67,
-      "source": "NOAA SWPC"
-    },
-    {
-      "timestamp": "2025-09-20T03:00:00Z",
-      "k_index": 2,
-      "estimated_kp": 2,
-      "source": "NOAA SWPC"
-    },
-    {
-      "timestamp": "2025-09-20T06:00:00Z",
-      "k_index": 2,
-      "estimated_kp": 2,
-      "source": "NOAA SWPC"
-    },
-    {
-      "timestamp": "2025-09-20T09:00:00Z",
-      "k_index": 1.33,
-      "estimated_kp": 1.33,
-      "source": "NOAA SWPC"
-    },
-    {
-      "timestamp": "2025-09-20T12:00:00Z",
-      "k_index": 0.67,
-      "estimated_kp": 0.67,
-      "source": "NOAA SWPC"
-    },
     {
       "timestamp": "2025-09-20T15:00:00Z",
       "k_index": 0.33,
@@ -586,6 +550,42 @@ Please analyze the following comprehensive space weather data and generate a det
       "timestamp": "2025-09-22T21:00:00Z",
       "k_index": 3.33,
       "estimated_kp": 3.33,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-23T00:00:00Z",
+      "k_index": 3.33,
+      "estimated_kp": 3.33,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-23T03:00:00Z",
+      "k_index": 2.67,
+      "estimated_kp": 2.67,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-23T06:00:00Z",
+      "k_index": 2.67,
+      "estimated_kp": 2.67,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-23T09:00:00Z",
+      "k_index": 2.67,
+      "estimated_kp": 2.67,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-23T12:00:00Z",
+      "k_index": 3.67,
+      "estimated_kp": 3.67,
+      "source": "NOAA SWPC"
+    },
+    {
+      "timestamp": "2025-09-23T15:00:00Z",
+      "k_index": 3,
+      "estimated_kp": 3,
       "source": "NOAA SWPC"
     }
   ],
