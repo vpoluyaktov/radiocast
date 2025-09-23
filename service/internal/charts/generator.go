@@ -27,10 +27,6 @@ func (cg *ChartGenerator) GenerateEChartsSnippetsWithSources(data *models.Propag
     if sn, err := cg.generateKIndexTrendSnippet(data, sourceData); err == nil {
         snippets = append(snippets, sn)
     }
-    // Band Conditions (Heatmap)
-    if sn, err := cg.generateBandConditionsSnippet(data); err == nil {
-        snippets = append(snippets, sn)
-    }
     // Forecast (Bar)
     if sn, err := cg.generateForecastSnippet(data); err == nil {
         snippets = append(snippets, sn)

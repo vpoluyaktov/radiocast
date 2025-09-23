@@ -54,7 +54,6 @@ type TemplateData struct {
 	SunGif                   template.HTML
 	GaugePanelChart          template.HTML
 	KIndexGaugeChart         template.HTML
-	BandConditionsChart      template.HTML
 	KIndexChart              template.HTML
 	ForecastChart            template.HTML
 	PropagationTimelineChart template.HTML
@@ -87,7 +86,6 @@ func (h *HTMLBuilder) GenerateChartData(data *models.PropagationData, sourceData
 	chartData := &TemplateData{
 		GaugePanelChart:          template.HTML(""),
 		KIndexGaugeChart:         template.HTML(""),
-		BandConditionsChart:      template.HTML(""),
 		KIndexChart:              template.HTML(""),
 		ForecastChart:            template.HTML(""),
 		PropagationTimelineChart: template.HTML(""),
@@ -100,8 +98,6 @@ func (h *HTMLBuilder) GenerateChartData(data *models.PropagationData, sourceData
 			chartData.GaugePanelChart = template.HTML(snippet.HTML)
 		case "chart-k-index-gauge":
 			chartData.KIndexGaugeChart = template.HTML(snippet.HTML)
-		case "chart-band-conditions":
-			chartData.BandConditionsChart = template.HTML(snippet.HTML)
 		case "chart-geomagnetic-conditions":
 			chartData.KIndexChart = template.HTML(snippet.HTML)
 		case "chart-forecast":
@@ -140,7 +136,6 @@ func (h *HTMLBuilder) BuildCompleteHTML(
 		SunGif:                   sunGifHTML,
 		GaugePanelChart:          chartData.GaugePanelChart,
 		KIndexGaugeChart:         chartData.KIndexGaugeChart,
-		BandConditionsChart:      chartData.BandConditionsChart,
 		KIndexChart:              chartData.KIndexChart,
 		ForecastChart:            chartData.ForecastChart,
 		PropagationTimelineChart: chartData.PropagationTimelineChart,
@@ -215,7 +210,6 @@ func (h *HTMLBuilder) ProcessMarkdownWithPlaceholders(
 		SunGif                   template.HTML
 		GaugePanelChart          template.HTML
 		KIndexGaugeChart         template.HTML
-		BandConditionsChart      template.HTML
 		KIndexChart              template.HTML
 		ForecastChart            template.HTML
 		PropagationTimelineChart template.HTML
@@ -223,7 +217,6 @@ func (h *HTMLBuilder) ProcessMarkdownWithPlaceholders(
 		SunGif:                   sunGifHTML,
 		GaugePanelChart:          chartData.GaugePanelChart,
 		KIndexGaugeChart:         chartData.KIndexGaugeChart,
-		BandConditionsChart:      chartData.BandConditionsChart,
 		KIndexChart:              chartData.KIndexChart,
 		ForecastChart:            chartData.ForecastChart,
 		PropagationTimelineChart: chartData.PropagationTimelineChart,

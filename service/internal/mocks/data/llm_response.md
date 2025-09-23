@@ -42,8 +42,6 @@ HF propagation is looking lively today thanks to robust solar activity: solar fl
 | 12m   | 🟠 Fair        | 🟡 Good        | 🟠 Fair        | 🔴 Poor        |
 | 10m   | 🟠 Fair        | 🟡 Good        | 🟠 Fair        | 🔴 Poor        |
 
-{{.BandConditionsChart}}
-
 **Analysis:**  
 Daytime is dominated by strong conditions on 20m, 17m, and 15m, with 12m and 10m also showing good potential for DX, especially around local noon. 80m and 40m are largely closed during the day but come alive after sunset, making them ideal for nighttime ragchews and regional nets. 30m offers reliable all-day performance for both DX and domestic contacts.
 
