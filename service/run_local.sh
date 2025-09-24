@@ -93,6 +93,7 @@ show_usage() {
     echo ""
     echo "Commands:"
     echo "  server      Run complete local test (LLM + HTML generation)"
+    echo "  stop        Stop running server process"
     echo "  debug-apis  Check all external API endpoints"
     echo "  unit-tests  Run Go unit tests"
     echo "  help        Show this help message"
@@ -109,6 +110,7 @@ show_usage() {
     echo "  export OPENAI_API_KEY='sk-your-key-here'"
     echo "  $0 server"
     echo "  $0 server --mockup    # Fast testing with mock data"
+    echo "  $0 stop               # Stop running server"
 }
 
 check_requirements() {
@@ -266,11 +268,74 @@ run_unit_tests() {
     fi
 }
 
+stop_server() {
+    print_header "Stopping Radiocast Server"
+    
+    local PORT="${PORT:-8981}"
+    
+    print_status "Looking for process on port $PORT..."
+    
+    # Find process listening on the port
+    EXISTING_PID=$(lsof -ti:$PORT 2>/dev/null)
+    
+    if [ -z "$EXISTING_PID" ]; then
+        print_warning "No process found running on port $PORT"
+        return 0
+    fi
+    
+    print_status "Found process PID: $EXISTING_PID on port $PORT"
+    
+    # Get process details for confirmation
+    PROCESS_INFO=$(ps -p $EXISTING_PID -o pid,ppid,cmd --no-headers 2>/dev/null)
+    if [ ! -z "$PROCESS_INFO" ]; then
+        print_status "Process details: $PROCESS_INFO"
+    fi
+    
+    # Graceful termination first
+    print_status "Sending TERM signal to process $EXISTING_PID..."
+    if kill -TERM $EXISTING_PID 2>/dev/null; then
+        print_status "TERM signal sent, waiting for graceful shutdown..."
+        
+        # Wait up to 5 seconds for graceful shutdown
+        for i in {1..5}; do
+            if ! kill -0 $EXISTING_PID 2>/dev/null; then
+                print_success "Process $EXISTING_PID terminated gracefully"
+                return 0
+            fi
+            sleep 1
+            print_status "Waiting... ($i/5)"
+        done
+        
+        # Force kill if still running
+        if kill -0 $EXISTING_PID 2>/dev/null; then
+            print_warning "Process still running, sending KILL signal..."
+            if kill -KILL $EXISTING_PID 2>/dev/null; then
+                sleep 1
+                if ! kill -0 $EXISTING_PID 2>/dev/null; then
+                    print_success "Process $EXISTING_PID force killed"
+                else
+                    print_error "Failed to kill process $EXISTING_PID"
+                    return 1
+                fi
+            else
+                print_error "Failed to send KILL signal to process $EXISTING_PID"
+                return 1
+            fi
+        fi
+    else
+        print_error "Failed to send TERM signal to process $EXISTING_PID"
+        return 1
+    fi
+}
+
 # Main script logic
 case "${1:-help}" in
     "server")
         check_requirements "$1"
         run_server "$1" "$2"
+        ;;
+    "stop")
+        stop_server
         ;;
     "debug-apis")
         check_requirements "$1"
