@@ -5,29 +5,32 @@
 }
 
 .theory-content {
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.9);
     padding: 20px;
     border-radius: 8px;
     margin: 15px 0;
-    border-left: 4px solid #007bff;
 }
 
 .band-theory {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.9);
     padding: 20px;
     border-radius: 8px;
     margin: 20px 0;
 }
 
 .band-theory h3 {
-    color: #007bff;
-    margin-top: 20px;
-    margin-bottom: 10px;
+    margin-top: 4px !important;
+    margin-bottom: 2px !important;
     font-size: 1.2em;
 }
 
 .band-theory h3:first-child {
-    margin-top: 0;
+    margin-top: 0 !important;
+}
+
+.band-theory p {
+    margin: 2px 0 8px 0 !important;
+    line-height: 1.3 !important;
 }
 
 .feature-preview {
@@ -44,7 +47,7 @@
 }
 
 .coming-soon {
-    background: rgba(255, 193, 7, 0.1);
+    background: rgba(255, 255, 255, 0.9);
     border: 2px solid rgba(255, 193, 7, 0.3);
     border-radius: 8px;
     padding: 20px;
@@ -56,64 +59,78 @@
     margin-top: 0;
 }
 
-/* Theory page content styling */
-.main-content {
+/* Theory page content styling - matching report page */
+.container {
     max-width: 1200px;
     margin: 0 auto;
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.3);
     border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     overflow: hidden;
 }
 
-.main-content .content {
-    padding: 30px 40px;
+/* Header section styling - matching report page */
+.header {
+    background: rgba(255, 255, 255, 0.25);
+    color: #2c3e50;
+    padding: 40px;
+    text-align: center;
+    border-bottom: 1px solid rgba(0, 123, 255, 0.1);
+}
+
+.header h2 {
+    border: none !important;
+    border-left: none !important;
+    padding-left: 0 !important;
+    color: #2c3e50;
+    margin: 10px 0;
+    font-size: 1.3em;
+    font-weight: 400;
+}
+
+.content {
+    padding: 40px;
+    position: relative;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
 }
 
 /* .main-content h1 styles now handled by common.css */
 
-.main-content h2 {
-    color: #007bff;
-    border-left: 4px solid #007bff;
-    padding-left: 15px;
-    margin: 30px 0 20px 0;
-    font-size: 1.4em;
-    font-weight: 600;
-}
+/* h2 styling now handled by common.css */
 
-.main-content h3 {
+.content h3 {
     color: #0056b3;
     margin: 25px 0 15px 0;
     font-size: 1.2em;
     font-weight: 600;
 }
 
-.main-content p {
+.content p {
     margin: 15px 0;
     line-height: 1.6;
     color: #444;
 }
 
-.main-content ul, .main-content ol {
+.content ul, .content ol {
     margin: 15px 0;
     padding-left: 25px;
 }
 
-.main-content li {
+.content li {
     margin: 8px 0;
     line-height: 1.5;
     color: #444;
 }
 
-.main-content strong {
-    color: #007bff;
-    font-weight: 600;
-}
+/* strong styling now uses default browser styling to match report page */
 
-.main-content em {
+.content em {
     color: #0056b3;
     font-style: italic;
 }
@@ -122,7 +139,7 @@
 .impact-mapping {
     margin: 20px 0;
     padding: 15px;
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.9);
     border-radius: 8px;
     border: 1px solid rgba(0, 123, 255, 0.2);
 }
@@ -130,8 +147,8 @@
 .impact-item {
     display: flex;
     align-items: center;
-    margin: 12px 0;
-    padding: 10px;
+    margin: 2px 0;
+    padding: 6px;
     border-radius: 6px;
     transition: background-color 0.2s ease;
 }
@@ -147,25 +164,7 @@
     text-align: center;
 }
 
-.impact-item.excellent {
-    border-left: 4px solid #28a745;
-}
-
-.impact-item.good {
-    border-left: 4px solid #ffc107;
-}
-
-.impact-item.fair {
-    border-left: 4px solid #fd7e14;
-}
-
-.impact-item.poor {
-    border-left: 4px solid #dc3545;
-}
-
-.impact-item.closed {
-    border-left: 4px solid #6f42c1;
-}
+/* Removed colored borders from impact items for cleaner appearance */
 
 .theory-tip {
     background: rgba(23, 162, 184, 0.1);
@@ -197,22 +196,20 @@
 
 /* Responsive adjustments for theory page */
 @media (max-width: 768px) {
-    .main-content {
+    .container {
         margin: 0;
         border-radius: 0;
     }
     
-    .main-content .content {
+    .content {
         padding: 20px;
     }
     
     /* .main-content h1 responsive styles now handled by common.css */
     
-    .main-content h2 {
-        font-size: 1.3em;
-    }
+    /* h2 responsive styles now handled by common.css */
     
-    .main-content h3 {
+    .content h3 {
         font-size: 1.1em;
     }
     
@@ -221,8 +218,8 @@
     }
     
     .impact-item {
-        padding: 8px;
-        margin: 10px 0;
+        padding: 4px;
+        margin: 1px 0;
     }
     
     .impact-indicator {
@@ -232,18 +229,15 @@
 }
 
 @media (max-width: 480px) {
-    .main-content .content {
+    .content {
         padding: 15px 10px;
     }
     
     /* .main-content h1 responsive styles now handled by common.css */
     
-    .main-content h2 {
-        font-size: 1.2em;
-        padding-left: 10px;
-    }
+    /* h2 responsive styles now handled by common.css */
     
-    .main-content h3 {
+    .content h3 {
         font-size: 1.0em;
     }
     
@@ -253,8 +247,8 @@
     }
     
     .impact-item {
-        padding: 6px;
-        margin: 8px 0;
+        padding: 3px;
+        margin: 1px 0;
         font-size: 0.9em;
     }
     
