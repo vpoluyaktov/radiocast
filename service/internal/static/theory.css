@@ -76,7 +76,7 @@
 .header {
     background: rgba(255, 255, 255, 0.25);
     color: #2c3e50;
-    padding: 40px;
+    padding: 20px 40px;
     text-align: center;
     border-bottom: 1px solid rgba(0, 123, 255, 0.1);
 }
@@ -201,6 +201,10 @@
         border-radius: 0;
     }
     
+    .header {
+        padding: 15px 20px;
+    }
+    
     .content {
         padding: 20px;
     }
@@ -214,21 +218,45 @@
     }
     
     .impact-mapping {
-        padding: 10px;
+        padding: 12px;
+        margin: 15px 0;
     }
     
     .impact-item {
-        padding: 4px;
-        margin: 1px 0;
+        padding: 12px;
+        margin: 6px 0;
+        flex-direction: column;
+        align-items: flex-start;
+        background: rgba(255, 255, 255, 0.4);
+        border-radius: 6px;
+        line-height: 1.4;
+    }
+    
+    .impact-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 6px;
+        font-weight: 600;
     }
     
     .impact-indicator {
         margin-right: 8px;
-        min-width: 18px;
+        font-size: 1.1em;
+        flex-shrink: 0;
+    }
+    
+    .impact-description {
+        margin-left: 0;
+        font-weight: normal;
+        line-height: 1.4;
     }
 }
 
 @media (max-width: 480px) {
+    .header {
+        padding: 10px 15px;
+    }
+    
     .content {
         padding: 15px 10px;
     }
@@ -242,20 +270,40 @@
     }
     
     .impact-mapping {
-        padding: 8px;
-        margin: 15px 0;
+        padding: 10px;
+        margin: 12px 0;
     }
     
     .impact-item {
-        padding: 3px;
-        margin: 1px 0;
-        font-size: 0.9em;
+        padding: 14px;
+        margin: 8px 0;
+        font-size: 0.95em;
+        flex-direction: column;
+        align-items: flex-start;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 8px;
+        line-height: 1.5;
+    }
+    
+    .impact-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        font-weight: 600;
+        font-size: 1.0em;
     }
     
     .impact-indicator {
-        margin-right: 6px;
-        min-width: 16px;
-        font-size: 1.0em;
+        margin-right: 10px;
+        font-size: 1.2em;
+        flex-shrink: 0;
+    }
+    
+    .impact-description {
+        margin-left: 0;
+        font-weight: normal;
+        line-height: 1.5;
+        font-size: 0.95em;
     }
     
     .theory-tip {
