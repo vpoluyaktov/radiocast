@@ -342,6 +342,47 @@ func (s *Server) HandleTheory(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// HandleAbout serves the about page
+func (s *Server) HandleAbout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "text/html")
+	
+	// Load and parse the about template
+	templatePath := filepath.Join("internal", "templates", "about_template.html")
+	templateContent, err := os.ReadFile(templatePath)
+	if err != nil {
+		logger.Error("Failed to load about template", err)
+		http.Error(w, "About page template not found", http.StatusInternalServerError)
+		return
+	}
+	
+	// Parse template
+	tmpl, err := template.New("about").Parse(string(templateContent))
+	if err != nil {
+		logger.Error("Failed to parse about template", err)
+		http.Error(w, "About page template error", http.StatusInternalServerError)
+		return
+	}
+	
+	// Prepare template data
+	data := struct {
+		Version string
+	}{
+		Version: config.GetVersion(),
+	}
+	
+	// Execute template
+	if err := tmpl.Execute(w, data); err != nil {
+		logger.Error("Failed to execute about template", err)
+		http.Error(w, "About page render error", http.StatusInternalServerError)
+		return
+	}
+}
+
 // HandleStaticFiles serves static files (CSS, images, etc.) from the static directory
 func (s *Server) HandleStaticFiles(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {

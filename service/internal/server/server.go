@@ -93,6 +93,7 @@ func (s *Server) SetupRoutes() *http.ServeMux {
 	// Handle static pages
 	mux.HandleFunc("/history", s.HandleHistory)
 	mux.HandleFunc("/theory", s.HandleTheory)
+	mux.HandleFunc("/about", s.HandleAbout)
 	mux.HandleFunc("/static/", s.HandleStaticFiles)
 	
 	// Handle root path last (catch-all)
@@ -153,6 +154,18 @@ func (s *Server) initializeStaticAssets(ctx context.Context) error {
 		return fmt.Errorf("failed to store theory page: %w", err)
 	}
 	logger.Debugf("Theory page uploaded successfully")
+	
+	// Store about page
+	aboutPath := filepath.Join(templatesDir, "about_template.html")
+	aboutData, err := os.ReadFile(aboutPath)
+	if err != nil {
+		return fmt.Errorf("failed to read about template: %w", err)
+	}
+	// Store as a regular file in about folder
+	if err := s.storeHTMLPage(ctx, aboutData, "about/index.html"); err != nil {
+		return fmt.Errorf("failed to store about page: %w", err)
+	}
+	logger.Debugf("About page uploaded successfully")
 	
 	return nil
 }

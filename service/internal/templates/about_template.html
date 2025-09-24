@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Radiocast Service</title>
+    <link rel="stylesheet" href="/static/common.css">
+    <link rel="stylesheet" href="/static/about.css">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+<body style="background-image: url('/static/background.png'); background-size: contain; background-repeat: repeat-y; background-position: top center;">
+    
+    <!-- Navigation Header -->
+    <div class="nav-header">
+        <button class="nav-button hamburger-menu" id="hamburgerMenu" title="Main Menu">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
+        <button class="nav-button refresh-button" id="refreshButton" title="Go to Latest Report">
+            <svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M21 21v-5h-5"/>
+            </svg>
+        </button>
+        <div class="nav-dropdown" id="navDropdown">
+            <a href="/" class="nav-dropdown-item">📊 Latest Report</a>
+            <a href="/history" class="nav-dropdown-item">📅 Reports History</a>
+            <a href="/theory" class="nav-dropdown-item">📚 Radio Propagation Theory</a>
+            <a href="/about" class="nav-dropdown-item active">ℹ️ About</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>ℹ️ About Radiocast</h1>
+        </div>
+        <div class="content">
+            <div class="about-section">
+                <h2>🎯 Project Purpose</h2>
+                <div class="about-content">
+                    <p>Radiocast delivers daily, easy-to-read radio propagation reports powered by real-time solar and space weather data. This service helps amateur radio operators make informed decisions about frequency selection, antenna planning, and optimal operating times.</p>
+                    
+                    <p>The goal is to transform complex space weather data into actionable insights that amateur radio operators can immediately use to improve their communication success rates, whether for casual contacts, DXing, or contest operations.</p>
+                </div>
+                
+                <h2>🤖 How Reports Are Created</h2>
+                <div class="about-content">
+                    <p>Radiocast combines real-time space weather data with advanced AI analysis to create comprehensive propagation reports:</p>
+                    
+                    <h3>Data Collection</h3>
+                    <p>The service continuously monitors multiple authoritative sources:</p>
+                    <ul>
+                        <li><strong>NOAA Space Weather Prediction Center (SWPC)</strong> - Solar flux, geomagnetic indices, space weather alerts</li>
+                        <li><strong>N0NBH Solar Data</strong> - Real-time solar activity measurements and predictions</li>
+                        <li><strong>SIDC Sunspot Data</strong> - International sunspot number and solar cycle information</li>
+                        <li><strong>NASA Helioviewer</strong> - Current solar imagery for visual context</li>
+                    </ul>
+                    
+                    <h3>AI-Powered Analysis</h3>
+                    <p>Raw space weather data is processed and analyzed using <strong>OpenAI's ChatGPT-4.1</strong>, which:</p>
+                    <ul>
+                        <li>Interprets complex space weather measurements and trends</li>
+                        <li>Correlates multiple data sources to assess propagation conditions</li>
+                        <li>Generates band-specific recommendations and timing guidance</li>
+                        <li>Creates easy-to-understand explanations of technical phenomena</li>
+                        <li>Provides actionable advice tailored to amateur radio operations</li>
+                    </ul>
+                    
+                    <h3>Report Generation</h3>
+                    <p>The AI analysis is combined with real-time data visualizations, charts, and formatted into comprehensive HTML reports that are automatically updated throughout the day to reflect changing conditions.</p>
+                </div>
+                
+                <h2>👨‍💻 About Me</h2>
+                <div class="about-content">
+                    <p>Hi! I'm <strong>Vlad</strong>, a Seattle-based professional software developer and amateur radio operator with callsign <strong>KK7UNL</strong>.</p>
+                    
+                    <p>I developed Radiocast as a side project to help the amateur radio community by making space weather data more accessible and actionable. As both a software engineer and ham radio operator, I understand the challenges of interpreting complex propagation data and wanted to create a tool that bridges the gap between raw scientific data and practical operating decisions.</p>
+                    
+                    <p>My background includes extensive experience in:</p>
+                    <ul>
+                        <li>Full-stack web development and cloud services</li>
+                        <li>Data processing and API integration</li>
+                        <li>Amateur radio operations and propagation theory</li>
+                        <li>Open source software development</li>
+                    </ul>
+                    
+                    <p>When I'm not coding or working radio, you can find me exploring the Pacific Northwest or experimenting with new antenna designs.</p>
+                </div>
+                
+                <h2>🚀 My Other Projects</h2>
+                <div class="about-content">
+                    <p>Here are some of my other open source projects that might interest the technical community:</p>
+                    
+                    <h3>Developer Tools</h3>
+                    <p><strong><a href="https://github.com/vpoluyaktov/github_developer_profiler" target="_blank" rel="noopener noreferrer">GitHub Developer Profiler</a></strong> - A comprehensive assessment tool that analyzes developers' public repositories to generate detailed insights about coding skills, technical expertise, and development patterns.</p>
+                    
+                    <p><strong><a href="https://github.com/vpoluyaktov/github_evaluation_tool" target="_blank" rel="noopener noreferrer">GitHub Evaluation Tool</a></strong> - Developer assessment tool designed for OpenWeb UI integration.</p>
+                    
+                    <h3>Amateur Radio & Morse Code</h3>
+                    <p><strong><a href="https://github.com/vpoluyaktov/cw-gen" target="_blank" rel="noopener noreferrer">CW Generator</a></strong> - Command-line tool to convert text into Morse code audio files, perfect for CW practice and training.</p>
+                    
+                    <p><strong><a href="https://github.com/vpoluyaktov/morse-keyboard-pi" target="_blank" rel="noopener noreferrer">Morse Keyboard Pi</a></strong> - Morse keyboard and iambic keyer implementation for Raspberry Pi, bringing modern computing to traditional CW operations.</p>
+                    
+                    <h3>Audiobook Creation Tools</h3>
+                    <p><strong><a href="https://github.com/vpoluyaktov/abb_ia" target="_blank" rel="noopener noreferrer">ABB IA</a></strong> - Terminal-based tool to download MP3 collections from Internet Archive and create professional M4B audiobooks with chapter support.</p>
+                    
+                    <p><strong><a href="https://github.com/vpoluyaktov/mp4_splitter" target="_blank" rel="noopener noreferrer">MP4 Splitter</a></strong> - Command-line utility to split M4B audiobooks into individual chapter files for flexible listening.</p>
+                    
+                    <p><strong><a href="https://github.com/vpoluyaktov/EBook_audiobook_creator" target="_blank" rel="noopener noreferrer">EBook Audiobook Creator</a></strong> - Convert text-based ebooks into audiobooks using text-to-speech technology.</p>
+                    
+                    <div class="about-tip">
+                        <h4>💡 Open Source Philosophy</h4>
+                        <p>All my projects are open source because I believe in giving back to the community. Whether you're a fellow ham, developer, or just curious about how things work, feel free to explore the code, contribute improvements, or adapt these tools for your own needs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <div class="footer-content">
+                <div class="service-info">
+                    <p>Powered by <a href="https://github.com/vpoluyaktov/radiocast" target="_blank" rel="noopener noreferrer">Radiocast Service</a></p>
+                    <p>{{.Version}}</p>
+                </div>
+                <div class="service-info">
+                    <p>Developed by KK7UNL</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Navigation functionality
+        const hamburgerMenu = document.getElementById('hamburgerMenu');
+        const navDropdown = document.getElementById('navDropdown');
+        const refreshButton = document.getElementById('refreshButton');
+        
+        // Toggle dropdown menu
+        hamburgerMenu.addEventListener('click', function() {
+            navDropdown.classList.toggle('show');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!hamburgerMenu.contains(event.target) && !navDropdown.contains(event.target)) {
+                navDropdown.classList.remove('show');
+            }
+        });
+        
+        // Refresh button functionality
+        refreshButton.addEventListener('click', function() {
+            window.location.href = '/';
+        });
+    </script>
+</body>
+</html>
