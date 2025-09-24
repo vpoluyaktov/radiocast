@@ -5,18 +5,21 @@ CRITICAL: Return exact placeholders {{.PlaceholderName}} as shown in the templat
 The report should be organized for maximum readability and practical use by amateur radio operators
 Use bold and italic markdown formatting to make the report easy to read by HAMs.
 CRITICAL: Avoid marking bold or italic whole sentences or paragraphs. Use it only to highlight key terms or phrases.
+CRITICAL: Do not add a header to the report. Use the template as is. Start with the SunGif placeholder.
+Below the report sections and placeholders:
+
 
 {{.SunGif}}
 
-1. **📋 Propagation Summary**: Comprehensive overview of current conditions, what HAMs need to know today, expected propagation quality, and key recommendations (4-6 sentences). Try to make it not too technical. Focus on what HAMs need to know for daily operations.
+**📋 Propagation Summary**: Comprehensive overview of current conditions, what HAMs need to know today, expected propagation quality, and key recommendations (4-6 sentences). Try to make it not too technical. Focus on what HAMs need to know for daily operations.
 
-2. **💡 Operator Tips**: Practical advice for today's conditions - best practices, equipment recommendations, modes to use, operating strategies (DX, contest, etc.)
+**💡 Operator Tips**: Practical advice for today's conditions - best practices, equipment recommendations, modes to use, operating strategies (DX, contest, etc.)
 
-3. **⏰ Best Operating Times**: When to operate each band for optimal results
+**⏰ Best Operating Times**: When to operate each band for optimal results
 
-4. **🌍 DX Opportunities**: Current DX openings, grayline predictions, and special propagation events
+**🌍 DX Opportunities**: Current DX openings, grayline predictions, and special propagation events
 
-5. **📻 Band-by-Band Analysis**:
+**📻 Band-by-Band Analysis**:
 
    Base the conditions on the actual solar flux, K-index, and current space weather data provided in the JSON data, generate a comprehensive band conditions table in markdown format showing current propagation conditions for different times of day for each amateur radio band (80m, 40m, 20m, 17m, 15m, 12m, 10m). 
    
@@ -29,19 +32,19 @@ CRITICAL: Avoid marking bold or italic whole sentences or paragraphs. Use it onl
    
    Below the table add text analysis which bands are working best and when (80m-10m). Don't add any header for the analysis text.
 
-6. **📊 Current Solar Activity**: Solar activity metrics affecting propagation
+**📊 Current Solar Activity**: Solar activity metrics affecting propagation
 
    {{.GaugePanelChart}}
 
    Add here K-index, Solar flux, sunspots, and space weather overview. Include bullet points explaining current values for all three gauges: K-index (geomagnetic activity), Solar Flux (10.7cm), and Sunspot Number.
 
-7. **📈 Geomagnetic Conditions**: K-index trends and impacts on propagation
+**📈 Geomagnetic Conditions**: K-index trends and impacts on propagation
 
    {{.KIndexChart}}
    
    Use the historical K-index data to explain recent trends. Mention if conditions are improving, worsening, or stable over the past 24 hours.
 
-8. **🌟 Space Weather Details**: Advanced conditions for experienced operators
+**🌟 Space Weather Details**: Advanced conditions for experienced operators
 
    {{.SpaceWeatherDashboardChart}}
 
@@ -54,7 +57,7 @@ CRITICAL: Avoid marking bold or italic whole sentences or paragraphs. Use it onl
    
    Keep explanations simple and focus on practical impacts for amateur radio operations.
 
-9. **📡 Propagation Timeline & Technical Details**: 24-hour propagation quality overview and supporting data
+**📡 Propagation Timeline & Technical Details**: 24-hour propagation quality overview and supporting data
 
    {{.PropagationTimelineChart}}
    
@@ -62,7 +65,7 @@ CRITICAL: Avoid marking bold or italic whole sentences or paragraphs. Use it onl
    
    {{.HistoricalSolarTrendChart}}
 
-10. **🔮 3-Day Forecast**: What to expect over the next few days
+**🔮 3-Day Forecast**: What to expect over the next few days
 
     {{.ForecastChart}}
 
