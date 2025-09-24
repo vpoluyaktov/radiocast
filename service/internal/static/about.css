@@ -1,0 +1,183 @@
+/* About page specific styles - matching theory page */
+
+.about-section {
+    padding: 0;
+}
+
+.about-content {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+/* About page content styling - matching theory page */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+}
+
+/* Header section styling - matching theory page */
+.header {
+    background: rgba(255, 255, 255, 0.25);
+    color: #2c3e50;
+    padding: 20px 40px;
+    text-align: center;
+    border-bottom: 1px solid rgba(0, 123, 255, 0.1);
+}
+
+.header h2 {
+    border: none !important;
+    border-left: none !important;
+    padding-left: 0 !important;
+    color: #2c3e50;
+    margin: 10px 0;
+    font-size: 1.3em;
+    font-weight: 400;
+}
+
+.content {
+    padding: 40px;
+    position: relative;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+
+/* h2 styling now handled by common.css */
+
+.content h3 {
+    color: #0056b3;
+    margin: 25px 0 15px 0;
+    font-size: 1.3em;
+    font-weight: 600;
+    background: rgba(0, 86, 179, 0.08);
+    padding: 12px 16px;
+    border-radius: 6px;
+    border-left: 4px solid #0056b3;
+}
+
+.content p {
+    margin: 15px 0;
+    line-height: 1.6;
+    color: #444;
+}
+
+.content ul, .content ol {
+    margin: 15px 0;
+    padding-left: 25px;
+}
+
+.content li {
+    margin: 8px 0;
+    line-height: 1.5;
+    color: #444;
+}
+
+/* strong styling now uses default browser styling to match other pages */
+
+.content em {
+    color: #0056b3;
+    font-style: italic;
+}
+
+/* About tip styling - similar to theory tip */
+.about-tip {
+    background: rgba(23, 162, 184, 0.1);
+    border: 2px solid rgba(23, 162, 184, 0.3);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 25px 0;
+}
+
+.about-tip h4 {
+    color: #17a2b8;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.about-tip p {
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+/* Links styling */
+.content a {
+    color: #0056b3;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-bottom-color 0.2s ease;
+}
+
+.content a:hover {
+    border-bottom-color: #0056b3;
+}
+
+/* Responsive adjustments for about page */
+@media (max-width: 768px) {
+    .container {
+        margin: 0;
+        border-radius: 0;
+    }
+    
+    .header {
+        padding: 15px 20px;
+    }
+    
+    .content {
+        padding: 20px;
+    }
+    
+    .content h3 {
+        font-size: 1.2em;
+        padding: 10px 12px;
+    }
+    
+    .about-content {
+        padding: 15px;
+        margin: 10px 0;
+    }
+    
+    .about-tip {
+        padding: 15px;
+        margin: 20px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding: 10px 15px;
+    }
+    
+    .content {
+        padding: 15px 10px;
+    }
+    
+    .content h3 {
+        font-size: 1.1em;
+        padding: 8px 10px;
+    }
+    
+    .about-content {
+        padding: 12px;
+        margin: 8px 0;
+    }
+    
+    .about-tip {
+        padding: 12px;
+        margin: 15px 0;
+    }
+    
+    .about-tip h4 {
+        font-size: 1.0em;
+    }
+}

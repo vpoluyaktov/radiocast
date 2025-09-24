@@ -415,9 +415,10 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     /* Improved table responsiveness for mobile */
     table { 
         font-size: 0.85em; 
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
+        width: 100%;
+        margin: 10px auto;
+        display: table;
+        table-layout: auto;
     }
     
     th, td { 
@@ -597,8 +598,11 @@ h2:has-text("🔬") { border-left-color: #95a5a6; }
     /* Optimize tables for very small screens */
     table { 
         font-size: 0.8em;
-        margin: 10px -5px;
+        width: 100%;
+        margin: 10px auto;
         border-radius: 0;
+        display: table;
+        table-layout: auto;
     }
     
     th, td { 

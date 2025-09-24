@@ -259,27 +259,26 @@ h2:has-text("🌍") { border-left-color: #3498db; }
 h2:has-text("📈") { border-left-color: #9b59b6; }
 h2:has-text("💡") { border-left-color: #f1c40f; }
 h2:has-text("🔬") { border-left-color: #95a5a6; }
-
 /* Common footer styling for all pages */
 .footer {
     background: rgba(255, 255, 255, 0.3);
     color: #6c757d;
-    padding: 30px 40px;
+    padding: 15px 40px;
+    border-top: 1px solid rgba(0,0,0,0.1);
     margin-top: 20px;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 0 0 12px 12px;
 }
 
 .footer-content {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 30px;
+    gap: 15px;
     align-items: start;
     text-align: center;
 }
 
 .footer p {
-    margin: 5px 0;
+    margin: 2px 0;
     opacity: 0.8;
     font-size: 0.9em;
 }
