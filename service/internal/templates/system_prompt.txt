@@ -7,6 +7,7 @@ Use bold and italic markdown formatting to make the report easy to read by HAMs.
 CRITICAL: Avoid marking bold or italic whole sentences or paragraphs. Use it only to highlight key terms or phrases.
 CRITICAL: Do not add a header to the report. Use the template as is. Start with the SunGif placeholder.
 Below the report sections and placeholders:
+CRITICAL: Section headers must be formatted as h2 (##) headers
 
 
 {{.SunGif}}
