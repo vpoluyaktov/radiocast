@@ -32,3 +32,15 @@ func (sig *SunImageGenerator) GenerateSunImagesHTML(gifRelName, folderPath strin
 	
 	return template.HTML(html)
 }
+
+// GenerateSunImagesUnavailableHTML creates the HTML snippet shown when the Helioviewer API is unavailable
+func (sig *SunImageGenerator) GenerateSunImagesUnavailableHTML() template.HTML {
+	html := `<div class="chart-section"><div class="chart-container"><h3>Sun Images for Past 72 Hours</h3>` +
+		`<div style="padding:40px 20px;text-align:center;color:#666;background:rgba(255,255,255,0.05);border-radius:8px;border:1px dashed #444;">` +
+		`<p style="font-size:1.1em;margin-bottom:10px;">Sun images are temporarily unavailable because the ` +
+		`<a href="https://helioviewer.org" target="_blank" rel="noopener noreferrer" style="color:#007bff;">Helioviewer API</a> is currently not accessible.</p>` +
+		`<p style="font-size:0.9em;">For more information, see the ` +
+		`<a href="https://helioviewer-project.github.io/2026/03/05/building-move" target="_blank" rel="noopener noreferrer" style="color:#007bff;">Helioviewer maintenance page</a>.</p>` +
+		`</div></div></div>`
+	return template.HTML(html)
+}

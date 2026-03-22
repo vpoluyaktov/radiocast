@@ -29,11 +29,12 @@ type MockService interface {
 
 // GeneratedFiles contains all files generated for a report
 type GeneratedFiles struct {
-	HTMLContent    string
-	ChartFiles     []string
-	JSONFiles      map[string][]byte
-	AssetFiles     map[string][]byte // CSS, GIFs, images
-	FolderPath     string            // GCS folder path for consistency
+	HTMLContent     string
+	ChartFiles      []string
+	JSONFiles       map[string][]byte
+	AssetFiles      map[string][]byte // CSS, GIFs, images
+	FolderPath      string            // GCS folder path for consistency
+	SunGIFAvailable bool              // Whether the Sun GIF was successfully generated
 }
 
 // NewFileGenerator creates a new file generator
@@ -48,42 +49,44 @@ func NewFileGenerator(reportGenerator *ReportGenerator, mockService MockService)
 // GenerateAllFiles creates all report files (HTML, charts, JSON, assets)
 func (fg *FileGenerator) GenerateAllFiles(ctx context.Context, data *models.PropagationData, sourceData *models.SourceData, markdown string, systemPrompt string, userPrompt string, mockupMode bool) (*GeneratedFiles, error) {
 	timestamp := data.Timestamp
-	
+
 	files := &GeneratedFiles{
 		JSONFiles:  make(map[string][]byte),
 		AssetFiles: make(map[string][]byte),
 	}
-	
+
 	// Generate unified folder path using storage utility
 	files.FolderPath = storage.GenerateReportFolderPath(timestamp)
-	
+
 	// 1. Generate JSON files for each data source
 	if err := fg.generateSourceJSONFiles(sourceData, files); err != nil {
 		logger.Warn("Failed to generate source JSON files", map[string]interface{}{"error": err.Error()})
 	}
-	
+
 	// 2. Generate normalized data JSON
 	if err := fg.generateNormalizedDataJSON(data, files); err != nil {
 		logger.Warn("Failed to generate normalized data", map[string]interface{}{"error": err.Error()})
 	}
-	
+
 	// 3. Generate LLM-related files
 	if err := fg.generateLLMFiles(markdown, systemPrompt, userPrompt, files); err != nil {
 		logger.Warn("Failed to generate LLM files", map[string]interface{}{"error": err.Error()})
 	}
-	
+
 	// 4. Generate Sun GIF (last 72h)
 	gifRelName := "sun_72h.gif"
 	if err := fg.generateSunGIF(ctx, mockupMode, timestamp, gifRelName, files); err != nil {
 		logger.Warn("Failed to generate Sun GIF", map[string]interface{}{"error": err.Error()})
+		files.SunGIFAvailable = false
+	} else {
+		files.SunGIFAvailable = true
 	}
 
 	// 5. Generate HTML report (CSS generation removed - all pages use /static/styles.css)
 	if err := fg.generateHTML(markdown, data, sourceData, gifRelName, files); err != nil {
 		return nil, fmt.Errorf("failed to generate HTML: %w", err)
 	}
-	
-	
+
 	return files, nil
 }
 
@@ -94,25 +97,25 @@ func (fg *FileGenerator) generateSourceJSONFiles(sourceData *models.SourceData, 
 		files.JSONFiles["noaa_k_index.json"] = data
 		logger.Debug("Generated NOAA K-Index JSON", map[string]interface{}{"bytes": len(data)})
 	}
-	
+
 	if sourceData.NOAASolar != nil {
 		data, _ := json.MarshalIndent(sourceData.NOAASolar, "", "  ")
 		files.JSONFiles["noaa_solar.json"] = data
 		logger.Debug("Generated NOAA Solar JSON", map[string]interface{}{"bytes": len(data)})
 	}
-	
+
 	if sourceData.N0NBH != nil {
 		data, _ := json.MarshalIndent(sourceData.N0NBH, "", "  ")
 		files.JSONFiles["n0nbh_data.json"] = data
 		logger.Debug("Generated N0NBH JSON", map[string]interface{}{"bytes": len(data)})
 	}
-	
+
 	if sourceData.SIDC != nil {
 		data, _ := json.MarshalIndent(sourceData.SIDC, "", "  ")
 		files.JSONFiles["sidc_data.json"] = data
 		logger.Debug("Generated SIDC JSON", map[string]interface{}{"bytes": len(data)})
 	}
-	
+
 	return nil
 }
 
@@ -129,15 +132,15 @@ func (fg *FileGenerator) generateLLMFiles(markdown string, systemPrompt string, 
 	// Store the markdown response
 	files.JSONFiles["llm_response.md"] = []byte(markdown)
 	logger.Debug("Generated LLM response file", map[string]interface{}{"bytes": len(markdown)})
-	
+
 	// Store the system prompt
 	files.JSONFiles["system_prompt.txt"] = []byte(systemPrompt)
 	logger.Debug("Generated system prompt file", map[string]interface{}{"bytes": len(systemPrompt)})
-	
+
 	// Store the user prompt (includes raw JSON data and instructions)
 	files.JSONFiles["user_prompt.txt"] = []byte(userPrompt)
 	logger.Debug("Generated user prompt file", map[string]interface{}{"bytes": len(userPrompt)})
-	
+
 	return nil
 }
 
@@ -157,27 +160,26 @@ func (fg *FileGenerator) generateSunGIF(ctx context.Context, mockupMode bool, ti
 		// Create temporary file for generation
 		tempDir := os.TempDir()
 		gifPath := filepath.Join(tempDir, fmt.Sprintf("sun_gif_%d.gif", time.Now().Unix()))
-		
+
 		if err := imagery.GenerateSunGIF(ctx, tempDir, timestamp, gifPath); err != nil {
 			return fmt.Errorf("failed to generate Sun GIF: %w", err)
 		}
-		
+
 		// Read the generated GIF
 		gifData, err := os.ReadFile(gifPath)
 		if err != nil {
 			return fmt.Errorf("failed to read generated GIF: %w", err)
 		}
-		
+
 		files.AssetFiles[gifRelName] = gifData
 		logger.Debug("Generated Sun GIF", map[string]interface{}{"bytes": len(gifData)})
-		
+
 		// Clean up temporary file
 		os.Remove(gifPath)
 	}
-	
+
 	return nil
 }
-
 
 // generateHTML generates HTML report
 func (fg *FileGenerator) generateHTML(markdown string, data *models.PropagationData, sourceData *models.SourceData, gifRelName string, files *GeneratedFiles) error {
@@ -186,13 +188,12 @@ func (fg *FileGenerator) generateHTML(markdown string, data *models.PropagationD
 	if err != nil {
 		return fmt.Errorf("failed to generate HTML: %w", err)
 	}
-	
+
 	// Inject Sun GIF section into HTML
-	files.HTMLContent = fg.injectSunGIFIntoHTML(html, gifRelName, files.FolderPath)
+	files.HTMLContent = fg.injectSunGIFIntoHTML(html, gifRelName, files.FolderPath, files.SunGIFAvailable)
 	logger.Debug("Generated HTML report", map[string]interface{}{"bytes": len(files.HTMLContent)})
 	return nil
 }
-
 
 // prepareSunGIFHTML generates the HTML section for the Sun GIF with the correct path
 func (fg *FileGenerator) prepareSunGIFHTML(gifRelName, folderPath string) string {
@@ -201,8 +202,14 @@ func (fg *FileGenerator) prepareSunGIFHTML(gifRelName, folderPath string) string
 }
 
 // injectSunGIFIntoHTML replaces the {{.SunGif}} placeholder with the actual Sun GIF HTML
-func (fg *FileGenerator) injectSunGIFIntoHTML(html, gifRelName, folderPath string) string {
-	sunGifHTML := fg.prepareSunGIFHTML(gifRelName, folderPath)
+// or an unavailable message if the GIF was not generated
+func (fg *FileGenerator) injectSunGIFIntoHTML(html, gifRelName, folderPath string, sunGIFAvailable bool) string {
+	var sunGifHTML string
+	if sunGIFAvailable {
+		sunGifHTML = fg.prepareSunGIFHTML(gifRelName, folderPath)
+	} else {
+		sunGifHTML = string(fg.sunImageGenerator.GenerateSunImagesUnavailableHTML())
+	}
 	const placeholder = "{{.SunGif}}"
 	return strings.Replace(html, placeholder, sunGifHTML, 1)
 }
